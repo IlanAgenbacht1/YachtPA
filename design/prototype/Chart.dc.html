@@ -77,7 +77,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;c
     <path d="M60 0V844M180 0V844M300 0V844M0 130H390M0 250H390M0 370H390M0 490H390M0 610H390M0 730H390" fill="none" style="stroke:var(--grid)" stroke-width="1"></path>
     <g style="font-family:var(--mono);font-size:9px;fill:var(--maptext)">
       <text x="63" y="128">57°25'E</text>
-      <text x="183" y="128">57°30'E</text>
+      <text x="176" y="128" text-anchor="end">57°30'E</text>
       <text x="303" y="128">57°35'E</text>
       <text x="8" y="126">20°05'S</text>
       <text x="8" y="246">20°10'S</text>
@@ -431,7 +431,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;c
           <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">Profile</span>
           <span style="display:block">
             <span style="display:block;font-family:var(--display);font-size:18px;font-weight:600;line-height:1.15">M/Y Shadow</span>
-            <span style="display:block;font-size:12px;color:var(--muted);margin-top:4px">Deckhand · since Mar 2025</span>
+            <span style="display:block;font-size:12px;color:var(--muted);margin-top:4px">Deckhand · Mar 2025</span>
           </span>
         </button>
       </div>
@@ -538,7 +538,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;c
 
 <!-- ===== TOAST ===== -->
 <sc-if value="{{hasToast}}" hint-placeholder-val="{{ true }}">
-<div class="toast" role="status" style="position:absolute;left:50%;bottom:120px;transform:translateX(-50%);z-index:30;background:var(--fg);color:var(--sheet);font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25)">{{toast}}</div>
+<div class="toast" role="status" style="position:absolute;left:50%;bottom:220px;transform:translateX(-50%);z-index:30;background:var(--fg);color:var(--sheet);font-size:13px;font-weight:600;padding:10px 16px;border-radius:999px;white-space:nowrap;box-shadow:0 8px 24px rgba(0,0,0,.25)">{{toast}}</div>
 </sc-if>
 
 </div>
@@ -587,11 +587,11 @@ class Component extends DCLogic {
   // voyage
   start = () => {
     this.clearAll(); clearInterval(this.liveT);
-    this.setState({ voyage: 'live', sheet: '', pop: false, phase: 'idle', elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0 });
+    this.setState({ voyage: 'live', sheet: '', pop: false, phase: 'idle', elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0, spdSum: 0, spdN: 0 });
     this.liveT = setInterval(() => {
       const t = this.state.tick + 1;
       const speed = 9.6 + 2.2 * Math.sin(t / 2.4);
-      this.setState({ tick: t, elapsed: this.state.elapsed + 1, nm: this.state.nm + speed / 60, speed: speed, maxSpeed: Math.max(this.state.maxSpeed, speed) });
+      this.setState({ tick: t, spdSum: (this.state.spdSum || 0) + speed, spdN: (this.state.spdN || 0) + 1, elapsed: this.state.elapsed + 1, nm: this.state.nm + speed / 60, speed: speed, maxSpeed: Math.max(this.state.maxSpeed, speed) });
     }, 600);
   };
 
@@ -662,7 +662,7 @@ class Component extends DCLogic {
     const s = this.state;
     const theme = s.theme ?? this.props.theme ?? 'dusk';
     const p = s.p;
-    const avg = s.elapsed > 0 ? s.nm / (s.elapsed / 60) : 0;
+    const avg = s.spdN ? s.spdSum / s.spdN : s.speed;
     const picked = s.picked;
     const tags = this.TAGS.map((t) => {
       const on = picked.indexOf(t.id) >= 0;

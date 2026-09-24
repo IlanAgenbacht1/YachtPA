@@ -14,7 +14,7 @@ body{margin:0;background:#0B1220;font-family:"Outfit",system-ui,sans-serif}
 a{color:#5EEAD4}a:hover{color:#99F6E4}
 /* Looks: the three classes only redefine tokens. dusk is the default (.root), dawn and night are switched by the orbs. */
 .root{--bg:#0B1220;--fg:#F2F5F7;--muted:#9DB0BF;--accent:#5EEAD4;--accent-fg:#04201D;--line:rgba(255,255,255,.14);--card:rgba(255,255,255,.06);--blob1:rgba(31,178,166,.38);--blob2:rgba(79,70,229,.30);--blob3:rgba(226,114,91,.22);--glow:rgba(94,234,212,.28);--ok:#4FCB8E;--warn:#E9AB3F;--backdrop:rgba(0,0,0,.35);--display:"Instrument Serif",Georgia,serif;--body:"Outfit",system-ui,sans-serif}
-.root.dawn{--bg:#F4F2ED;--fg:#16212B;--muted:#5B6B78;--accent:#0F766E;--accent-fg:#F4F2ED;--line:rgba(22,33,43,.14);--card:rgba(22,33,43,.05);--blob1:rgba(45,212,191,.40);--blob2:rgba(251,191,36,.30);--blob3:rgba(165,180,252,.40);--glow:rgba(15,118,110,.18);--ok:#15803D;--warn:#B45309;--backdrop:rgba(22,33,43,.25)}
+.root.dawn{--bg:#F4F2ED;--fg:#16212B;--muted:#5B6B78;--accent:#0F766E;--accent-fg:#F4F2ED;--line:rgba(22,33,43,.14);--card:rgba(22,33,43,.05);--blob1:rgba(45,212,191,.30);--blob2:rgba(251,191,36,.22);--blob3:rgba(165,180,252,.30);--glow:rgba(15,118,110,.18);--ok:#15803D;--warn:#B45309;--backdrop:rgba(22,33,43,.25)}
 .root.night{--bg:#000;--fg:#FF453A;--muted:#D93E34;--accent:#FF453A;--accent-fg:#000;--line:#3A0E0B;--card:#120404;--blob1:rgba(255,69,58,.12);--blob2:rgba(255,69,58,.08);--blob3:rgba(255,69,58,.10);--glow:rgba(255,69,58,.14);--ok:#FF453A;--warn:#FF453A;--backdrop:rgba(0,0,0,.35)}
 /* Theme crossfade on everything that carries colour; transform and opacity stay short so presses and fades keep working. */
 .root,.root *{transition:background-color .55s ease,color .55s ease,border-color .55s ease,fill .55s ease,stroke .55s ease,box-shadow .55s ease,transform .15s ease,opacity .35s ease}
@@ -86,7 +86,7 @@ a{color:#5EEAD4}a:hover{color:#99F6E4}
 @keyframes drift1{from{transform:translate(0,0) scale(.9)}to{transform:translate(80px,110px) scale(1.15)}}
 @keyframes drift2{from{transform:translate(0,0) scale(1.15)}to{transform:translate(-100px,-70px) scale(.9)}}
 @keyframes drift3{from{transform:translate(0,0) scale(.95)}to{transform:translate(120px,-60px) scale(1.12)}}
-@keyframes hbreathe{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes hbreathe{0%,100%{opacity:.35}50%{opacity:.7}}
 @keyframes waveX{from{transform:translateX(-70px)}to{transform:translateX(70px)}}
 @keyframes ringIn{from{transform:scale(.5);opacity:0}}
 @keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
@@ -111,10 +111,10 @@ a{color:#5EEAD4}a:hover{color:#99F6E4}
     <div class="b1" style="position:absolute;width:340px;height:340px;left:-90px;top:-70px;border-radius:50%;filter:blur(70px);background:var(--blob1)"></div>
     <div class="b2" style="position:absolute;width:300px;height:300px;right:-110px;top:36%;border-radius:50%;filter:blur(70px);background:var(--blob2)"></div>
     <div class="b3" style="position:absolute;width:280px;height:280px;left:16%;bottom:-90px;border-radius:50%;filter:blur(70px);background:var(--blob3)"></div>
-    <div class="hglow" style="position:absolute;left:0;right:0;top:58%;height:120px;background:var(--glow);-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)"></div>
+    <div class="hglow" style="position:absolute;left:-40px;right:-40px;top:calc(58% - 70px);height:140px;background:linear-gradient(180deg,transparent 0%,var(--glow) 50%,transparent 100%);filter:blur(16px)"></div>
     <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
       <div class="fade">
-        <div class="hglow hglow2" style="position:absolute;left:0;right:0;top:58%;height:120px;background:var(--glow);-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)"></div>
+        <div class="hglow hglow2" style="position:absolute;left:-40px;right:-40px;top:calc(58% - 70px);height:140px;background:linear-gradient(180deg,transparent 0%,var(--glow) 50%,transparent 100%);filter:blur(16px)"></div>
         <div class="wave" style="position:absolute;left:-20%;width:140%;top:58%;margin-top:16px;height:1px;background:var(--accent);opacity:.35;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent)"></div>
       </div>
     </sc-if>
@@ -328,7 +328,7 @@ a{color:#5EEAD4}a:hover{color:#99F6E4}
           <svg viewBox="0 0 334 110" width="334" height="110" aria-hidden="true" style="display:block;margin-top:14px;overflow:visible">
             <path class="track" d="M12 18 C 90 20, 150 70, 322 92" fill="none" stroke-width="1.5" stroke-linecap="round" style="stroke:var(--accent)"></path>
             <circle cx="12" cy="18" r="2" style="fill:var(--accent)"></circle>
-            <text x="12" y="38" font-size="11" style="fill:var(--muted);font-family:var(--body);font-variant-numeric:tabular-nums">Port Louis · 09:42</text>
+            <text x="22" y="42" font-size="11" style="fill:var(--muted);font-family:var(--body);font-variant-numeric:tabular-nums">Port Louis · 09:42</text>
             <circle class="enddot" cx="322" cy="92" r="2" style="fill:var(--accent)"></circle>
             <text class="enddot" x="322" y="108" font-size="11" text-anchor="end" style="fill:var(--muted);font-family:var(--body);font-variant-numeric:tabular-nums">Black River · {{endTime}}</text>
           </svg>
@@ -350,7 +350,7 @@ a{color:#5EEAD4}a:hover{color:#99F6E4}
               <div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Max speed</div>
             </div>
           </div>
-          <div style="margin-top:18px;font-size:13px;line-height:1.4;color:var(--muted)">Night hours 0h 00m · Day passage · Motor yacht · Deckhand</div>
+          <div style="margin-top:18px;font-size:13px;line-height:1.5;color:var(--muted)"><span style="display:block">Day passage · Motor yacht · Deckhand</span><span class="tab" style="display:block">Night hours 0h 00m · departed 09:42</span></div>
           <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;line-height:1.4;color:var(--muted)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--ok)"><path d="M20 6L9 17l-5-5"></path></svg>
             <span>Consistent with your last known position</span>

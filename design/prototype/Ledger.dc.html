@@ -81,7 +81,7 @@ a{color:#17505A}a:hover{color:#2A6E7A}
 .root .wavebox{position:absolute;left:0;right:0;bottom:-1px;height:6px;overflow:hidden;display:block;pointer-events:none}
 .root .wave{display:block;animation:wave 6s linear infinite}
 .root .draw{stroke-dasharray:380;stroke-dashoffset:380;animation:draw 2.2s cubic-bezier(.2,.8,.2,1) .2s both}
-.root .stampbox{position:absolute;right:4px;top:54px;border:2px solid var(--stamp);border-radius:8px;padding:8px 14px;font-family:var(--body);font-weight:700;font-size:18px;letter-spacing:.2em;color:var(--stamp);transform:rotate(-9deg);animation:stamp .5s ease-out 1.1s both;pointer-events:none;line-height:1}
+.root .stampbox{position:absolute;left:112px;top:100px;border:2px solid var(--stamp);border-radius:8px;padding:8px 14px;font-family:var(--body);font-weight:700;font-size:18px;letter-spacing:.2em;color:var(--stamp);transform:rotate(-9deg);animation:stamp .5s ease-out 1.1s both;pointer-events:none;line-height:1}
 
 /* pages */
 .root .page{position:absolute;inset:0;z-index:10;display:flex;flex-direction:column;background:var(--sheet);box-shadow:-24px 0 48px var(--backdrop);animation:pageIn .42s cubic-bezier(.2,.8,.2,1) both}
@@ -183,8 +183,7 @@ a{color:#17505A}a:hover{color:#2A6E7A}
         <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
         <button class="act up d4" onClick="{{openLive}}">
           <span style="width:22px;height:22px;border-radius:3px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0"><span class="pulse" style="width:6px;height:6px;border-radius:50%;background:var(--accent-ink)"></span></span>
-          <span style="font-family:var(--display);font-size:22px;line-height:1.15;color:var(--ink);flex:1 1 auto;min-width:0">Underway to Black River</span>
-          <span style="font-size:14px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap;flex-shrink:0">{{liveElapsed}} · {{liveNm}} NM</span>
+          <span style="display:flex;flex-direction:column;gap:3px;min-width:0;flex:1 1 auto"><span style="font-family:var(--display);font-size:22px;line-height:1.15;color:var(--ink)">Underway to Black River</span><span style="font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink-soft)">{{liveElapsed}} · {{liveNm}} NM · 168°</span></span>
           <span class="wavebox"><svg class="wave" width="700" height="6" viewBox="0 0 700 6" aria-hidden="true"><defs><pattern id="wv" patternUnits="userSpaceOnUse" width="20" height="6"><path d="M0 3q5-3 10 0t10 0" fill="none" stroke-width="1.5" style="stroke:var(--accent)"></path></pattern></defs><rect width="700" height="6" fill="url(#wv)"></rect></svg></span>
         </button>
         </sc-if>
@@ -215,17 +214,17 @@ a{color:#17505A}a:hover{color:#2A6E7A}
           </button>
           <button class="drow" onClick="{{soon}}">
             <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Mon 22</span>
-            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:var(--display);font-size:18px;line-height:1.2;color:var(--ink)">Passage Grand Baie → Port Louis</span><span style="font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums">2h 10m · day</span></span>
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:var(--display);font-size:18px;line-height:1.2;color:var(--ink)">Grand Baie → Port Louis</span><span style="font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums">Passage · 2h 10m · day</span></span>
             <span style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink-soft)">18 NM</span>
           </button>
           <button class="drow" onClick="{{soon}}">
             <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Sun 21</span>
-            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:var(--display);font-size:18px;line-height:1.2;color:var(--ink)">Guest ops, anchoring at Grand Baie</span><span style="font-size:12px;color:var(--ink-soft)">At anchor</span></span>
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:var(--display);font-size:18px;line-height:1.2;color:var(--ink)">Guest ops, anchoring</span><span style="font-size:12px;color:var(--ink-soft)">At anchor · Grand Baie</span></span>
             <span style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink-soft)">—</span>
           </button>
           <button class="drow" onClick="{{soon}}">
             <span style="font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)">Sat 20</span>
-            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:var(--display);font-size:18px;line-height:1.2;color:var(--ink)">Passage Port Louis → Grand Baie</span><span style="font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums">1h 40m · day</span></span>
+            <span style="display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-family:var(--display);font-size:18px;line-height:1.2;color:var(--ink)">Port Louis → Grand Baie</span><span style="font-size:12px;color:var(--ink-soft);font-variant-numeric:tabular-nums">Passage · 1h 40m · day</span></span>
             <span style="font-size:14px;font-variant-numeric:tabular-nums;color:var(--ink-soft)">14 NM</span>
           </button>
         </div>
@@ -380,7 +379,7 @@ a{color:#17505A}a:hover{color:#2A6E7A}
         <span class="stampbox" aria-hidden="true">DRAFT</span>
       </div>
       <div style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:13px;color:var(--ink-soft)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--stamp-ok);flex-shrink:0"><path d="M20 6L9 17l-5-5"></path></svg>Consistent with your last known position</div>
-      <svg width="342" height="90" viewBox="0 0 342 90" aria-hidden="true" style="display:block;margin-top:8px;overflow:visible">
+      <svg width="342" height="90" viewBox="0 0 342 90" aria-hidden="true" style="display:block;margin-top:22px;overflow:visible">
         <path id="trk2" class="draw" d="M14 12 C 90 22, 150 60, 328 78" fill="none" stroke-width="1.5" stroke-linecap="round" style="stroke:var(--ink)"></path>
         <text x="14" y="5" font-size="10" style="fill:var(--ink-soft);font-family:var(--body)">Port Louis</text>
         <text x="328" y="90" font-size="10" text-anchor="end" style="fill:var(--ink-soft);font-family:var(--body)">Black River</text>
@@ -496,11 +495,11 @@ class Component extends DCLogic {
 
   start = () => {
     this.clearAll(); clearInterval(this.liveT);
-    this.setState({ page: 'live', voyage: true, elapsed: 64, secs: 0, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0 });
+    this.setState({ page: 'live', voyage: true, spdSum: 0, spdN: 0, elapsed: 64, secs: 0, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0 });
     this.liveT = setInterval(() => {
       const t = this.state.tick + 1;
       const speed = 9.6 + 2.2 * Math.sin(t / 2.4);
-      this.setState({ tick: t, elapsed: this.state.elapsed + 1, secs: this.state.secs + 1, nm: this.state.nm + speed / 60, speed: speed, maxSpeed: Math.max(this.state.maxSpeed, speed) });
+      this.setState({ tick: t, spdSum: (this.state.spdSum || 0) + speed, spdN: (this.state.spdN || 0) + 1, elapsed: this.state.elapsed + 1, secs: this.state.secs + 1, nm: this.state.nm + speed / 60, speed: speed, maxSpeed: Math.max(this.state.maxSpeed, speed) });
     }, 600);
   };
 
@@ -566,7 +565,7 @@ class Component extends DCLogic {
     const s = this.state;
     const theme = s.theme ?? this.props.theme ?? 'paper';
     const p = s.p;
-    const avg = s.elapsed > 0 ? s.nm / (s.elapsed / 60) : 0;
+    const avg = s.spdN ? s.spdSum / s.spdN : s.speed;
     const anyPage = s.page !== '';
     const showMini = !!s.voyage && s.page !== 'live';
     const tags = this.TAGS.map((t) => {
