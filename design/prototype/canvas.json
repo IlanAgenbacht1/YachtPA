@@ -1,0 +1,66 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Horizon.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 44,
+      "title": "C · Horizon",
+      "w": 390,
+      "x": 940,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 44,
+      "title": "A · Deep Water",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "Sailcloth.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "radius": 44,
+      "title": "B · Sailcloth",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-24T17:45:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "title": {
+      "kind": "title1",
+      "maxW": 1330,
+      "text": "YachtPA · pick a look",
+      "w": 240,
+      "x": 0,
+      "y": -400
+    },
+    "howto": {
+      "fill": "blue",
+      "maxH": 120,
+      "text": "How to try it: press Play on a phone. Start voyage → Stop → Confirm. Then Log today → tap the mic → Confirm. Explore the Experience and Documents tabs. A voyage keeps running while you use the rest of the app. The moon switches to night-watch mode. Same app in all three, only the look changes. Sample data throughout.",
+      "w": 1330,
+      "x": 0,
+      "y": -270
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Sailcloth.dc.html",
+    "Horizon.dc.html"
+  ],
+  "pages": [],
+  "title": "YachtPA UI Directions"
+}

@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Horizon · YachtPA</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F4F7;font-family:"IBM Plex Sans",system-ui,sans-serif}
+a{color:#D2481F}a:hover{color:#A93A18}
+.root{--bg:#F2F4F7;--hero:radial-gradient(90% 55% at 50% 100%,rgba(214,75,35,0.32) 0%,rgba(214,75,35,0) 60%),linear-gradient(180deg,#07192B 0%,#0D2F4D 100%);--hero-fg:#FFFFFF;--hero-muted:#9FB6CA;--sheet:#F2F4F7;--fg:#0E1D31;--muted:#5A6A7A;--card:#FFFFFF;--card-border:#E0E6EC;--card-shadow:0 1px 2px rgba(14,29,49,0.04),0 10px 28px rgba(14,29,49,0.06);--accent:#D2481F;--accent-fg:#FFFFFF;--brass:#B4862A;--ok:#1E8C5C;--warn:#CF7A12;--danger:#B8391C;--track:#E0E6EC;--chart:rgba(14,29,49,0.08);--tab:#FFFFFF;--tab-fg:#7A8794;--tab-active:#0E1D31;--btn2:rgba(255,255,255,0.12);--btn2-fg:#FFFFFF;--btn2-border:rgba(255,255,255,0.26);--btn-shadow:0 12px 28px rgba(210,72,31,0.28),0 2px 6px rgba(0,0,0,0.18);--radius:16px;--radius-lg:22px;--display:"Space Grotesk",system-ui,sans-serif;--body:"IBM Plex Sans",system-ui,sans-serif}
+.root.night{--bg:#000000;--hero:#000000;--hero-fg:#FF453A;--hero-muted:#C63A31;--sheet:#000000;--fg:#FF453A;--muted:#C63A31;--card:#120404;--card-border:#3A0E0B;--card-shadow:none;--accent:#FF453A;--accent-fg:#000000;--brass:#FF453A;--ok:#FF453A;--warn:#FF453A;--danger:#FF453A;--track:#2A0A08;--chart:#2A0A08;--tab:#000000;--tab-fg:#8A2A24;--tab-active:#FF453A;--btn2:#120404;--btn2-fg:#FF453A;--btn2-border:#3A0E0B;--btn-shadow:none}
+button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;color:inherit;box-sizing:border-box;transition:transform .12s ease}
+button:active{transform:scale(.985)}
+@keyframes wave{from{transform:translateX(0)}to{transform:translateX(-390px)}}
+@keyframes breathe{0%,100%{transform:scale(1);opacity:.16}50%{transform:scale(1.12);opacity:.3}}
+@keyframes enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes rise{from{transform:translateY(36px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes fadeUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes draw{from{stroke-dashoffset:340}to{stroke-dashoffset:0}}
+@keyframes bars{from{transform:scaleY(.22)}to{transform:scaleY(1)}}
+@keyframes ring64{from{stroke-dashoffset:163.4}}
+@keyframes ring96{from{stroke-dashoffset:251.3}}
+@keyframes pulse{0%{transform:scale(1);opacity:.55}100%{transform:scale(2.6);opacity:0}}
+.wave{animation:wave 7s linear infinite}
+.wave2{animation:wave 11s linear infinite}
+.breathe{animation:breathe 3.4s ease-in-out infinite}
+.enter{animation:enter .4s cubic-bezier(.2,.8,.2,1) both}
+.rise{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+.fadeUp{animation:fadeUp .45s ease-out both}
+.blink{animation:blink 1.4s ease-in-out infinite}
+.draw{stroke-dasharray:340;animation:draw 2.2s ease-out both}
+.bar{animation:bars .8s ease-in-out infinite alternate;transform-origin:center}
+.ring64{animation:ring64 1.2s cubic-bezier(.2,.8,.2,1) both}
+.ring96{animation:ring96 1.4s cubic-bezier(.2,.8,.2,1) both}
+.pulse{animation:pulse 1.8s ease-out infinite;transform-origin:center;transform-box:fill-box}
+</style>
+</helmet>
+<div class="root {{nightClass}}" style="width:390px;height:844px;box-sizing:border-box;position:relative;overflow:hidden;display:flex;flex-direction:column;background:var(--bg);color:var(--fg);font-family:var(--body)">
+
+<sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+<div class="enter" style="display:flex;flex-direction:column;flex-grow:1;min-height:0">
+  <div style="position:relative;display:flex;flex-direction:column;gap:22px;padding:60px 24px 48px;background:var(--hero);color:var(--hero-fg);overflow:hidden">
+    <svg aria-hidden="true" viewBox="0 0 200 200" fill="none" stroke="currentColor" style="position:absolute;right:-88px;top:-76px;width:250px;height:250px;opacity:.08;pointer-events:none">
+      <circle cx="100" cy="100" r="92" stroke-width="1"></circle>
+      <circle cx="100" cy="100" r="66" stroke-width="1" stroke-dasharray="2 5"></circle>
+      <circle cx="100" cy="100" r="5" stroke-width="1"></circle>
+      <path d="M100 8L107 100 100 192 93 100Z" stroke-width="1"></path>
+      <path d="M8 100L100 93 192 100 100 107Z" stroke-width="1"></path>
+      <path d="M35 35L104 96 165 165 96 104Z" stroke-width="1" opacity=".7"></path>
+      <path d="M165 35L104 104 35 165 96 96Z" stroke-width="1" opacity=".7"></path>
+    </svg>
+    <div style="position:relative;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">Today · Wed 24 Sep</span>
+      <span style="display:flex;align-items:center;gap:10px">
+        <span style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--hero-muted)"><span style="width:6px;height:6px;border-radius:99px;background:var(--ok)"></span><span>Synced</span></span>
+        <button onClick="{{toggleNight}}" aria-label="{{nightLabel}}" style="width:40px;height:40px;border-radius:14px;background:var(--btn2);border:1px solid var(--btn2-border);display:flex;align-items:center;justify-content:center;color:var(--hero-fg)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+        </button>
+      </span>
+    </div>
+    <div style="position:relative;display:flex;align-items:center;gap:14px">
+      <div style="width:52px;height:52px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:var(--btn2);border:1px solid var(--btn2-border);color:var(--hero-fg);flex-shrink:0">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="3"></circle><path d="M12 8v14M5 12H2a10 10 0 0 0 20 0h-3"></path></svg>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+        <div style="font-family:var(--display);font-size:38px;font-weight:600;line-height:1;letter-spacing:-.01em">M/Y Shadow</div>
+        <div style="font-size:14px;color:var(--hero-muted)">Deckhand · Port Louis, Mauritius</div>
+      </div>
+    </div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:12px;margin-top:2px">
+      <sc-if value="{{voyageIdle}}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{start}}" style="height:66px;border-radius:var(--radius-lg);background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:var(--btn-shadow)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l19-9-9 19-2-8-8-2z"></path></svg>
+        <span>Start voyage</span>
+      </button>
+      </sc-if>
+      <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{openLive}}" style="display:flex;align-items:center;gap:14px;padding:12px 14px 12px 18px;border-radius:var(--radius-lg);background:var(--btn2);border:1px solid var(--accent);color:var(--hero-fg);text-align:left;box-shadow:var(--btn-shadow)">
+        <span class="blink" style="width:10px;height:10px;border-radius:99px;background:var(--accent);flex-shrink:0"></span>
+        <span style="flex-grow:1;display:flex;flex-direction:column;gap:3px;min-width:0">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">Underway · to Black River</span>
+          <span style="display:flex;align-items:baseline;gap:8px"><span style="font-family:var(--display);font-size:30px;font-weight:600;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{liveNm}}</span><span style="font-size:13px;font-weight:700;color:var(--hero-muted)">NM · {{liveElapsed}}</span></span>
+        </span>
+        <span style="padding:10px 14px;border-radius:99px;background:var(--accent);color:var(--accent-fg);font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;flex-shrink:0">View</span>
+      </button>
+      </sc-if>
+      <sc-if value="{{notLogged}}" hint-placeholder-val="{{ true }}">
+      <button onClick="{{openLog}}" style="height:58px;border-radius:var(--radius-lg);background:var(--btn2);color:var(--btn2-fg);border:1px solid var(--btn2-border);display:flex;align-items:center;justify-content:center;gap:12px;font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"></path></svg>
+        <span>Log today</span>
+      </button>
+      </sc-if>
+      <sc-if value="{{logged}}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{openLog}}" style="height:58px;border-radius:var(--radius-lg);background:var(--btn2);color:var(--btn2-fg);border:1px solid var(--btn2-border);display:flex;align-items:center;justify-content:center;gap:12px;font-size:15px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+        <span>Logged · view entry</span>
+      </button>
+      </sc-if>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:12px;flex-grow:1;min-height:0;position:relative;overflow-y:auto;overflow-x:hidden;margin-top:-26px;padding:20px 20px 20px;background:var(--sheet);border-radius:28px 28px 0 0;border-top:1px solid var(--card-border)">
+    <button class="fadeUp" onClick="{{openExp}}" style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.05s">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">My experience</span>
+        <span style="font-size:12px;font-weight:800;color:var(--brass)">+37 NM this week</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:8px">
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-family:var(--display);font-size:32px;font-weight:600;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{totalNm}}</span>
+          <span style="font-size:12px;color:var(--muted)">NM logged</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-family:var(--display);font-size:32px;font-weight:600;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{totalH}}</span>
+          <span style="font-size:12px;color:var(--muted)">hours underway</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          <span style="font-family:var(--display);font-size:32px;font-weight:600;line-height:1;letter-spacing:-.02em;font-variant-numeric:tabular-nums">42</span>
+          <span style="font-size:12px;color:var(--muted)">night hours</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="display:flex;align-items:flex-end;gap:4px;height:40px">
+          <span style="flex-grow:1;height:12px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:18px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:9px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:24px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:20px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:15px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:28px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:11px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:22px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:32px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:19px;border-radius:3px;background:var(--track)"></span>
+          <span style="flex-grow:1;height:40px;border-radius:3px;background:var(--accent)"></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;font-weight:600;color:var(--muted)"><span>Oct 2025</span><span>Sep 2026</span></div>
+      </div>
+    </button>
+
+    <button class="fadeUp" onClick="{{openDocs}}" style="display:flex;align-items:center;gap:10px;padding:14px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.12s">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+      <span style="flex-grow:1;font-size:15px;font-weight:700">Documents</span>
+      <span style="width:8px;height:8px;border-radius:99px;background:var(--ok)"></span>
+      <span style="font-size:13px;font-weight:600;color:var(--muted)">8 valid</span>
+      <span style="width:8px;height:8px;border-radius:99px;background:var(--warn);margin-left:4px"></span>
+      <span style="font-size:13px;font-weight:600;color:var(--muted)">1 expiring</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+
+    <button class="fadeUp" onClick="{{openExp}}" style="display:flex;align-items:center;gap:14px;padding:14px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.19s">
+      <div style="position:relative;width:64px;height:64px;flex-shrink:0">
+        <svg viewBox="0 0 64 64" width="64" height="64" fill="none" aria-hidden="true">
+          <circle cx="32" cy="32" r="26" style="stroke:var(--track)" stroke-width="6"></circle>
+          <circle class="ring64" cx="32" cy="32" r="26" style="stroke:var(--brass)" stroke-width="6" stroke-linecap="round" stroke-dasharray="163.4" stroke-dashoffset="80" transform="rotate(-90 32 32)"></circle>
+        </svg>
+        <span style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;font-variant-numeric:tabular-nums">51%</span>
+      </div>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:4px;min-width:0">
+        <span style="font-size:15px;font-weight:700">Yachtmaster Offshore</span>
+        <span style="font-size:12px;color:var(--muted)">1,274 of 2,500 NM · 3 of 5 passages</span>
+        <span style="font-size:12px;font-weight:700;color:var(--brass)">Sea days and night hours done</span>
+      </span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted);flex-shrink:0"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+  </div>
+
+  <sc-if value="{{showMini}}" hint-placeholder-val="{{ false }}">
+  <div style="background:var(--sheet);padding:0 12px 8px">
+    <button onClick="{{openLive}}" style="width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;background:var(--fg);color:var(--bg);text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+      <span class="blink" style="width:8px;height:8px;border-radius:99px;background:var(--accent);flex-shrink:0"></span>
+      <span style="flex-grow:1;font-size:13px;font-weight:700">Underway · {{liveNm}} NM · {{liveElapsed}}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+  </div>
+  </sc-if>
+  <div style="display:flex;justify-content:space-around;align-items:flex-start;padding:10px 8px 24px;background:var(--tab);border-top:1px solid var(--card-border)">
+    <button onClick="{{home}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--tab-active)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+      <span>Home</span>
+    </button>
+    <button onClick="{{openLog}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>Log</span>
+    </button>
+    <button onClick="{{openExp}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z"></path></svg>
+      <span>Experience</span>
+    </button>
+    <button onClick="{{openDocs}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+      <span>Documents</span>
+    </button>
+    <button onClick="{{soon}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLive}}" hint-placeholder-val="{{ false }}">
+<div class="enter" style="display:flex;flex-direction:column;flex-grow:1;min-height:0">
+  <div style="position:relative;display:flex;flex-direction:column;gap:22px;padding:60px 24px 58px;background:var(--hero);color:var(--hero-fg);overflow:hidden">
+    <div style="position:relative;display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">
+        <span class="blink" style="width:8px;height:8px;border-radius:99px;background:var(--accent)"></span>
+        <span>Underway · M/Y Shadow</span>
+      </div>
+      <button onClick="{{toggleNight}}" aria-label="{{nightLabel}}" style="width:44px;height:44px;border-radius:15px;background:var(--btn2);border:1px solid var(--btn2-border);display:flex;align-items:center;justify-content:center;color:var(--hero-fg)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"></path></svg>
+      </button>
+    </div>
+    <div style="position:relative;display:flex;flex-direction:column;gap:6px;align-items:flex-start">
+      <div class="breathe" style="position:absolute;left:-30px;top:-40px;width:240px;height:170px;border-radius:50%;background:var(--accent);filter:blur(42px);pointer-events:none"></div>
+      <div style="position:relative;display:flex;align-items:baseline;gap:10px">
+        <span style="font-family:var(--display);font-size:96px;font-weight:600;line-height:.92;font-variant-numeric:tabular-nums;letter-spacing:-.02em">{{liveNm}}</span>
+        <span style="font-size:20px;font-weight:700;color:var(--hero-muted)">NM</span>
+      </div>
+      <div style="position:relative;font-size:14px;color:var(--hero-muted)">From Port Louis · 09:42 · Heading 112°</div>
+    </div>
+    <div style="position:relative;display:grid;grid-template-columns:repeat(3, minmax(0, 1fr));gap:10px">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:var(--radius);background:var(--btn2);border:1px solid var(--btn2-border)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--hero-muted)">Elapsed</span>
+        <span style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums">{{liveElapsed}}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:var(--radius);background:var(--btn2);border:1px solid var(--btn2-border)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--hero-muted)">Speed</span>
+        <span style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums">{{liveSpeed}} kn</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:12px 14px;border-radius:var(--radius);background:var(--btn2);border:1px solid var(--btn2-border)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--hero-muted)">Night</span>
+        <span style="font-size:18px;font-weight:800;font-variant-numeric:tabular-nums">0h 00m</span>
+      </div>
+    </div>
+    <svg class="wave" aria-hidden="true" style="position:absolute;left:0;bottom:32px;width:780px;height:44px;color:var(--hero-fg);opacity:.3" viewBox="0 0 780 44" fill="none"><path d="M0 22q48.75 -18 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0" stroke="currentColor" stroke-width="1.6"></path></svg>
+    <svg class="wave2" aria-hidden="true" style="position:absolute;left:0;bottom:44px;width:780px;height:44px;color:var(--hero-fg);opacity:.13" viewBox="0 0 780 44" fill="none"><path d="M0 22q48.75 -14 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0" stroke="currentColor" stroke-width="1.6"></path></svg>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:14px;flex-grow:1;min-height:0;position:relative;overflow-y:auto;overflow-x:hidden;margin-top:-26px;padding:20px 20px 24px;background:var(--sheet);border-radius:28px 28px 0 0;border-top:1px solid var(--card-border)">
+    <div class="fadeUp" style="display:flex;flex-direction:column;gap:10px;padding:16px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);animation-delay:.08s">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Track</span>
+        <span style="font-size:12px;font-weight:600;color:var(--muted)">GPS ±8 m · 1 fix per minute</span>
+      </div>
+      <svg viewBox="0 0 320 110" style="width:100%;height:110px;display:block;color:var(--chart)" fill="none" aria-hidden="true">
+        <path d="M0 22H320M0 44H320M0 66H320M0 88H320M32 0V110M64 0V110M96 0V110M128 0V110M160 0V110M192 0V110M224 0V110M256 0V110M288 0V110" stroke="currentColor" stroke-width="1"></path>
+        <path d="M-10 95C40 80 70 100 120 88S200 60 250 78 300 70 330 60" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 4"></path>
+        <path d="M-10 60C30 50 60 70 110 58S180 30 240 48 290 40 330 28" stroke="currentColor" stroke-width="1.2" stroke-dasharray="3 4"></path>
+        <path d="M14 84C62 76 96 40 144 44S222 72 262 40 300 24 308 20" style="stroke:var(--track)" stroke-width="7" stroke-linecap="round"></path>
+        <path class="draw" d="M14 84C62 76 96 40 144 44S222 72 262 40 300 24 308 20" style="stroke:var(--accent)" stroke-width="3" stroke-linecap="round"></path>
+        <circle cx="14" cy="84" r="8" style="stroke:var(--muted)" stroke-width="1.5"></circle>
+        <circle cx="14" cy="84" r="3.5" style="fill:var(--muted)"></circle>
+        <circle class="pulse" cx="308" cy="20" r="6" style="fill:var(--accent)"></circle>
+        <circle cx="308" cy="20" r="6" style="fill:var(--accent)"></circle>
+      </svg>
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--muted)">
+        <span>Port Louis · 09:42</span>
+        <span>Black River · 4.1 NM ahead</span>
+      </div>
+    </div>
+    <div class="fadeUp" style="display:flex;align-items:center;gap:14px;padding:10px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);animation-delay:.16s">
+      <div style="flex-grow:1;display:flex;flex-direction:column;gap:3px">
+        <span style="font-size:15px;font-weight:700">Sunset 18:24</span>
+        <span style="font-size:12px;color:var(--muted)">Night hours start automatically</span>
+      </div>
+      <svg viewBox="0 0 120 44" style="width:120px;height:44px;display:block;flex-shrink:0" fill="none" aria-hidden="true">
+        <path d="M14 40H106" style="stroke:var(--card-border)" stroke-width="1"></path>
+        <path d="M26 40A34 34 0 0 1 94 40" style="stroke:var(--track)" stroke-width="2"></path>
+        <path d="M26 40A34 34 0 0 1 72.5 8.4" style="stroke:var(--brass)" stroke-width="2" stroke-linecap="round"></path>
+        <circle cx="72.5" cy="8.4" r="5" style="fill:var(--brass)"></circle>
+      </svg>
+    </div>
+    <div style="flex-grow:1"></div>
+    <button onClick="{{stop}}" style="height:66px;border-radius:var(--radius-lg);background:var(--danger);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:var(--btn-shadow)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><rect x="5" y="5" width="14" height="14" rx="3"></rect></svg>
+      <span>Stop voyage</span>
+    </button>
+  </div>
+
+  <div style="display:flex;justify-content:space-around;align-items:flex-start;padding:10px 8px 24px;background:var(--tab);border-top:1px solid var(--card-border)">
+    <button onClick="{{home}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+      <span>Home</span>
+    </button>
+    <button onClick="{{openLog}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>Log</span>
+    </button>
+    <button onClick="{{openExp}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z"></path></svg>
+      <span>Experience</span>
+    </button>
+    <button onClick="{{openDocs}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+      <span>Documents</span>
+    </button>
+    <button onClick="{{soon}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{isSummary}}" hint-placeholder-val="{{ false }}">
+<div class="enter" style="display:flex;flex-direction:column;flex-grow:1;min-height:0">
+  <div style="display:flex;flex-direction:column;gap:10px;padding:60px 24px 48px;background:var(--hero);color:var(--hero-fg)">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">Voyage complete</div>
+    <div style="font-family:var(--display);font-size:36px;font-weight:600;line-height:1.05;letter-spacing:-.01em">Port Louis → Black River</div>
+    <div style="font-size:14px;color:var(--hero-muted)">Wed 24 Sep · 09:42 – {{endTime}}</div>
+  </div>
+  <div class="rise" style="display:flex;flex-direction:column;gap:14px;flex-grow:1;min-height:0;position:relative;overflow-y:auto;overflow-x:hidden;margin-top:-26px;padding:24px 20px 24px;background:var(--sheet);border-radius:28px 28px 0 0;border-top:1px solid var(--card-border)">
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <span style="font-family:var(--display);font-size:80px;font-weight:600;line-height:.92;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{sumNm}}</span>
+      <span style="font-size:20px;font-weight:700;color:var(--muted)">NM</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Duration</span>
+        <span style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums">{{sumDur}}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Night hours</span>
+        <span style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums">0h 00m</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Avg speed</span>
+        <span style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums">{{sumAvg}} kn</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Max speed</span>
+        <span style="font-size:20px;font-weight:800;font-variant-numeric:tabular-nums">{{sumMax}} kn</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span style="padding:8px 12px;border-radius:99px;background:var(--accent);color:var(--accent-fg);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase">Day passage</span>
+      <span style="padding:8px 12px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:12px;font-weight:700">Motor yacht</span>
+      <span style="padding:8px 12px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:12px;font-weight:700">Deckhand</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--muted)">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--ok)"><path d="M20 6L9 17l-5-5"></path></svg>
+      <span>Consistent with your last known position</span>
+    </div>
+    <div style="flex-grow:1"></div>
+    <button onClick="{{confirmVoyage}}" style="height:66px;border-radius:var(--radius-lg);background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:var(--btn-shadow)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+      <span>Confirm voyage</span>
+    </button>
+    <button onClick="{{soon}}" style="height:48px;border-radius:var(--radius-lg);background:var(--card);color:var(--fg);border:1px solid var(--card-border);font-size:15px;font-weight:700">Edit details</button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLog}}" hint-placeholder-val="{{ false }}">
+<div class="enter" style="display:flex;flex-direction:column;flex-grow:1;min-height:0">
+  <div style="display:flex;flex-direction:column;gap:10px;padding:60px 24px 48px;background:var(--hero);color:var(--hero-fg)">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">Log today</div>
+    <div style="font-family:var(--display);font-size:36px;font-weight:600;line-height:1.05;letter-spacing:-.01em">Wednesday 24 September</div>
+    <div style="font-size:14px;color:var(--hero-muted)">M/Y Shadow · Deckhand</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:16px;flex-grow:1;min-height:0;position:relative;overflow-y:auto;overflow-x:hidden;margin-top:-26px;padding:24px 20px 20px;background:var(--sheet);border-radius:28px 28px 0 0;border-top:1px solid var(--card-border)">
+
+    <sc-if value="{{isIdle}}" hint-placeholder-val="{{ true }}">
+    <div class="fadeUp" style="display:flex;flex-direction:column;align-items:center;gap:20px;padding:22px 0 8px">
+      <div style="position:relative;width:116px;height:116px;display:flex;align-items:center;justify-content:center">
+        <span style="position:absolute;inset:-30px;border-radius:50%;background:var(--accent);opacity:.07"></span>
+        <span style="position:absolute;inset:-14px;border-radius:50%;background:var(--accent);opacity:.12"></span>
+        <button onClick="{{record}}" aria-label="Start recording" style="position:relative;width:116px;height:116px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;box-shadow:var(--btn-shadow)">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"></path></svg>
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center">
+        <span style="font-size:17px;font-weight:700">Tap and say what you did today</span>
+        <span style="font-size:13px;color:var(--muted)">The app writes it up. You confirm.</span>
+      </div>
+    </div>
+    <div class="fadeUp" style="display:flex;flex-direction:column;gap:10px;animation-delay:.1s">
+      <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Or tick what you did</span>
+      <div style="display:flex;flex-wrap:wrap;gap:8px">
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Washdown</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Docking</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Anchoring</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Tender</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Maintenance</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Night watch</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Guest ops</button>
+        <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Safety drill</button>
+      </div>
+    </div>
+    </sc-if>
+
+    <sc-if value="{{isRec}}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 0 4px">
+      <div style="position:relative;width:116px;height:116px;display:flex;align-items:center;justify-content:center">
+        <span style="position:absolute;inset:-14px;border-radius:50%;background:var(--accent);opacity:.12"></span>
+        <div style="position:relative;width:116px;height:116px;border-radius:50%;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;box-shadow:var(--btn-shadow)">
+          <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"></path></svg>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:4px;height:44px" aria-hidden="true">
+        <span class="bar" style="width:4px;height:18px;border-radius:99px;background:var(--accent);animation-delay:0s"></span>
+        <span class="bar" style="width:4px;height:30px;border-radius:99px;background:var(--accent);animation-delay:.07s"></span>
+        <span class="bar" style="width:4px;height:40px;border-radius:99px;background:var(--accent);animation-delay:.14s"></span>
+        <span class="bar" style="width:4px;height:24px;border-radius:99px;background:var(--accent);animation-delay:.21s"></span>
+        <span class="bar" style="width:4px;height:36px;border-radius:99px;background:var(--accent);animation-delay:.28s"></span>
+        <span class="bar" style="width:4px;height:16px;border-radius:99px;background:var(--accent);animation-delay:.35s"></span>
+        <span class="bar" style="width:4px;height:42px;border-radius:99px;background:var(--accent);animation-delay:.42s"></span>
+        <span class="bar" style="width:4px;height:28px;border-radius:99px;background:var(--accent);animation-delay:.49s"></span>
+        <span class="bar" style="width:4px;height:20px;border-radius:99px;background:var(--accent);animation-delay:.56s"></span>
+        <span class="bar" style="width:4px;height:38px;border-radius:99px;background:var(--accent);animation-delay:.63s"></span>
+        <span class="bar" style="width:4px;height:26px;border-radius:99px;background:var(--accent);animation-delay:.7s"></span>
+        <span class="bar" style="width:4px;height:14px;border-radius:99px;background:var(--accent);animation-delay:.77s"></span>
+        <span class="bar" style="width:4px;height:32px;border-radius:99px;background:var(--accent);animation-delay:.84s"></span>
+        <span class="bar" style="width:4px;height:22px;border-radius:99px;background:var(--accent);animation-delay:.91s"></span>
+      </div>
+      <span class="blink" style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--accent)">Listening</span>
+    </div>
+    <div style="min-height:120px;padding:16px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);font-size:16px;line-height:1.5;color:var(--fg)">{{transcript}}</div>
+    </sc-if>
+
+    <sc-if value="{{isDraft}}" hint-placeholder-val="{{ false }}">
+    <div class="rise" style="display:flex;flex-direction:column;gap:12px;padding:16px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Deckhand duties</span>
+        <span style="padding:4px 9px;border-radius:99px;border:1px solid var(--brass);color:var(--brass);font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase">AI draft</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div class="fadeUp" style="display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.35;animation-delay:.05s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--accent)"><path d="M20 6L9 17l-5-5"></path></svg><span>Exterior washdown completed</span></div>
+        <div class="fadeUp" style="display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.35;animation-delay:.18s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--accent)"><path d="M20 6L9 17l-5-5"></path></svg><span>Stainless steel polished</span></div>
+        <div class="fadeUp" style="display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.35;animation-delay:.31s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--accent)"><path d="M20 6L9 17l-5-5"></path></svg><span>Tender inspected</span></div>
+        <div class="fadeUp" style="display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.35;animation-delay:.44s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--accent)"><path d="M20 6L9 17l-5-5"></path></svg><span>Generator fuel filters replaced</span></div>
+        <div class="fadeUp" style="display:flex;align-items:flex-start;gap:10px;font-size:15px;line-height:1.35;animation-delay:.57s"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0;margin-top:2px;color:var(--accent)"><path d="M20 6L9 17l-5-5"></path></svg><span>Pre-departure safety inspection completed</span></div>
+      </div>
+    </div>
+    <div class="fadeUp" style="display:flex;flex-wrap:wrap;gap:8px;animation-delay:.7s">
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--accent);background:var(--accent);font-size:13px;font-weight:700;color:var(--accent-fg)">Washdown</button>
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--accent);background:var(--accent);font-size:13px;font-weight:700;color:var(--accent-fg)">Tender</button>
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--accent);background:var(--accent);font-size:13px;font-weight:700;color:var(--accent-fg)">Maintenance</button>
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--accent);background:var(--accent);font-size:13px;font-weight:700;color:var(--accent-fg)">Safety drill</button>
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Docking</button>
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Anchoring</button>
+      <button style="padding:10px 14px;border-radius:99px;border:1px solid var(--card-border);background:var(--card);font-size:13px;font-weight:600;color:var(--fg)">Night watch</button>
+    </div>
+    <div class="fadeUp" style="font-size:12px;font-weight:600;color:var(--muted);animation-delay:.8s">Nothing added that you did not say. Edit anything before you confirm.</div>
+    <div style="flex-grow:1"></div>
+    <button onClick="{{confirmLog}}" class="fadeUp" style="height:62px;border-radius:var(--radius-lg);background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;gap:12px;font-size:16px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;box-shadow:var(--btn-shadow);animation-delay:.85s">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg>
+      <span>Confirm and save</span>
+    </button>
+    <div style="height:12px"></div>
+    </sc-if>
+
+  </div>
+
+  <sc-if value="{{showMini}}" hint-placeholder-val="{{ false }}">
+  <div style="background:var(--sheet);padding:0 12px 8px">
+    <button onClick="{{openLive}}" style="width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;background:var(--fg);color:var(--bg);text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+      <span class="blink" style="width:8px;height:8px;border-radius:99px;background:var(--accent);flex-shrink:0"></span>
+      <span style="flex-grow:1;font-size:13px;font-weight:700">Underway · {{liveNm}} NM · {{liveElapsed}}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+  </div>
+  </sc-if>
+  <div style="display:flex;justify-content:space-around;align-items:flex-start;padding:10px 8px 24px;background:var(--tab);border-top:1px solid var(--card-border)">
+    <button onClick="{{home}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+      <span>Home</span>
+    </button>
+    <button onClick="{{openLog}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--tab-active)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>Log</span>
+    </button>
+    <button onClick="{{openExp}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z"></path></svg>
+      <span>Experience</span>
+    </button>
+    <button onClick="{{openDocs}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+      <span>Documents</span>
+    </button>
+    <button onClick="{{soon}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{isExp}}" hint-placeholder-val="{{ false }}">
+<div class="enter" style="display:flex;flex-direction:column;flex-grow:1;min-height:0">
+  <div style="position:relative;display:flex;flex-direction:column;gap:10px;padding:60px 24px 48px;background:var(--hero);color:var(--hero-fg);overflow:hidden">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">My experience</div>
+    <div style="display:flex;align-items:baseline;gap:10px">
+      <span style="font-family:var(--display);font-size:66px;font-weight:600;line-height:.92;letter-spacing:-.02em;font-variant-numeric:tabular-nums">{{totalNm}}</span>
+      <span style="font-size:20px;font-weight:700;color:var(--hero-muted)">NM</span>
+    </div>
+    <div style="font-size:14px;color:var(--hero-muted)">Since March 2025 · 5 vessels · 3 flags</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:12px;flex-grow:1;min-height:0;position:relative;overflow-y:auto;overflow-x:hidden;margin-top:-26px;padding:20px 20px 20px;background:var(--sheet);border-radius:28px 28px 0 0;border-top:1px solid var(--card-border)">
+    <div class="fadeUp" style="display:flex;flex-direction:column;gap:14px;padding:16px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);animation-delay:.05s">
+      <div style="display:flex;align-items:center;gap:16px">
+        <div style="position:relative;width:96px;height:96px;flex-shrink:0">
+          <svg viewBox="0 0 96 96" width="96" height="96" fill="none" aria-hidden="true">
+            <circle cx="48" cy="48" r="40" style="stroke:var(--track)" stroke-width="8"></circle>
+            <circle class="ring96" cx="48" cy="48" r="40" style="stroke:var(--brass)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251.3" stroke-dashoffset="123.1" transform="rotate(-90 48 48)"></circle>
+          </svg>
+          <span style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0"><span style="font-family:var(--display);font-size:28px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums">51%</span><span style="font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)">miles</span></span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px;min-width:0">
+          <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">Next up</span>
+          <span style="font-size:17px;font-weight:700;line-height:1.2">Yachtmaster Offshore</span>
+          <span style="font-size:13px;font-weight:700;color:var(--brass)">1,226 NM to go</span>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid var(--card-border)">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:var(--muted);font-weight:600">Miles</span><span style="font-weight:700;font-variant-numeric:tabular-nums">1,274 / 2,500</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:var(--muted);font-weight:600">Passages over 60 NM</span><span style="font-weight:700;font-variant-numeric:tabular-nums">3 / 5</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:var(--muted);font-weight:600">Days as skipper</span><span style="font-weight:700;font-variant-numeric:tabular-nums">2 / 5</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px"><span style="color:var(--muted);font-weight:600">Sea days · Night hours</span><span style="display:flex;align-items:center;gap:4px;font-weight:700;color:var(--ok)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"></path></svg><span>Done</span></span></div>
+      </div>
+    </div>
+    <div class="fadeUp" style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:10px;animation-delay:.12s">
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Hours underway</span>
+        <span style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums">{{totalH}}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Night hours</span>
+        <span style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums">42</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Longest passage</span>
+        <span style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums">380 NM</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow)">
+        <span style="font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Largest vessel</span>
+        <span style="font-size:22px;font-weight:800;font-variant-numeric:tabular-nums">90 ft</span>
+      </div>
+    </div>
+    <div class="fadeUp" style="display:flex;flex-direction:column;gap:10px;padding:14px 18px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);animation-delay:.19s">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)">By vessel type</span>
+      </div>
+      <div style="display:flex;height:8px;border-radius:99px;overflow:hidden;background:var(--track)">
+        <span style="width:84%;background:var(--accent)"></span>
+        <span style="width:16%;background:var(--brass)"></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:600;color:var(--muted)">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:99px;background:var(--accent)"></span><span>Motor · 2,100 NM</span></span>
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:99px;background:var(--brass)"></span><span>Sail · 387 NM</span></span>
+      </div>
+    </div>
+  </div>
+
+  <sc-if value="{{showMini}}" hint-placeholder-val="{{ false }}">
+  <div style="background:var(--sheet);padding:0 12px 8px">
+    <button onClick="{{openLive}}" style="width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;background:var(--fg);color:var(--bg);text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+      <span class="blink" style="width:8px;height:8px;border-radius:99px;background:var(--accent);flex-shrink:0"></span>
+      <span style="flex-grow:1;font-size:13px;font-weight:700">Underway · {{liveNm}} NM · {{liveElapsed}}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+  </div>
+  </sc-if>
+  <div style="display:flex;justify-content:space-around;align-items:flex-start;padding:10px 8px 24px;background:var(--tab);border-top:1px solid var(--card-border)">
+    <button onClick="{{home}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+      <span>Home</span>
+    </button>
+    <button onClick="{{openLog}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>Log</span>
+    </button>
+    <button onClick="{{openExp}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--tab-active)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z"></path></svg>
+      <span>Experience</span>
+    </button>
+    <button onClick="{{openDocs}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+      <span>Documents</span>
+    </button>
+    <button onClick="{{soon}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{isDocs}}" hint-placeholder-val="{{ false }}">
+<div class="enter" style="display:flex;flex-direction:column;flex-grow:1;min-height:0">
+  <div style="display:flex;flex-direction:column;gap:10px;padding:60px 24px 48px;background:var(--hero);color:var(--hero-fg)">
+    <div style="font-size:11px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--hero-muted)">Documents</div>
+    <div style="font-family:var(--display);font-size:36px;font-weight:600;line-height:1.05;letter-spacing:-.01em">One to renew</div>
+    <div style="display:flex;align-items:center;gap:8px;font-size:14px;color:var(--hero-muted)">
+      <span style="width:8px;height:8px;border-radius:99px;background:var(--ok)"></span><span>8 valid</span>
+      <span style="width:8px;height:8px;border-radius:99px;background:var(--warn);margin-left:6px"></span><span>1 expiring</span>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:10px;flex-grow:1;min-height:0;position:relative;overflow-y:auto;overflow-x:hidden;margin-top:-26px;padding:20px 20px 20px;background:var(--sheet);border-radius:28px 28px 0 0;border-top:1px solid var(--card-border)">
+    <button class="fadeUp" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--warn);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.04s">
+      <span style="width:10px;height:10px;border-radius:99px;background:var(--warn);flex-shrink:0"></span>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">VHF SRC</span><span style="font-size:12px;color:var(--muted)">RYA · expires 8 Dec 2026</span></span>
+      <span style="font-size:13px;font-weight:800;color:var(--warn);font-variant-numeric:tabular-nums">75 days</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+    <button class="fadeUp" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.09s">
+      <span style="width:10px;height:10px;border-radius:99px;background:var(--ok);flex-shrink:0"></span>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">Passport</span><span style="font-size:12px;color:var(--muted)">South Africa · expires 03/2028</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted)">2 yrs</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+    <button class="fadeUp" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.14s">
+      <span style="width:10px;height:10px;border-radius:99px;background:var(--ok);flex-shrink:0"></span>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">STCW Basic Safety</span><span style="font-size:12px;color:var(--muted)">Refresher due 08/2027</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted)">11 mo</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+    <button class="fadeUp" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.19s">
+      <span style="width:10px;height:10px;border-radius:99px;background:var(--ok);flex-shrink:0"></span>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">ENG1 Medical</span><span style="font-size:12px;color:var(--muted)">MCA · expires 05/2027</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted)">8 mo</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+    <button class="fadeUp" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.24s">
+      <span style="width:10px;height:10px;border-radius:99px;background:var(--ok);flex-shrink:0"></span>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">Powerboat Level 2</span><span style="font-size:12px;color:var(--muted)">RYA · no expiry</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted)">Valid</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+    <button class="fadeUp" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--card);border:1px solid var(--card-border);border-radius:var(--radius);box-shadow:var(--card-shadow);text-align:left;color:var(--fg);animation-delay:.29s">
+      <span style="width:10px;height:10px;border-radius:99px;background:var(--ok);flex-shrink:0"></span>
+      <span style="flex-grow:1;display:flex;flex-direction:column;gap:2px;min-width:0"><span style="font-size:15px;font-weight:700">PADI Open Water</span><span style="font-size:12px;color:var(--muted)">No expiry</span></span>
+      <span style="font-size:13px;font-weight:700;color:var(--muted)">Valid</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+    <button class="fadeUp" onClick="{{soon}}" style="height:54px;border-radius:var(--radius);border:1px dashed var(--muted);display:flex;align-items:center;justify-content:center;gap:10px;font-size:14px;font-weight:700;color:var(--muted);animation-delay:.34s">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg>
+      <span>Add a document</span>
+    </button>
+  </div>
+
+  <sc-if value="{{showMini}}" hint-placeholder-val="{{ false }}">
+  <div style="background:var(--sheet);padding:0 12px 8px">
+    <button onClick="{{openLive}}" style="width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:16px;background:var(--fg);color:var(--bg);text-align:left;box-shadow:0 8px 24px rgba(0,0,0,.25)">
+      <span class="blink" style="width:8px;height:8px;border-radius:99px;background:var(--accent);flex-shrink:0"></span>
+      <span style="flex-grow:1;font-size:13px;font-weight:700">Underway · {{liveNm}} NM · {{liveElapsed}}</span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg>
+    </button>
+  </div>
+  </sc-if>
+  <div style="display:flex;justify-content:space-around;align-items:flex-start;padding:10px 8px 24px;background:var(--tab);border-top:1px solid var(--card-border)">
+    <button onClick="{{home}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-8 9 8v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"></path></svg>
+      <span>Home</span>
+    </button>
+    <button onClick="{{openLog}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+      <span>Log</span>
+    </button>
+    <button onClick="{{openExp}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M16.2 7.8l-2.1 6.3-6.3 2.1 2.1-6.3z"></path></svg>
+      <span>Experience</span>
+    </button>
+    <button onClick="{{openDocs}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:700;color:var(--tab-active)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+      <span>Documents</span>
+    </button>
+    <button onClick="{{soon}}" style="display:flex;flex-direction:column;align-items:center;gap:4px;width:70px;padding-top:2px;white-space:nowrap;font-size:11px;font-weight:600;color:var(--tab-fg)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+      <span>Profile</span>
+    </button>
+  </div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div class="fadeUp" style="position:absolute;left:24px;right:24px;bottom:110px;padding:14px 18px;border-radius:16px;background:var(--fg);color:var(--bg);font-size:14px;font-weight:700;text-align:center;box-shadow:0 12px 30px rgba(0,0,0,.3)">{{toast}}</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"night":{"editor":"boolean","default":false,"section":"Mode"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  state = { screen: 'home', voyage: false, night: false, logged: false, elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0, p: 1, phase: 'idle', words: 0, toast: '', totalNm: 2487, totalH: 184 };
+  WORDS = 'Today we washed down the exterior, polished the stainless, checked the tender, changed the fuel filters on the generator and then did a safety inspection before departure.'.split(' ');
+
+  componentWillUnmount() { this.clearAll(); clearInterval(this.liveT); }
+
+  clearAll() {
+    clearInterval(this.animT); clearInterval(this.wordT);
+    clearTimeout(this.toastT); clearTimeout(this.doneT);
+  }
+
+  openLive = () => { this.clearAll(); this.setState({ screen: 'live' }); };
+
+  flash = (msg) => {
+    clearTimeout(this.toastT);
+    this.setState({ toast: msg });
+    this.toastT = setTimeout(() => this.setState({ toast: '' }), 2600);
+  };
+
+  home = () => { this.clearAll(); this.setState({ screen: 'home', phase: 'idle' }); };
+  openExp = () => { this.clearAll(); this.setState({ screen: 'exp', phase: 'idle' }); };
+  openDocs = () => { this.clearAll(); this.setState({ screen: 'docs', phase: 'idle' }); };
+  soon = () => this.flash('Not in this demo yet');
+  toggleNight = () => this.setState({ night: !this.state.night });
+
+  start = () => {
+    this.clearAll(); clearInterval(this.liveT);
+    this.setState({ screen: 'live', voyage: true, elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0 });
+    this.liveT = setInterval(() => {
+      const t = this.state.tick + 1;
+      const speed = 9.6 + 2.2 * Math.sin(t / 2.4);
+      this.setState({ tick: t, elapsed: this.state.elapsed + 1, nm: this.state.nm + speed / 60, speed: speed, maxSpeed: Math.max(this.state.maxSpeed, speed) });
+    }, 600);
+  };
+
+  stop = () => {
+    clearInterval(this.liveT);
+    this.setState({ screen: 'summary', voyage: false, p: 0 });
+    const t0 = Date.now();
+    this.animT = setInterval(() => {
+      const k = Math.min(1, (Date.now() - t0) / 1100);
+      const p = 1 - Math.pow(1 - k, 3);
+      this.setState({ p: p });
+      if (k >= 1) clearInterval(this.animT);
+    }, 30);
+  };
+
+  confirmVoyage = () => {
+    const add = Math.round(this.state.nm);
+    this.setState({ screen: 'home', totalNm: this.state.totalNm + add, totalH: this.state.totalH + Math.round(this.state.elapsed / 60) });
+    this.flash('Voyage saved · ' + add + ' NM added to your record');
+  };
+
+  openLog = () => { this.clearAll(); this.setState({ screen: 'log', phase: 'idle', words: 0 }); };
+
+  record = () => {
+    this.setState({ phase: 'rec', words: 0 });
+    this.wordT = setInterval(() => {
+      const w = this.state.words + 1;
+      this.setState({ words: w });
+      if (w >= this.WORDS.length) {
+        clearInterval(this.wordT);
+        this.doneT = setTimeout(() => this.setState({ phase: 'draft' }), 700);
+      }
+    }, 130);
+  };
+
+  confirmLog = () => {
+    this.setState({ screen: 'home', logged: true, phase: 'idle' });
+    this.flash('Logged · Wednesday 24 September');
+  };
+
+  fmtDur(min) {
+    const h = Math.floor(min / 60), m = Math.round(min % 60);
+    return h + 'h ' + (m < 10 ? '0' : '') + m + 'm';
+  }
+  fmtInt(n) { return Math.round(n).toLocaleString('en-GB'); }
+  fmtTime(min) {
+    const h = Math.floor(min / 60) % 24, m = Math.round(min % 60);
+    return (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  }
+
+  renderVals() {
+    const s = this.state;
+    const night = !!(this.props.night ?? false) !== !!s.night;
+    const p = s.p;
+    const avg = s.elapsed > 0 ? s.nm / (s.elapsed / 60) : 0;
+    return {
+      isHome: s.screen === 'home', isLive: s.screen === 'live', isSummary: s.screen === 'summary', isLog: s.screen === 'log',
+      isExp: s.screen === 'exp', isDocs: s.screen === 'docs',
+      voyageActive: !!s.voyage, voyageIdle: !s.voyage,
+      showMini: !!s.voyage && (s.screen === 'log' || s.screen === 'exp' || s.screen === 'docs'),
+      openLive: this.openLive,
+      nightClass: night ? 'night' : '', nightLabel: night ? 'Night mode on' : 'Night mode',
+      start: this.start, stop: this.stop, confirmVoyage: this.confirmVoyage, openLog: this.openLog,
+      record: this.record, confirmLog: this.confirmLog, toggleNight: this.toggleNight, home: this.home, soon: this.soon,
+      openExp: this.openExp, openDocs: this.openDocs,
+      liveNm: s.nm.toFixed(1), liveElapsed: this.fmtDur(s.elapsed), liveSpeed: s.speed.toFixed(1),
+      endTime: this.fmtTime(582 + s.elapsed),
+      sumNm: this.fmtInt(s.nm * p), sumDur: this.fmtDur(s.elapsed * p), sumAvg: (avg * p).toFixed(1), sumMax: (s.maxSpeed * p).toFixed(1),
+      totalNm: this.fmtInt(s.totalNm), totalH: this.fmtInt(s.totalH),
+      isIdle: s.phase === 'idle', isRec: s.phase === 'rec', isDraft: s.phase === 'draft',
+      transcript: this.WORDS.slice(0, s.words).join(' '),
+      logged: s.logged, notLogged: !s.logged,
+      hasToast: !!s.toast, toast: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
