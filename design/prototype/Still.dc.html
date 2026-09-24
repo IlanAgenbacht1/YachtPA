@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Still · YachtPA</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0B1220;font-family:"Outfit",system-ui,sans-serif}
+a{color:#5EEAD4}a:hover{color:#99F6E4}
+/* Looks: the three classes only redefine tokens. dusk is the default (.root), dawn and night are switched by the orbs. */
+.root{--bg:#0B1220;--fg:#F2F5F7;--muted:#9DB0BF;--accent:#5EEAD4;--accent-fg:#04201D;--line:rgba(255,255,255,.14);--card:rgba(255,255,255,.06);--blob1:rgba(31,178,166,.38);--blob2:rgba(79,70,229,.30);--blob3:rgba(226,114,91,.22);--glow:rgba(94,234,212,.28);--ok:#4FCB8E;--warn:#E9AB3F;--backdrop:rgba(0,0,0,.35);--display:"Instrument Serif",Georgia,serif;--body:"Outfit",system-ui,sans-serif}
+.root.dawn{--bg:#F4F2ED;--fg:#16212B;--muted:#5B6B78;--accent:#0F766E;--accent-fg:#F4F2ED;--line:rgba(22,33,43,.14);--card:rgba(22,33,43,.05);--blob1:rgba(45,212,191,.40);--blob2:rgba(251,191,36,.30);--blob3:rgba(165,180,252,.40);--glow:rgba(15,118,110,.18);--ok:#15803D;--warn:#B45309;--backdrop:rgba(22,33,43,.25)}
+.root.night{--bg:#000;--fg:#FF453A;--muted:#D93E34;--accent:#FF453A;--accent-fg:#000;--line:#3A0E0B;--card:#120404;--blob1:rgba(255,69,58,.12);--blob2:rgba(255,69,58,.08);--blob3:rgba(255,69,58,.10);--glow:rgba(255,69,58,.14);--ok:#FF453A;--warn:#FF453A;--backdrop:rgba(0,0,0,.35)}
+/* Theme crossfade on everything that carries colour; transform and opacity stay short so presses and fades keep working. */
+.root,.root *{transition:background-color .55s ease,color .55s ease,border-color .55s ease,fill .55s ease,stroke .55s ease,box-shadow .55s ease,transform .15s ease,opacity .35s ease}
+.root button{font:inherit;color:inherit;background:none;border:0;padding:0;margin:0;cursor:pointer;box-sizing:border-box;text-align:left;-webkit-tap-highlight-color:transparent}
+.press:active{transform:scale(.96)}
+.root button:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.tab{font-variant-numeric:tabular-nums}
+/* Motion system: cubic-bezier(.2,.8,.2,1) for enters and rises, ease-in-out for breathing, 3-42s for ambient loops. */
+/* Entrances */
+.enter{animation:enter .5s cubic-bezier(.2,.8,.2,1) both}
+.d1{animation-delay:.1s}
+.d2{animation-delay:.2s}
+.fade{animation:fadeIn .4s ease-out both}
+.rise{animation:rise .55s cubic-bezier(.2,.8,.2,1) both}
+/* Atmosphere */
+.b1{animation:drift1 26s ease-in-out -6s infinite alternate}
+.b2{animation:drift2 34s ease-in-out -15s infinite alternate}
+.b3{animation:drift3 42s ease-in-out -27s infinite alternate}
+.hglow{animation:hbreathe 4.5s ease-in-out infinite}
+.hglow2{animation-delay:-2.25s}
+.wave{animation:waveX 12s ease-in-out infinite alternate}
+.root.night .grain rect{opacity:.03}
+/* Orbs: the dot colours are constants of each look, so they live here; night-watch replaces the two lighter dots with dark reds. */
+.dot.du{background:#14243A}
+.dot.da{background:#F1E9DA}
+.dot.dn{background:#000;border-color:#FF453A}
+.root.night .dot.du{background:#1C0806}
+.root.night .dot.da{background:#5C1712}
+.orb-ring{animation:ringIn .35s cubic-bezier(.2,.8,.2,1) both}
+.pdot{animation:pdot 1.4s ease-in-out infinite}
+/* The ring */
+.ring-glow{animation:glowB 4s ease-in-out infinite}
+.o1{animation:ringB 4s ease-in-out infinite}
+.o2{animation:ringB 4s ease-in-out -1.6s infinite}
+.pring{animation:pulse 2.6s ease-out infinite}
+.p2{animation-delay:1.3s}
+/* Recording ring: a registered angle so the conic gradient itself can rotate. */
+@property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
+.rec-ring{background:conic-gradient(from var(--a),var(--accent) 0 40%,transparent 40% 100%);animation:spin 1.6s linear infinite}
+.bars i{display:block;width:4px;border-radius:2px;background:var(--accent);transform-origin:center;animation:bars .7s ease-in-out infinite alternate}
+.bars i:nth-child(1){height:22px;animation-delay:-.05s}
+.bars i:nth-child(2){height:34px;animation-delay:-.2s}
+.bars i:nth-child(3){height:46px;animation-delay:-.35s}
+.bars i:nth-child(4){height:30px;animation-delay:-.5s}
+.bars i:nth-child(5){height:54px;animation-delay:-.65s}
+.bars i:nth-child(6){height:30px;animation-delay:-.1s}
+.bars i:nth-child(7){height:46px;animation-delay:-.25s}
+.bars i:nth-child(8){height:34px;animation-delay:-.4s}
+.bars i:nth-child(9){height:22px;animation-delay:-.55s}
+/* Summary track and draft checks */
+.track{stroke-dasharray:360;stroke-dashoffset:360;animation:draw 1.6s ease-out .2s both}
+.enddot{animation:fadeIn .5s ease-out 1.5s both}
+.stagger>*{animation:enter .5s cubic-bezier(.2,.8,.2,1) both}
+.stagger>*:nth-child(2){animation-delay:.08s}
+.stagger>*:nth-child(3){animation-delay:.16s}
+.stagger>*:nth-child(4){animation-delay:.24s}
+.stagger>*:nth-child(5){animation-delay:.32s}
+.tick{stroke-dasharray:24;stroke-dashoffset:24;animation:draw24 .4s ease-out .25s both}
+.stagger>*:nth-child(2) .tick{animation-delay:.33s}
+.stagger>*:nth-child(3) .tick{animation-delay:.41s}
+.stagger>*:nth-child(4) .tick{animation-delay:.49s}
+.stagger>*:nth-child(5) .tick{animation-delay:.57s}
+.fill{transform-origin:left;animation:fill .9s cubic-bezier(.2,.8,.2,1) .25s both}
+.toast{animation:toastIn .4s cubic-bezier(.2,.8,.2,1) both}
+.caret{animation:blink 1s steps(2,start) infinite}
+@keyframes enter{from{opacity:0;transform:translateY(10px)}}
+@keyframes fadeIn{from{opacity:0}}
+@keyframes rise{from{transform:translateY(40px);opacity:0}}
+@keyframes drift1{from{transform:translate(0,0) scale(.9)}to{transform:translate(80px,110px) scale(1.15)}}
+@keyframes drift2{from{transform:translate(0,0) scale(1.15)}to{transform:translate(-100px,-70px) scale(.9)}}
+@keyframes drift3{from{transform:translate(0,0) scale(.95)}to{transform:translate(120px,-60px) scale(1.12)}}
+@keyframes hbreathe{0%,100%{opacity:.45}50%{opacity:1}}
+@keyframes waveX{from{transform:translateX(-70px)}to{transform:translateX(70px)}}
+@keyframes ringIn{from{transform:scale(.5);opacity:0}}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.25}}
+@keyframes glowB{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes ringB{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+@keyframes pulse{from{transform:scale(1);opacity:.5}to{transform:scale(1.55);opacity:0}}
+@keyframes spin{to{--a:360deg}}
+@keyframes bars{from{transform:scaleY(.2)}to{transform:scaleY(1)}}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes draw24{to{stroke-dashoffset:0}}
+@keyframes fill{from{transform:scaleX(0)}}
+@keyframes toastIn{from{opacity:0;transform:translate(-50%,8px)}}
+@keyframes blink{to{opacity:0}}
+@media (prefers-reduced-motion:reduce){.root *{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+</style>
+</helmet>
+<div class="root {{themeClass}}" style="width:390px;height:844px;box-sizing:border-box;position:relative;overflow:hidden;background:var(--bg);color:var(--fg);font-family:var(--body)">
+  <!-- State map: screen home|log · sheet ""|summary|more · voyage (live timer keeps running on every screen) · phase idle|rec|draft · logged · theme dusk|dawn|night (null until an orb is tapped) -->
+
+  <!-- Atmosphere: three drifting blobs, a horizon with a breathing glow, film grain. Behind every screen. -->
+  <div aria-hidden="true" style="position:absolute;inset:0;overflow:hidden;pointer-events:none">
+    <div class="b1" style="position:absolute;width:340px;height:340px;left:-90px;top:-70px;border-radius:50%;filter:blur(70px);background:var(--blob1)"></div>
+    <div class="b2" style="position:absolute;width:300px;height:300px;right:-110px;top:36%;border-radius:50%;filter:blur(70px);background:var(--blob2)"></div>
+    <div class="b3" style="position:absolute;width:280px;height:280px;left:16%;bottom:-90px;border-radius:50%;filter:blur(70px);background:var(--blob3)"></div>
+    <div class="hglow" style="position:absolute;left:0;right:0;top:58%;height:120px;background:var(--glow);-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)"></div>
+    <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
+      <div class="fade">
+        <div class="hglow hglow2" style="position:absolute;left:0;right:0;top:58%;height:120px;background:var(--glow);-webkit-mask-image:linear-gradient(180deg,#000,transparent);mask-image:linear-gradient(180deg,#000,transparent)"></div>
+        <div class="wave" style="position:absolute;left:-20%;width:140%;top:58%;margin-top:16px;height:1px;background:var(--accent);opacity:.35;-webkit-mask-image:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent);mask-image:linear-gradient(90deg,transparent,#000 30%,#000 70%,transparent)"></div>
+      </div>
+    </sc-if>
+    <div style="position:absolute;left:0;right:0;top:58%;height:1px;background:var(--line)"></div>
+    <svg class="grain" viewBox="0 0 390 844" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%;mix-blend-mode:overlay">
+      <filter id="still-grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch"></feTurbulence><feColorMatrix type="saturate" values="0"></feColorMatrix></filter>
+      <rect width="100%" height="100%" filter="url(#still-grain)" opacity="0.05"></rect>
+    </svg>
+  </div>
+
+  <!-- Screen column: the top row is always there; below it either the home centre + bottom line, or the log screen. -->
+  <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:64px 28px 40px;box-sizing:border-box">
+
+    <div class="enter" style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div style="min-width:0">
+        <div style="font-family:var(--display);font-size:26px;line-height:30px;letter-spacing:-.01em;color:var(--fg)">M/Y Shadow</div>
+        <div style="display:flex;align-items:center;min-height:20px;margin-top:2px;font-size:13px;line-height:20px;color:var(--muted);white-space:nowrap">
+          <sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+            <sc-if value="{{voyageIdle}}" hint-placeholder-val="{{ true }}">
+              <sc-if value="{{notLogged}}" hint-placeholder-val="{{ true }}">
+                <span class="fade">Deckhand · Port Louis</span>
+              </sc-if>
+              <sc-if value="{{logged}}" hint-placeholder-val="{{ false }}">
+                <span class="fade">Deckhand · Port Louis · Logged</span>
+              </sc-if>
+            </sc-if>
+            <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
+              <span class="fade" style="display:inline-flex;align-items:center;gap:7px">
+                <span class="pdot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none"></span>
+                <span>Underway · to Black River</span>
+              </span>
+            </sc-if>
+          </sc-if>
+          <sc-if value="{{isLog}}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{voyageIdle}}" hint-placeholder-val="{{ true }}">
+              <span class="fade">Deckhand · Port Louis</span>
+            </sc-if>
+            <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
+              <button class="fade press tab" onClick="{{home}}" style="display:inline-flex;align-items:center;gap:7px;min-height:44px;margin:-12px 0;color:var(--muted)">
+                <span class="pdot" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);flex:none"></span>
+                <span>Underway · {{liveElapsed}} · {{liveNm}} NM</span>
+              </button>
+            </sc-if>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- The look switch: three orbs. The active one carries a 24px ring that scales in. -->
+      <div role="group" aria-label="Look" style="display:flex;flex:none;margin:-7px -15px 0 0">
+        <button class="orb" aria-label="Dusk look" aria-pressed="{{duskOn}}" onClick="{{setDusk}}" style="position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center">
+          <span class="dot du" style="display:block;width:14px;height:14px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box"></span>
+          <sc-if value="{{duskOn}}" hint-placeholder-val="{{ true }}"><span class="orb-ring" style="position:absolute;left:10px;top:10px;width:24px;height:24px;border-radius:50%;border:1px solid var(--accent);box-sizing:border-box;pointer-events:none"></span></sc-if>
+        </button>
+        <button class="orb" aria-label="Dawn look" aria-pressed="{{dawnOn}}" onClick="{{setDawn}}" style="position:relative;width:44px;height:44px;margin-left:-6px;display:flex;align-items:center;justify-content:center">
+          <span class="dot da" style="display:block;width:14px;height:14px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box"></span>
+          <sc-if value="{{dawnOn}}" hint-placeholder-val="{{ false }}"><span class="orb-ring" style="position:absolute;left:10px;top:10px;width:24px;height:24px;border-radius:50%;border:1px solid var(--accent);box-sizing:border-box;pointer-events:none"></span></sc-if>
+        </button>
+        <button class="orb" aria-label="Night look" aria-pressed="{{nightOn}}" onClick="{{setNight}}" style="position:relative;width:44px;height:44px;margin-left:-6px;display:flex;align-items:center;justify-content:center">
+          <span class="dot dn" style="display:block;width:14px;height:14px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box"></span>
+          <sc-if value="{{nightOn}}" hint-placeholder-val="{{ false }}"><span class="orb-ring" style="position:absolute;left:10px;top:10px;width:24px;height:24px;border-radius:50%;border:1px solid var(--accent);box-sizing:border-box;pointer-events:none"></span></sc-if>
+        </button>
+      </div>
+    </div>
+
+    <!-- HOME centre: the ring, the Stop pill while live, the Log today pill -->
+    <sc-if value="{{isHome}}" hint-placeholder-val="{{ true }}">
+      <div class="enter d1" style="display:flex;flex-direction:column;align-items:center;width:100%">
+        <div style="position:relative;width:224px;height:224px;flex:none">
+          <sc-if value="{{voyageIdle}}" hint-placeholder-val="{{ true }}">
+            <div class="o1" style="position:absolute;inset:-24px;border-radius:50%;border:1px solid var(--line);opacity:.6;pointer-events:none"></div>
+            <div class="o2" style="position:absolute;inset:-48px;border-radius:50%;border:1px solid var(--line);opacity:.35;pointer-events:none"></div>
+            <div class="ring-glow" style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 90px var(--glow);pointer-events:none"></div>
+            <button class="press fade" aria-label="Start voyage" onClick="{{start}}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+              <span style="font-family:var(--display);font-size:46px;line-height:.95;letter-spacing:-.01em">Start</span>
+              <span style="font-family:var(--display);font-style:italic;font-size:46px;line-height:.95;letter-spacing:-.01em">voyage</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
+            <div class="pring" style="position:absolute;inset:-24px;border-radius:50%;border:1px solid var(--accent);pointer-events:none"></div>
+            <div class="pring p2" style="position:absolute;inset:-48px;border-radius:50%;border:1px solid var(--accent);pointer-events:none"></div>
+            <div class="ring-glow" style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 90px var(--glow);pointer-events:none"></div>
+            <div class="fade" role="timer" style="position:absolute;inset:0;border-radius:50%;border:1.5px solid var(--accent);color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+              <span class="tab" style="font-weight:300;font-size:44px;line-height:1;letter-spacing:-.01em">{{liveClock}}</span>
+              <span class="tab" style="margin-top:10px;font-size:14px;color:var(--muted)">{{liveNm}} NM · {{liveSpeed}} kn</span>
+              <span style="margin-top:4px;font-size:12px;color:var(--muted)">to Black River</span>
+            </div>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{voyageActive}}" hint-placeholder-val="{{ false }}">
+          <button class="press fade" onClick="{{stop}}" style="margin-top:24px;height:48px;padding:0 26px;border:1px solid var(--line);border-radius:24px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:var(--fg)">Stop voyage</button>
+        </sc-if>
+
+        <sc-if value="{{notLogged}}" hint-placeholder-val="{{ true }}">
+          <button class="press" onClick="{{openLog}}" style="position:relative;margin-top:28px;width:100%;height:60px;padding:0 18px 0 20px;border:1px solid var(--line);border-radius:30px;background:var(--card);display:flex;align-items:center;gap:12px;font-size:17px;font-weight:500;color:var(--fg)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><path d="M12 19v3"></path></svg>
+            <span style="flex:1">Log today</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+        </sc-if>
+        <sc-if value="{{logged}}" hint-placeholder-val="{{ false }}">
+          <button class="press" onClick="{{openLog}}" style="position:relative;margin-top:28px;width:100%;height:60px;padding:0 18px 0 20px;border:1px solid var(--line);border-radius:30px;background:var(--card);display:flex;align-items:center;gap:12px;font-size:17px;font-weight:500;color:var(--fg)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--ok)"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><path d="M22 4L12 14.01l-3-3"></path></svg>
+            <span style="flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.2">
+              <span>Logged</span>
+              <span style="font-size:13px;font-weight:400;color:var(--muted)">Wednesday 24 September</span>
+            </span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+        </sc-if>
+      </div>
+
+      <!-- The one line to reach the rest -->
+      <button class="enter d2 press tab" onClick="{{openMore}}" style="width:100%;min-height:44px;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;color:var(--muted)">
+        <span>{{totalNm}} NM · {{totalH}} h · Yachtmaster 51%</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none"><path d="M18 15l-6-6-6 6"></path></svg>
+      </button>
+    </sc-if>
+
+    <!-- LOG screen: replaces the centre; the top row stays -->
+    <sc-if value="{{isLog}}" hint-placeholder-val="{{ false }}">
+      <div class="enter d1" style="flex:1;display:flex;flex-direction:column;min-height:0;margin-top:14px">
+        <button class="press" aria-label="Back" onClick="{{home}}" style="width:44px;height:44px;margin-left:-12px;display:flex;align-items:center;justify-content:center;color:var(--fg)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg>
+        </button>
+        <h2 style="margin:4px 0 0;font-family:var(--display);font-weight:400;font-size:28px;line-height:1.15;letter-spacing:-.01em;color:var(--fg)">Wednesday 24 September</h2>
+        <sc-if value="{{notDraft}}" hint-placeholder-val="{{ true }}">
+          <p style="margin:6px 0 0;font-size:14px;line-height:1.4;color:var(--muted)">Tap and say what you did today.</p>
+        </sc-if>
+
+        <!-- idle: the ring is the mic -->
+        <sc-if value="{{isIdle}}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;justify-content:center;margin-top:44px">
+            <div style="position:relative;width:224px;height:224px;flex:none">
+              <div class="ring-glow" style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 90px var(--glow);pointer-events:none"></div>
+              <button class="press fade" aria-label="Start recording" onClick="{{record}}" style="position:absolute;inset:0;width:100%;height:100%;border-radius:50%;border:1px solid var(--line);background:transparent;color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
+                <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"></path><path d="M19 10v2a7 7 0 0 1-14 0v-2"></path><path d="M12 19v3"></path><path d="M8 22h8"></path></svg>
+                <span style="margin-top:12px;font-size:13px;color:var(--muted)">Tap to speak</span>
+              </button>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- recording: rotating conic ring, waveform bars, transcript streaming in below; ends by itself -->
+        <sc-if value="{{isRec}}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;justify-content:center;margin-top:44px">
+            <div class="fade" style="position:relative;width:224px;height:224px;flex:none">
+              <div class="ring-glow" style="position:absolute;inset:0;border-radius:50%;box-shadow:0 0 90px var(--glow);pointer-events:none"></div>
+              <div class="rec-ring" style="position:absolute;inset:0;border-radius:50%"></div>
+              <div style="position:absolute;inset:2px;border-radius:50%;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center">
+                <div class="bars" aria-hidden="true" style="display:flex;align-items:center;gap:4px;height:56px"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+                <span style="margin-top:14px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Listening</span>
+              </div>
+            </div>
+          </div>
+          <p style="margin:28px 0 0;min-height:120px;font-family:var(--display);font-size:21px;line-height:1.35;color:var(--fg)">{{transcript}}<span class="caret" aria-hidden="true" style="display:inline-block;width:2px;height:20px;margin-left:4px;vertical-align:-3px;background:var(--accent)"></span></p>
+        </sc-if>
+
+        <!-- draft: five duty lines, each check draws itself, staggered -->
+        <sc-if value="{{isDraft}}" hint-placeholder-val="{{ false }}">
+          <div class="fade" style="display:flex;flex-direction:column;flex:1;min-height:0;margin-top:22px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Deckhand duties</span>
+              <span style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;line-height:14px;padding:2px 8px;border:1px solid var(--line);border-radius:10px;color:var(--muted)">AI draft</span>
+            </div>
+            <ul class="stagger" style="list-style:none;margin:8px 0 0;padding:0">
+              <li style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px;line-height:1.3;color:var(--fg)">
+                <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg></span>
+                <span>Exterior washdown completed</span>
+              </li>
+              <li style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px;line-height:1.3;color:var(--fg)">
+                <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg></span>
+                <span>Stainless steel polished</span>
+              </li>
+              <li style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px;line-height:1.3;color:var(--fg)">
+                <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg></span>
+                <span>Tender inspected</span>
+              </li>
+              <li style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px;line-height:1.3;color:var(--fg)">
+                <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg></span>
+                <span>Generator fuel filters replaced</span>
+              </li>
+              <li style="display:flex;align-items:center;gap:12px;min-height:44px;font-size:16px;line-height:1.3;color:var(--fg)">
+                <span style="flex:none;width:20px;height:20px;border-radius:50%;border:1px solid var(--line);box-sizing:border-box;display:flex;align-items:center;justify-content:center;color:var(--accent)"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path class="tick" d="M5 12l5 5 9-10"></path></svg></span>
+                <span>Pre-departure safety inspection completed</span>
+              </li>
+            </ul>
+            <div style="margin-top:8px;font-size:13px;line-height:1.4;color:var(--muted)">Washdown · Tender · Maintenance · Safety drill</div>
+            <p style="margin:12px 0 0;font-size:13px;line-height:1.45;color:var(--muted)">Nothing added that you did not say. Edit anything before you confirm.</p>
+            <div style="margin-top:auto;padding-top:20px">
+              <button class="press" onClick="{{confirmLog}}" style="width:100%;height:56px;border-radius:28px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">Confirm and save</button>
+              <button class="press" onClick="{{soon}}" style="width:100%;min-height:44px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:var(--muted)">Type instead</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- Sheets: Summary (after Stop) and More (from the bottom line). The home stays behind, dimmed. -->
+  <sc-if value="{{hasSheet}}" hint-placeholder-val="{{ false }}">
+    <div style="position:absolute;inset:0;z-index:5">
+
+      <sc-if value="{{showSummary}}" hint-placeholder-val="{{ false }}">
+        <div class="fade" style="position:absolute;inset:0;background:var(--backdrop)"></div>
+        <section class="rise" aria-label="Voyage summary" style="position:absolute;left:0;right:0;bottom:0;height:76%;box-sizing:border-box;padding:20px 28px 36px;border-radius:32px 32px 0 0;background:var(--bg);color:var(--fg);display:flex;flex-direction:column">
+          <div aria-hidden="true" style="width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto"></div>
+          <div style="margin-top:22px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)">Voyage complete</div>
+          <h2 style="margin:8px 0 0;font-family:var(--display);font-weight:400;font-size:34px;line-height:1.1;letter-spacing:-.01em;color:var(--fg)">Port Louis → Black River</h2>
+          <!-- The track draws itself from Port Louis to Black River; the arrival label appears with the end dot. -->
+          <svg viewBox="0 0 334 110" width="334" height="110" aria-hidden="true" style="display:block;margin-top:14px;overflow:visible">
+            <path class="track" d="M12 18 C 90 20, 150 70, 322 92" fill="none" stroke-width="1.5" stroke-linecap="round" style="stroke:var(--accent)"></path>
+            <circle cx="12" cy="18" r="2" style="fill:var(--accent)"></circle>
+            <text x="12" y="38" font-size="11" style="fill:var(--muted);font-family:var(--body);font-variant-numeric:tabular-nums">Port Louis · 09:42</text>
+            <circle class="enddot" cx="322" cy="92" r="2" style="fill:var(--accent)"></circle>
+            <text class="enddot" x="322" y="108" font-size="11" text-anchor="end" style="fill:var(--muted);font-family:var(--body);font-variant-numeric:tabular-nums">Black River · {{endTime}}</text>
+          </svg>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px 20px;margin-top:12px">
+            <div>
+              <div class="tab" style="font-weight:300;font-size:34px;line-height:1.05;letter-spacing:-.01em;color:var(--fg)">{{sumNm}}<span style="margin-left:5px;font-size:15px;font-weight:400;color:var(--muted)">NM</span></div>
+              <div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Distance</div>
+            </div>
+            <div>
+              <div class="tab" style="font-weight:300;font-size:34px;line-height:1.05;letter-spacing:-.01em;color:var(--fg)">{{sumDur}}</div>
+              <div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Duration</div>
+            </div>
+            <div>
+              <div class="tab" style="font-weight:300;font-size:34px;line-height:1.05;letter-spacing:-.01em;color:var(--fg)">{{sumAvg}}<span style="margin-left:5px;font-size:15px;font-weight:400;color:var(--muted)">kn</span></div>
+              <div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Avg speed</div>
+            </div>
+            <div>
+              <div class="tab" style="font-weight:300;font-size:34px;line-height:1.05;letter-spacing:-.01em;color:var(--fg)">{{sumMax}}<span style="margin-left:5px;font-size:15px;font-weight:400;color:var(--muted)">kn</span></div>
+              <div style="margin-top:5px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)">Max speed</div>
+            </div>
+          </div>
+          <div style="margin-top:18px;font-size:13px;line-height:1.4;color:var(--muted)">Night hours 0h 00m · Day passage · Motor yacht · Deckhand</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:8px;font-size:13px;line-height:1.4;color:var(--muted)">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--ok)"><path d="M20 6L9 17l-5-5"></path></svg>
+            <span>Consistent with your last known position</span>
+          </div>
+          <div style="margin-top:auto;padding-top:20px">
+            <button class="press" onClick="{{confirmVoyage}}" style="width:100%;height:56px;border-radius:28px;background:var(--accent);color:var(--accent-fg);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600">Confirm voyage</button>
+            <button class="press" onClick="{{soon}}" style="width:100%;min-height:44px;margin-top:6px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:500;color:var(--muted)">Edit details</button>
+          </div>
+        </section>
+      </sc-if>
+
+      <sc-if value="{{showMore}}" hint-placeholder-val="{{ false }}">
+        <button class="fade" aria-label="Close" onClick="{{closeSheet}}" style="position:absolute;inset:0;width:100%;height:100%;background:var(--backdrop);border-radius:0"></button>
+        <section class="rise" aria-label="More" style="position:absolute;left:0;right:0;bottom:0;height:62%;box-sizing:border-box;padding:20px 28px 36px;border-radius:32px 32px 0 0;background:var(--bg);color:var(--fg);display:flex;flex-direction:column">
+          <button aria-label="Close" onClick="{{closeSheet}}" style="width:100%;height:44px;margin-top:-20px;display:flex;align-items:center;justify-content:center">
+            <span aria-hidden="true" style="display:block;width:36px;height:4px;border-radius:2px;background:var(--line)"></span>
+          </button>
+          <h2 style="margin:2px 0 4px;font-family:var(--display);font-weight:400;font-size:28px;line-height:1.15;letter-spacing:-.01em;color:var(--fg)">More</h2>
+
+          <button class="press" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--fg)">
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:17px;font-weight:500;line-height:1.25">Experience</span>
+              <span class="tab" style="display:block;margin-top:3px;font-size:13px;line-height:1.35;color:var(--muted)">{{totalNm}} NM · {{totalH}} h underway · 38 night hours · 61 sea days</span>
+            </span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+
+          <button class="press" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--fg)">
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:17px;font-weight:500;line-height:1.25">Documents</span>
+              <span class="tab" style="display:flex;align-items:center;gap:6px;margin-top:3px;font-size:13px;line-height:1.35;color:var(--muted)"><span>8 valid ·</span><span aria-hidden="true" style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--warn)"></span><span>1 to renew</span></span>
+            </span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+
+          <button class="press" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--fg)">
+            <span style="flex:1;min-width:0">
+              <span style="display:block;font-size:17px;font-weight:500;line-height:1.25">Yachtmaster Offshore</span>
+              <span class="tab" style="display:block;margin-top:3px;font-size:13px;line-height:1.35;color:var(--muted)">Appears to meet 2 of 5 · 1,226 NM to go</span>
+              <span aria-hidden="true" style="display:block;height:2px;margin-top:10px;background:var(--line)"><span class="fill" style="display:block;width:51%;height:2px;background:var(--accent)"></span></span>
+            </span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+
+          <button class="press" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--fg)">
+            <span style="flex:1;min-width:0;font-size:17px;font-weight:500;line-height:1.25">Export PDF record</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+
+          <button class="press" onClick="{{soon}}" style="display:flex;align-items:center;gap:12px;width:100%;min-height:64px;padding:12px 0;border-bottom:1px solid var(--line);color:var(--fg)">
+            <span style="flex:1;min-width:0;font-size:17px;font-weight:500;line-height:1.25">Profile and vessels</span>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex:none;color:var(--muted)"><path d="M9 18l6-6-6-6"></path></svg>
+          </button>
+        </section>
+      </sc-if>
+
+    </div>
+  </sc-if>
+
+  <!-- Toast: inverted pill, auto-hides after 2.6s -->
+  <sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+    <div class="toast" role="status" style="position:absolute;left:50%;bottom:104px;transform:translate(-50%,0);z-index:9;padding:10px 16px;border-radius:20px;background:var(--fg);color:var(--bg);font-size:13px;font-weight:500;white-space:nowrap">{{toast}}</div>
+  </sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dusk","dawn","night"],"default":"dusk","section":"Look"},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  state = { screen: 'home', sheet: '', voyage: false, theme: null, logged: false, elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0, speedSum: 9.8, p: 1, phase: 'idle', words: 0, toast: '', totalNm: 2487, totalH: 184 };
+  WORDS = 'Today we washed down the exterior, polished the stainless, checked the tender, changed the fuel filters on the generator and then did a safety inspection before departure.'.split(' ');
+
+  componentWillUnmount() { this.clearWork(); clearInterval(this.liveT); clearTimeout(this.toastT); }
+
+  // Timers that belong to a screen or a sheet. The live voyage timer and the toast timer are kept apart on purpose:
+  // the voyage keeps running wherever the user goes, and a toast must still hide after a screen change.
+  clearWork() { clearInterval(this.animT); clearInterval(this.wordT); clearTimeout(this.doneT); }
+
+  flash = (msg) => {
+    clearTimeout(this.toastT);
+    this.setState({ toast: msg });
+    this.toastT = setTimeout(() => this.setState({ toast: '' }), 2600);
+  };
+
+  setDusk = () => this.setState({ theme: 'dusk' });
+  setDawn = () => this.setState({ theme: 'dawn' });
+  setNight = () => this.setState({ theme: 'night' });
+
+  home = () => { this.clearWork(); this.setState({ screen: 'home', phase: 'idle', words: 0 }); };
+  openLog = () => { this.clearWork(); this.setState({ screen: 'log', sheet: '', phase: 'idle', words: 0 }); };
+  openMore = () => this.setState({ sheet: 'more' });
+  closeSheet = () => this.setState({ sheet: '' });
+  soon = () => this.flash('Not in this demo yet');
+
+  start = () => {
+    if (this.state.voyage) return;
+    clearInterval(this.liveT);
+    this.setState({ voyage: true, elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0, speedSum: 9.8 });
+    this.liveT = setInterval(() => {
+      const t = this.state.tick + 1;
+      const speed = 9.6 + 2.2 * Math.sin(t / 2.4);
+      this.setState({ tick: t, elapsed: this.state.elapsed + 1, nm: this.state.nm + speed / 60, speed: speed, maxSpeed: Math.max(this.state.maxSpeed, speed), speedSum: this.state.speedSum + speed });
+    }, 600);
+  };
+
+  stop = () => {
+    clearInterval(this.liveT); clearInterval(this.animT);
+    this.setState({ voyage: false, sheet: 'summary', p: 0 });
+    const t0 = Date.now();
+    this.animT = setInterval(() => {
+      const k = Math.min(1, (Date.now() - t0) / 1100);
+      const p = 1 - Math.pow(1 - k, 3);
+      this.setState({ p: p });
+      if (k >= 1) clearInterval(this.animT);
+    }, 30);
+  };
+
+  confirmVoyage = () => {
+    clearInterval(this.animT);
+    const add = Math.round(this.state.nm);
+    this.setState({ sheet: '', p: 1, totalNm: this.state.totalNm + add, totalH: this.state.totalH + Math.round(this.state.elapsed / 60) });
+    this.flash('Voyage saved · ' + add + ' NM added to your record');
+  };
+
+  record = () => {
+    if (this.state.phase !== 'idle') return;
+    clearInterval(this.wordT); clearTimeout(this.doneT);
+    this.setState({ phase: 'rec', words: 0 });
+    this.wordT = setInterval(() => {
+      const w = this.state.words + 1;
+      this.setState({ words: w });
+      if (w >= this.WORDS.length) {
+        clearInterval(this.wordT);
+        this.doneT = setTimeout(() => this.setState({ phase: 'draft' }), 700);
+      }
+    }, 130);
+  };
+
+  confirmLog = () => {
+    this.clearWork();
+    this.setState({ screen: 'home', logged: true, phase: 'idle', words: 0 });
+    this.flash('Logged · Wednesday 24 September');
+  };
+
+  pad2(n) { return (n < 10 ? '0' : '') + n; }
+  fmtDur(min) { const h = Math.floor(min / 60), m = Math.round(min % 60); return h + 'h ' + this.pad2(m) + 'm'; }
+  fmtTime(min) { const h = Math.floor(min / 60) % 24, m = Math.round(min % 60); return this.pad2(h) + ':' + this.pad2(m); }
+  // Demo time runs one minute per tick; the seconds field follows real time since START so the clock never sits still.
+  fmtClock(min, tick) { const h = Math.floor(min / 60), m = Math.floor(min % 60), s = (12 + Math.floor(tick * 0.6)) % 60; return h + ':' + this.pad2(m) + ':' + this.pad2(s); }
+  fmtInt(n) { return Math.round(n).toLocaleString('en-GB'); }
+
+  renderVals() {
+    const s = this.state;
+    const theme = s.theme ?? this.props.theme ?? 'dusk';
+    const p = s.p;
+    // Average speed is the mean of the sampled speeds (one sample per tick, seeded with the 9.8 kn at START), so it can never exceed the max.
+    const avg = s.speedSum / (s.tick + 1);
+    return {
+      isHome: s.screen === 'home', isLog: s.screen === 'log',
+      showSummary: s.sheet === 'summary', showMore: s.sheet === 'more', hasSheet: s.sheet !== '',
+      voyageActive: !!s.voyage, voyageIdle: !s.voyage,
+      logged: !!s.logged, notLogged: !s.logged,
+      isIdle: s.phase === 'idle', isRec: s.phase === 'rec', isDraft: s.phase === 'draft', notDraft: s.phase !== 'draft',
+      hasToast: !!s.toast, toast: s.toast,
+      themeClass: theme === 'dawn' ? 'dawn' : theme === 'night' ? 'night' : '',
+      duskOn: theme === 'dusk', dawnOn: theme === 'dawn', nightOn: theme === 'night',
+      setDusk: this.setDusk, setDawn: this.setDawn, setNight: this.setNight,
+      start: this.start, stop: this.stop, confirmVoyage: this.confirmVoyage,
+      openLog: this.openLog, home: this.home, record: this.record, confirmLog: this.confirmLog,
+      openMore: this.openMore, closeSheet: this.closeSheet, soon: this.soon,
+      liveClock: this.fmtClock(s.elapsed, s.tick), liveElapsed: this.fmtDur(s.elapsed), liveNm: s.nm.toFixed(1), liveSpeed: s.speed.toFixed(1),
+      endTime: this.fmtTime(582 + s.elapsed),
+      sumNm: (s.nm * p).toFixed(1), sumDur: this.fmtDur(s.elapsed * p), sumAvg: (avg * p).toFixed(1), sumMax: (s.maxSpeed * p).toFixed(1),
+      transcript: this.WORDS.slice(0, s.words).join(' '),
+      totalNm: this.fmtInt(s.totalNm), totalH: this.fmtInt(s.totalH)
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -12,10 +12,10 @@ Scoping and UI direction. No app code yet.
 |---|---|
 | [docs/SCOPE.md](docs/SCOPE.md) | Draft scope: MVP boundary, hard problems, proposed stack, domain model, screens, phases |
 | [docs/source/](docs/source/) | The two original requirement documents, verbatim |
-| [design/prototype/](design/prototype/) | Interactive phone prototype in three looks (Deep Water, Sailcloth, Horizon) |
+| [design/prototype/](design/prototype/) | Interactive phone prototypes. Round 2: four different UI builds (Still, Chart, Ledger, Bridge), each with its own 3-way look switch. Round 1: one app in two looks kept (Sailcloth, Horizon) |
 
 ## Next
 
-1. Pick a look from the prototype.
+1. Pick a build (and a look) from the Round 2 prototypes.
 2. Phase 0 spike: background GPS on iOS and Android for 24 h, voice → structured log entry.
 3. Expo app scaffold with the chosen design tokens.

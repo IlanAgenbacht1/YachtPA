@@ -2,15 +2,28 @@
 
 ## prototype/
 
-Source of the interactive UI-direction prototype. Each `.dc.html` is one phone artboard (390×844) containing the full demo flow: Home → Start voyage → Stop → Confirm → Log today → voice → confirm, plus Experience and Documents tabs, a background-voyage mini bar, and a red night-watch mode.
+Source of the interactive UI prototypes. Each `.dc.html` is one phone artboard (390×844) with the full demo flow inside it: Home → Start voyage → Stop → Confirm → Log today → voice → confirm, plus the secondary views, a live indicator while a voyage runs in the background, and a red night-watch look. Same sample data throughout.
+
+The live, tappable version is the "YachtPA UI Directions" canvas on claude.ai. These files are the versioned source for it; `canvas.json` is the canvas index (two pages: Round 2 and Round 1).
+
+### Round 2 · four different builds, each with its own look switch
+
+Left to right: least to most on screen. Every build has a 3-way look switch inside the UI; one of the three is always the night-watch look (pure black, everything in red).
+
+| File | Build | Idea | Type | Looks (switch) |
+|---|---|---|---|---|
+| `Still.dc.html` | 1 · Still | One thing at a time. Who/where, today, Start, Log, one line to the rest. Drifting colour fields, a breathing horizon, a ring that becomes the timer. | Instrument Serif + Outfit | Dusk · Dawn · Night (three orbs) |
+| `Chart.dc.html` | 2 · Chart | The home screen is the chart. Stylised chart of the Mauritius west coast, live track drawing itself, controls floating on glass. | Bricolage Grotesque + Instrument Sans + JetBrains Mono | Day chart · Dusk chart · Night watch (layers popover) |
+| `Ledger.dc.html` | 3 · Ledger | The app reads like a ship's log. Big serif dates, ruled paper, dotted leaders, rubber stamps, pages that turn. No tab bar. | Newsreader + Hanken Grotesk | Paper · Slate · Night (three ink pots) |
+| `Bridge.dc.html` | 4 · Bridge | An instrument panel in your pocket. Speed gauge with needle, heading tape, sparkline, expiry timeline, voyage table, instrument bar. | Rajdhani + IBM Plex Mono + Archivo | DAY · DUSK · NIGHT (hardware toggle) |
+
+Each build's looks are pure CSS custom-property blocks (`.root`, `.root.<look>`) on the root element, so the chosen build's token block becomes the app's design tokens, and the night look is the same token mechanism, not a separate theme.
+
+### Round 1 · one app, three looks (two kept for reference)
 
 | File | Look |
 |---|---|
-| `Main.dc.html` | A · Deep Water. Dark navy-to-teal, glass cards, brass milestones. Cormorant Garamond + Manrope. |
 | `Sailcloth.dc.html` | B · Sailcloth. Warm off-white paper, white cards, teal action. Fraunces + Figtree. |
 | `Horizon.dc.html` | C · Horizon. Dark hero over a light sheet, regatta-orange action. Space Grotesk + IBM Plex Sans. |
-| `canvas.json` | Artboard layout and notes for the canvas |
 
-The three files share one template. Only five lines differ: the `<title>`, the Google Fonts link, the `body` rule, the `a` rule and the `.root{…}` token block. Everything visual flows through those CSS variables, so the winning look's `.root` block becomes the app's design tokens.
-
-The live, tappable version is the "YachtPA UI Directions" canvas on claude.ai. These files are the versioned source for it.
+The Round 1 files share one template; only the font link and the `.root{…}` token block differ. A · Deep Water (`Main.dc.html`) was dropped from the canvas in the editor; it is still in git history if needed.

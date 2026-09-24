@@ -2,31 +2,64 @@
   "v": 3,
   "attachments": {},
   "boards": {
-    "Horizon.dc.html": {
+    "Still.dc.html": {
       "h": 844,
       "is_interactive": true,
+      "page": "builds",
       "radius": 44,
-      "title": "C · Horizon",
+      "title": "1 · Still",
+      "w": 390,
+      "x": 0,
+      "y": 0
+    },
+    "Chart.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "builds",
+      "radius": 44,
+      "title": "2 · Chart",
+      "w": 390,
+      "x": 470,
+      "y": 0
+    },
+    "Ledger.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "builds",
+      "radius": 44,
+      "title": "3 · Ledger",
       "w": 390,
       "x": 940,
       "y": 0
     },
-    "Main.dc.html": {
+    "Bridge.dc.html": {
       "h": 844,
       "is_interactive": true,
+      "page": "builds",
       "radius": 44,
-      "title": "A · Deep Water",
+      "title": "4 · Bridge",
       "w": 390,
-      "x": 0,
+      "x": 1410,
+      "y": 0
+    },
+    "Horizon.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "themes",
+      "radius": 44,
+      "title": "C · Horizon",
+      "w": 390,
+      "x": 733,
       "y": 0
     },
     "Sailcloth.dc.html": {
       "h": 844,
       "is_interactive": true,
+      "page": "themes",
       "radius": 44,
       "title": "B · Sailcloth",
       "w": 390,
-      "x": 470,
+      "x": 172,
       "y": 0
     }
   },
@@ -36,31 +69,90 @@
   },
   "designSystems": [],
   "launch": {
-    "view": "canvas"
+    "view": "canvas",
+    "page": "builds"
   },
   "notes": {
+    "howto": {
+      "fill": "blue",
+      "maxH": 120,
+      "page": "themes",
+      "text": "How to try it: press Play on a phone. Start voyage → Stop → Confirm. Then Log today → tap the mic → Confirm. Explore the Experience and Documents tabs. A voyage keeps running while you use the rest of the app. The moon switches to night-watch mode. Same app in both, only the look changes. Sample data throughout.",
+      "w": 1330,
+      "x": 0,
+      "y": -270
+    },
     "title": {
       "kind": "title1",
       "maxW": 1330,
-      "text": "YachtPA · pick a look",
+      "page": "themes",
+      "text": "YachtPA · Round 1 · one app, two looks",
       "w": 240,
       "x": 0,
       "y": -400
     },
-    "howto": {
+    "r2title": {
+      "kind": "title1",
+      "maxW": 1800,
+      "page": "builds",
+      "text": "YachtPA · Round 2 · four different builds",
+      "w": 240,
+      "x": 0,
+      "y": -400
+    },
+    "r2howto": {
       "fill": "blue",
       "maxH": 120,
-      "text": "How to try it: press Play on a phone. Start voyage → Stop → Confirm. Then Log today → tap the mic → Confirm. Explore the Experience and Documents tabs. A voyage keeps running while you use the rest of the app. The moon switches to night-watch mode. Same app in all three, only the look changes. Sample data throughout.",
-      "w": 1330,
+      "page": "builds",
+      "text": "Four different apps on the same data, least to most on screen from left to right. Each one has its own look switch (top right) with three looks, always including the red night-watch mode. Press Play on a phone: Start voyage → Stop → Confirm. Log today → mic → Confirm. The voyage keeps running while you move around. Sample data throughout.",
+      "w": 1800,
       "x": 0,
       "y": -270
+    },
+    "n1": {
+      "maxH": 220,
+      "page": "builds",
+      "text": "1 · Still — one thing at a time. Who and where, today, Start, Log, and one line to everything else. The whole screen breathes: drifting colour, a horizon, a ring that becomes the timer. Switch: three orbs (Dusk · Dawn · Night).",
+      "w": 390,
+      "x": 0,
+      "y": 904
+    },
+    "n2": {
+      "maxH": 220,
+      "page": "builds",
+      "text": "2 · Chart — the home screen is the chart. Your position, the coast, the track drawing itself as you go. Controls float on glass. Switch: the layers button (Day chart · Dusk chart · Night watch).",
+      "w": 390,
+      "x": 470,
+      "y": 904
+    },
+    "n3": {
+      "maxH": 220,
+      "page": "builds",
+      "text": "3 · Ledger — the app reads like a ship's log. Big dates, ruled lines, dotted leaders, rubber stamps, pages that turn. No tab bar. Switch: three ink pots (Paper · Slate · Night).",
+      "w": 390,
+      "x": 940,
+      "y": 904
+    },
+    "n4": {
+      "maxH": 220,
+      "page": "builds",
+      "text": "4 · Bridge — an instrument panel in your pocket. Speed gauge, heading tape, sparkline, expiry timeline, voyage table, five-item instrument bar. Switch: DAY / DUSK / NIGHT hardware toggle.",
+      "w": 390,
+      "x": 1410,
+      "y": 904
     }
   },
   "order": [
-    "Main.dc.html",
+    "Still.dc.html",
+    "Chart.dc.html",
+    "Ledger.dc.html",
+    "Bridge.dc.html",
     "Sailcloth.dc.html",
     "Horizon.dc.html"
   ],
-  "pages": [],
+  "pages": [
+    { "id": "builds", "name": "Round 2 · UI builds" },
+    { "id": "themes", "name": "Round 1 · Themes" }
+  ],
   "title": "YachtPA UI Directions"
 }
