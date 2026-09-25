@@ -545,7 +545,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;c
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dusk","day","night"],"default":"dusk","section":"Look"},"$preview":{"width":390,"height":844}}'>
+<script type="text/x-dc" data-dc-script data-props='{"theme":{"editor":"enum","options":["dusk","day","night"],"default":"day","section":"Look"},"$preview":{"width":390,"height":844}}'>
 class Component extends DCLogic {
   state = { sheet: '', pop: false, voyage: 'idle', theme: null, logged: false, elapsed: 64, nm: 34.2, speed: 9.8, maxSpeed: 11.6, tick: 0, p: 1, phase: 'idle', words: 0, picked: [], toast: '', totalNm: 2487, totalH: 184 };
   WORDS = 'Today we washed down the exterior, polished the stainless, checked the tender, changed the fuel filters on the generator and then did a safety inspection before departure.'.split(' ');
@@ -662,7 +662,7 @@ class Component extends DCLogic {
 
   renderVals() {
     const s = this.state;
-    const theme = s.theme ?? this.props.theme ?? 'dusk';
+    const theme = s.theme ?? this.props.theme ?? 'day';
     const p = s.p;
     const avg = s.spdN ? s.spdSum / s.spdN : s.speed;
     const picked = s.picked;
