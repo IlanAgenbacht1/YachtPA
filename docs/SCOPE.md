@@ -1,7 +1,7 @@
-# YachtPA — Scope v0.1 (draft for discussion)
+# YachtPA — Scope v0.2
 
-Date: 2026-09-24
-Status: draft. Nothing here is decided until the open decisions in §11 are answered.
+Date: 2026-09-25 (v0.1: 2026-09-24)
+Status: working draft. Decisions and their rationale are logged in [DECISIONS.md](DECISIONS.md); §11 lists what is still open.
 Sources: [01-product-requirements.md](source/01-product-requirements.md), [02-initial-concept.md](source/02-initial-concept.md)
 
 ## 1. Product in one line
@@ -30,6 +30,8 @@ Note on doc 1's "1,500 NM Yachtmaster" example: that figure does not match a pub
 
 ## 3. MVP boundary
 
+Platform: **iOS first.** Android after MVP (decided 2026-09-25).
+
 ### In
 
 1. Account + basic profile
@@ -56,11 +58,11 @@ Captain sign-off and locking, certificate OCR, career-path wizard, B2B yacht das
 2. **Underway detection and distance quality.** GPS jitter at anchor produces phantom miles. Needs an accuracy filter, a speed threshold, outlier rejection and a "you look stationary" prompt. Good news: boats are slow, so one fix per 30–60 s is accurate enough and battery-friendly.
 3. **Sea-time definitions differ by authority.** RYA, MCA and IYT count "days", "night hours" and "passages" differently. Store raw facts (underway segments, days aboard, positions, watches); compute each metric per authority in the rules layer.
 4. **Qualification rules engine.** A single qualification can combine rule types: total miles, days aboard, days as skipper, passages over a distance measured along the rhumb line, overnight passages, night hours, share of time in tidal waters, a rolling time window, vessel-size limits, plus prerequisite certificates. Rules must be data, not code.
-5. **Offline AI.** Voice must work offshore. Record locally, transcribe on-device where the OS supports it, queue LLM structuring for reconnect. The user can confirm a transcript-only entry offline and get the polished version later.
+5. **Offline AI.** Voice must work offshore. Transcription is on-device. LLM structuring is cloud-only and queued: the entry is saved locally as `queued`, PowerSync uploads it on reconnect, a database webhook calls the edge function, and the draft syncs back as `drafted`. The user can confirm a transcript-only entry offline; a later draft arrives as a suggestion, never an overwrite. Assumes most yachts have Starlink or similar (confirmed 2026-09-25). On-device models are a Phase 2 question.
 6. **AI honesty.** "Never invent duties." Strict JSON schema, every output item must map to a span of the transcript, and the user sees the draft before anything is saved.
 7. **Offline place names.** "Port Louis → Black River" needs a bundled ports/places dataset so start and end names work without signal.
 
-## 5. Proposed stack (decision needed)
+## 5. Stack (decided 2026-09-25, rationale in [DECISIONS.md](DECISIONS.md))
 
 | Layer | Recommended | Alternative | Why |
 |---|---|---|---|
@@ -68,11 +70,14 @@ Captain sign-off and locking, certificate OCR, career-path wizard, B2B yacht das
 | Local store | SQLite via PowerSync client | WatermelonDB | Offline-first with proper sync semantics, not hand-rolled. |
 | Backend | Supabase (Postgres, Auth, Storage, RLS, Edge Functions) | .NET API on Azure | Fastest path to MVP; row-level security gives "the user owns their data" for free. Azure/.NET is viable if staying in that ecosystem matters more than speed. |
 | Sync | PowerSync ↔ Supabase | Custom queue | Battle-tested offline sync, conflict handling included. |
-| Speech to text | On-device recogniser (iOS / Android) offline; cloud transcription when online | Whisper on-device | Offline is non-negotiable for crew. |
-| AI structuring | Claude with structured output against a fixed schema | | Model choice at implementation time. |
-| Maps | MapLibre | Mapbox | Open, offline tile packs possible later. |
-| PDF | Server-side HTML → PDF | On-device PDF | Consistent output, emailable, one template. |
+| Speech to text | On-device OS recogniser via expo-speech-recognition | whisper.rn if the spike shows poor accuracy; cloud STT only if both fail | Offline, free, audio never leaves the phone. |
+| AI structuring | Claude from a Supabase Edge Function, structured outputs against a strict schema. Model is a config value, default `claude-opus-5` at low effort | Any provider with strict JSON output, chosen by eval on real transcripts | Every duty cites a transcript span and the server verifies it. Phone never holds the API key. Only text is sent, never audio. |
+| Maps | MapLibre + OpenFreeMap tiles | Mapbox | No key, no bill. Offline tile packs possible later. |
+| PDF | On-device via expo-print | Server-side HTML → PDF | Free and works offline. Server-side would need a paid container. |
 | Push | Expo Notifications | | |
+| Builds and distribution | EAS Build, EAS Update, EAS Submit → TestFlight | Local builds | No Mac in the team. 15 iOS builds a month free; JS changes ship over the air. |
+| CI | GitHub Actions, Linux runners only | | macOS runners count tenfold against free minutes. |
+| Crash reporting | Sentry | | Free tier, queues events offline. |
 | Captain sign-off page (Phase 2) | Small web app, magic link | | Captains must not need to install anything. |
 
 ## 6. Domain model v0
@@ -155,20 +160,23 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 
 | Phase | Weeks (rough) | Outcome |
 |---|---|---|
-| 0 — Spike | 1–2 | Background GPS proven on both platforms over a 24 h run. Voice → structured log proven end to end. Stack confirmed. |
-| 1 — MVP | 8–12 | §3 "In" list, TestFlight / internal testing with real crew. |
+| 0 — Spike | 1–2 | Instrumentation first: diagnostics log, send-diagnostics button, GPX export, Sentry. Background GPS proven on iOS over two 24 h runs on a real passage, Low Power Mode off then on. Voice → queued → Claude draft proven end to end. About 50 real transcripts collected for the model eval. |
+| 1 — MVP | 8–12 | §3 "In" list, iOS only, TestFlight with real crew. |
 | 2 — Trust | 4–6 | Captain sign-off and locking, smart notifications, certificate OCR, career-path wizard, richer stats. |
 | 3 — Network | later | B2B yacht dashboard, jobs, references, schools, visa assistant, marketplace. |
 
 ## 11. Open decisions
 
-1. **Mobile stack:** Expo/React Native (recommended) or Flutter?
-2. **Backend:** Supabase (recommended for speed) or Azure/.NET (ecosystem fit)?
-3. **MVP boundary:** include the certificate wallet? Captain sign-off in MVP or Phase 2?
-4. **First qualifications to seed:** RYA Yachtmaster Coastal + Offshore and STCW basic set?
-5. **Whose product:** personal project with a friend, no client (confirmed 2026-09-24). Optimise for speed and free tiers; put IP and revenue split in writing between the two of you.
-6. **Team and timeline:** solo or team, target date for first crew test?
-7. **App name:** working title "YachtPA" from the folder.
+Decided items and their rationale are in [DECISIONS.md](DECISIONS.md). Still open:
+
+1. **MVP boundary:** include the certificate wallet? Captain sign-off in MVP or Phase 2?
+2. **First qualifications to seed:** RYA Yachtmaster Coastal + Offshore and STCW basic set?
+3. **App name:** shortlist Teak (first) or Keel. Needs a trademark search and a domain check before it is final. Working title stays "YachtPA".
+4. **Which Round 2 build and look** becomes the app's design tokens.
+5. **Target date** for the first crew test.
+6. **Partner agreement:** IP and revenue split in writing, and which of you holds the Apple Developer account. That person is the legal seller.
+
+Decided so far: Expo + PowerSync + Supabase; iOS first; cloud Claude with an offline queue; on-device speech; expo-print for PDF; free tiers only; personal project with no client.
 
 ## 12. Non-negotiables and risks
 
@@ -178,3 +186,5 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 - App Store review needs a visible, user-triggered reason for background location. START VOYAGE is that reason.
 - Users can export everything (JSON + PDF) and delete their account.
 - Battery: target under 10% per 12 h of tracking on a mid-range phone. Measured in the spike.
+- The app must report on itself (diagnostics log, send button, GPX export, Sentry). The developer cannot watch it run: the test device is on a boat.
+- TestFlight builds expire after 90 days. Ship a new build at least every 80 days or every tester's app stops opening.
