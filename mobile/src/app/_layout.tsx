@@ -1,3 +1,5 @@
+import '@/location/task';
+
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -5,16 +7,13 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Toast } from '@/components/Toast';
-import { AppStoreProvider } from '@/store/AppStore';
+import { AppStoreProvider, useAppStore } from '@/store/AppStore';
 import { LookProvider, useAppFonts, useTokens } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
-  useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
   if (!fontsLoaded && !fontError) return null;
 
   return (
@@ -30,6 +29,12 @@ export default function RootLayout() {
 
 function Shell() {
   const t = useTokens();
+  const { ready } = useAppStore();
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+  if (!ready) return null;
+
   const base = t.look === 'night' ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,

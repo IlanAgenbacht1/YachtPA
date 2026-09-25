@@ -36,3 +36,15 @@ export function fmtDateLong(d: Date): string {
 export function minutesOfDay(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
+
+/** "09:42" in the device's local time from ms since epoch. */
+export function fmtClockMs(ms: number): string {
+  const d = new Date(ms);
+  return fmtClock(d.getHours() * 60 + d.getMinutes());
+}
+
+/** Hours from minutes for totals: one decimal under ten hours, whole hours above. */
+export function fmtHours(min: number): string {
+  const h = min / 60;
+  return h < 10 ? h.toFixed(1) : fmtInt(h);
+}

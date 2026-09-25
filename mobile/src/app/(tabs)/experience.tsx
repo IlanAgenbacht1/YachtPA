@@ -4,13 +4,13 @@ import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Card, Col, Display, Dot, Eyebrow, Hero, Ring, Row, Sheet, Tile, Txt } from '@/components/ui';
 import { experience, qualification } from '@/data/sample';
-import { fmtInt } from '@/lib/format';
+import { fmtHours, fmtInt } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 export default function ExperienceScreen() {
   const t = useTokens();
-  const { totals } = useAppStore();
+  const { totals, engagement } = useAppStore();
   const motor = experience.byType.motorNm;
   const sail = experience.byType.sailNm;
   const motorPct = Math.round((motor / (motor + sail)) * 100);
@@ -28,7 +28,7 @@ export default function ExperienceScreen() {
           </Txt>
         </Row>
         <Txt size={14} color="heroMuted">
-          {experience.since}
+          {totals.voyages === 0 ? 'No confirmed voyages yet' : `${totals.voyages} confirmed voyage${totals.voyages === 1 ? '' : 's'} · ${engagement?.vessel.name ?? ''}`}
         </Txt>
       </Hero>
 
@@ -75,10 +75,10 @@ export default function ExperienceScreen() {
           <Col gap={10}>
             <Row gap={10} align="stretch">
               <View style={{ flex: 1 }}>
-                <Tile label="Hours underway" value={fmtInt(totals.hours)} valueSize={22} />
+                <Tile label="Hours underway" value={fmtHours(totals.underwayMin)} valueSize={22} />
               </View>
               <View style={{ flex: 1 }}>
-                <Tile label="Night hours" value={fmtInt(totals.nightHours)} valueSize={22} />
+                <Tile label="Night hours" value={fmtHours(totals.nightMin)} valueSize={22} />
               </View>
             </Row>
             <Row gap={10} align="stretch">

@@ -20,13 +20,13 @@ const TABS: Record<string, { label: string; icon: IconName }> = {
 /** Bottom tabs from the Deck build, with the live-voyage mini bar docked above them. */
 export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
   const t = useTokens();
-  const { voyage } = useAppStore();
+  const { live } = useAppStore();
   const focused = state.routes[state.index]?.name;
-  const showMini = !!voyage && focused !== 'index';
+  const showMini = !!live && focused !== 'index';
 
   return (
     <View style={{ backgroundColor: t.colors.sheet }}>
-      {showMini && voyage && (
+      {showMini && live && (
         <View style={{ paddingHorizontal: 12, paddingBottom: 8 }}>
           <Pressable
             onPress={() => router.push('/live')}
@@ -49,7 +49,7 @@ export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
               <Dot color="accent" size={8} />
             </Blink>
             <Txt size={13} weight={700} color="bg" tabular style={{ flex: 1 }}>
-              Underway · {voyage.nm.toFixed(1)} NM · {fmtDur(voyage.elapsedMin)}
+              Underway · {live.voyage.nm.toFixed(1)} NM · {fmtDur(live.elapsedMin)}
             </Txt>
             <Icon name="chevronRight" size={18} color="bg" strokeWidth={2.2} />
           </Pressable>

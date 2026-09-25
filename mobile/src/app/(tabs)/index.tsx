@@ -1,23 +1,23 @@
 import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { FadeUp, Blink } from '@/components/motion';
+import { Blink, FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Ring, Row, Sheet, Txt } from '@/components/ui';
-import { docCounts, experience, qualification, vessel } from '@/data/sample';
-import { fmtDateShort, fmtDur, fmtInt } from '@/lib/format';
+import { docCounts, experience, qualification } from '@/data/sample';
+import type { LiveSnapshot } from '@/db';
+import { fmtDateShort, fmtDur, fmtHours, fmtInt } from '@/lib/format';
 import { thump } from '@/lib/haptics';
-import { useAppStore, type LiveVoyage } from '@/store/AppStore';
+import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 export default function HomeScreen() {
   const t = useTokens();
-  const { voyage, loggedToday, startVoyage, totals } = useAppStore();
+  const { engagement, lastPlace, live, draft, loggedToday, startVoyage, totals } = useAppStore();
 
-  const onStart = () => {
+  const onStart = async () => {
     thump();
-    startVoyage();
-    router.push('/live');
+    if (await startVoyage()) router.push('/live');
   };
 
   return (
@@ -29,7 +29,7 @@ export default function HomeScreen() {
             <Row gap={6}>
               <Dot color="ok" size={6} />
               <Txt size={11} weight={700} color="heroMuted">
-                Synced
+                Local
               </Txt>
             </Row>
             <LookPill />
@@ -52,16 +52,22 @@ export default function HomeScreen() {
           </View>
           <Col gap={3} flex={1}>
             <Display size={38} color="heroFg" numberOfLines={1}>
-              {vessel.name}
+              {engagement?.vessel.name ?? 'No vessel'}
             </Display>
-            <Txt size={14} color="heroMuted">
-              {vessel.position} · {vessel.place}
+            <Txt size={14} color="heroMuted" numberOfLines={1}>
+              {engagement?.position ?? ''} · {lastPlace ?? 'No voyages logged yet'}
             </Txt>
           </Col>
         </Row>
 
         <Col gap={12} style={{ marginTop: 2 }}>
-          {voyage ? <LiveCard voyage={voyage} /> : <Button label="Start voyage" icon="send" onPress={onStart} />}
+          {live ? (
+            <LiveCard live={live} />
+          ) : draft ? (
+            <Button label={`Confirm voyage · ${draft.nm.toFixed(1)} NM`} icon="check" iconStrokeWidth={2.4} onPress={() => router.push('/summary')} />
+          ) : (
+            <Button label="Start voyage" icon="send" onPress={onStart} />
+          )}
           {loggedToday ? (
             <Button variant="hero" icon="check" iconStrokeWidth={2.4} label="Logged · view entry" onPress={() => router.navigate('/log')} />
           ) : (
@@ -76,13 +82,13 @@ export default function HomeScreen() {
             <Row justify="space-between">
               <Eyebrow>My experience</Eyebrow>
               <Txt size={12} weight={800} color="brass">
-                {experience.weekDelta}
+                {totals.voyages === 0 ? 'No voyages yet' : `${totals.voyages} voyage${totals.voyages === 1 ? '' : 's'} logged`}
               </Txt>
             </Row>
             <Row gap={8} align="flex-start">
               <Stat value={fmtInt(totals.nm)} label="NM logged" />
-              <Stat value={fmtInt(totals.hours)} label="hours underway" />
-              <Stat value={fmtInt(totals.nightHours)} label="night hours" />
+              <Stat value={fmtHours(totals.underwayMin)} label="hours underway" />
+              <Stat value={fmtHours(totals.nightMin)} label="night hours" />
             </Row>
             <Col gap={6}>
               <Row gap={4} align="flex-end" style={{ height: 40 }}>
@@ -170,7 +176,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 }
 
 /** Replaces the Start button while a voyage is running. */
-function LiveCard({ voyage }: { voyage: LiveVoyage }) {
+function LiveCard({ live }: { live: LiveSnapshot }) {
   const t = useTokens();
   return (
     <Pressable
@@ -197,13 +203,15 @@ function LiveCard({ voyage }: { voyage: LiveVoyage }) {
         <Dot color="accent" size={10} />
       </Blink>
       <Col gap={3} flex={1}>
-        <Eyebrow color="heroMuted">Underway · to {voyage.to}</Eyebrow>
+        <Eyebrow color="heroMuted" numberOfLines={1}>
+          Underway · {live.voyage.start?.place ?? 'waiting for a fix'}
+        </Eyebrow>
         <Row gap={8} align="baseline">
           <Display size={30} tabular ls={-0.6} color="heroFg">
-            {voyage.nm.toFixed(1)}
+            {live.voyage.nm.toFixed(1)}
           </Display>
           <Txt size={13} weight={700} color="heroMuted" tabular>
-            NM · {fmtDur(voyage.elapsedMin)}
+            NM · {fmtDur(live.elapsedMin)}
           </Txt>
         </Row>
       </Col>
