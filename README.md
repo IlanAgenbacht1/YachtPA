@@ -12,7 +12,7 @@ Scoping and UI direction. No app code yet.
 |---|---|
 | [docs/SCOPE.md](docs/SCOPE.md) | Draft scope: MVP boundary, hard problems, proposed stack, domain model, screens, phases |
 | [docs/source/](docs/source/) | The two original requirement documents, verbatim |
-| [design/prototype/](design/prototype/) | Interactive phone prototypes. Round 2: four different UI builds (Still, Chart, Ledger, Bridge), each with its own 3-way look switch. Round 1: one app in two looks kept (Sailcloth, Horizon) |
+| [design/prototype/](design/prototype/) | Interactive phone prototypes. Round 2: four different UI builds (Still, Chart, Ledger, Deck), each with its own 3-way look switch. Round 1: one app in two looks kept (Sailcloth, Horizon) |
 
 ## Next
 

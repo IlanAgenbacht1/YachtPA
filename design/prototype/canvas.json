@@ -32,16 +32,6 @@
       "x": 940,
       "y": 0
     },
-    "Bridge.dc.html": {
-      "h": 844,
-      "is_interactive": true,
-      "page": "builds",
-      "radius": 44,
-      "title": "4 · Bridge",
-      "w": 390,
-      "x": 1410,
-      "y": 0
-    },
     "Horizon.dc.html": {
       "h": 844,
       "is_interactive": true,
@@ -60,6 +50,16 @@
       "title": "B · Sailcloth",
       "w": 390,
       "x": 172,
+      "y": 0
+    },
+    "Deck.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "page": "builds",
+      "radius": 44,
+      "title": "4 · Deck",
+      "w": 390,
+      "x": 1410,
       "y": 0
     }
   },
@@ -112,7 +112,7 @@
     "n1": {
       "maxH": 220,
       "page": "builds",
-      "text": "1 · Still — one thing at a time. Who and where, today, Start, Log, and one line to everything else. The whole screen breathes: drifting colour, a horizon, a ring that becomes the timer. Switch: three orbs (Dusk · Dawn · Night).",
+      "text": "1 · Still — one thing at a time. Who and where, today, Start, Log, and one line to everything else. Slow drifting colour, a ring that becomes the timer. Switch: three orbs (Dusk · Dawn · Night).",
       "w": 390,
       "x": 0,
       "y": 904
@@ -128,7 +128,7 @@
     "n3": {
       "maxH": 220,
       "page": "builds",
-      "text": "3 · Ledger — the app reads like a ship's log. Big dates, ruled lines, dotted leaders, rubber stamps, pages that turn. No tab bar. Switch: three ink pots (Paper · Slate · Night).",
+      "text": "3 · Ledger — the app reads like a ship's log. Big dates, dotted leaders, rubber stamps, pages that turn. No tab bar. Switch: three ink pots (Paper · Slate · Night).",
       "w": 390,
       "x": 940,
       "y": 904
@@ -136,7 +136,7 @@
     "n4": {
       "maxH": 220,
       "page": "builds",
-      "text": "4 · Bridge — an instrument panel in your pocket. Speed gauge, heading tape, sparkline, expiry timeline, voyage table, five-item instrument bar. Switch: DAY / DUSK / NIGHT hardware toggle.",
+      "text": "4 · Deck — the Round 1 app, polished: dark hero over a light sheet, cards, bottom tabs. The switch carries the Round 1 looks: Horizon (navy and regatta orange) · Sailcloth (warm off-white and teal) · Night.",
       "w": 390,
       "x": 1410,
       "y": 904
@@ -146,13 +146,19 @@
     "Still.dc.html",
     "Chart.dc.html",
     "Ledger.dc.html",
-    "Bridge.dc.html",
+    "Deck.dc.html",
     "Sailcloth.dc.html",
     "Horizon.dc.html"
   ],
   "pages": [
-    { "id": "builds", "name": "Round 2 · UI builds" },
-    { "id": "themes", "name": "Round 1 · Themes" }
+    {
+      "id": "builds",
+      "name": "Round 2 · UI builds"
+    },
+    {
+      "id": "themes",
+      "name": "Round 1 · Themes"
+    }
   ],
   "title": "YachtPA UI Directions"
 }

@@ -20,14 +20,7 @@ a{color:#17505A}a:hover{color:#2A6E7A}
 .root button:active{opacity:.7}
 .root .big:active{opacity:1;transform:scale(.985)}
 
-/* paper: ruling and grain */
 .root .sheet{position:relative;isolation:isolate}
-.root .sheet::before{content:"";position:absolute;inset:0;z-index:-1;background-color:var(--rule);-webkit-mask-image:repeating-linear-gradient(180deg,transparent 0 31px,#000 31px 32px);mask-image:repeating-linear-gradient(180deg,transparent 0 31px,#000 31px 32px);pointer-events:none;transition:background-color .55s ease}
-.root .grain{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:40;mix-blend-mode:multiply}
-.root .grain rect{opacity:.045}
-.root.slate .grain,.root.night .grain{mix-blend-mode:screen}
-.root.slate .grain rect{opacity:.03}
-.root.night .grain rect{opacity:.02}
 
 /* keyframes */
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}}
@@ -457,8 +450,6 @@ a{color:#17505A}a:hover{color:#2A6E7A}
 </div>
 </sc-if>
 
-<!-- grain -->
-<svg class="grain" aria-hidden="true"><filter id="gr"><feTurbulence type="fractalNoise" baseFrequency=".75" numOctaves="2" stitchTiles="stitch"></feTurbulence></filter><rect width="100%" height="100%" filter="url(#gr)"></rect></svg>
 
 </div>
 </x-dc>

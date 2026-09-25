@@ -12,12 +12,12 @@ Left to right: least to most on screen. Every build has a 3-way look switch insi
 
 | File | Build | Idea | Type | Looks (switch) |
 |---|---|---|---|---|
-| `Still.dc.html` | 1 · Still | One thing at a time. Who/where, today, Start, Log, one line to the rest. Drifting colour fields, a breathing horizon, a ring that becomes the timer. | Instrument Serif + Outfit | Dusk · Dawn · Night (three orbs) |
+| `Still.dc.html` | 1 · Still | One thing at a time. Who/where, today, Start, Log, one line to the rest. Slow drifting colour fields, a ring that becomes the timer. | Instrument Serif + Outfit | Dusk · Dawn · Night (three orbs) |
 | `Chart.dc.html` | 2 · Chart | The home screen is the chart. Stylised chart of the Mauritius west coast, live track drawing itself, controls floating on glass. | Bricolage Grotesque + Instrument Sans + JetBrains Mono | Day chart · Dusk chart · Night watch (layers popover) |
-| `Ledger.dc.html` | 3 · Ledger | The app reads like a ship's log. Big serif dates, ruled paper, dotted leaders, rubber stamps, pages that turn. No tab bar. | Newsreader + Hanken Grotesk | Paper · Slate · Night (three ink pots) |
-| `Bridge.dc.html` | 4 · Bridge | An instrument panel in your pocket. Speed gauge with needle, heading tape, sparkline, expiry timeline, voyage table, instrument bar. | Rajdhani + IBM Plex Mono + Archivo | DAY · DUSK · NIGHT (hardware toggle) |
+| `Ledger.dc.html` | 3 · Ledger | The app reads like a ship's log. Big serif dates, dotted leaders, rubber stamps, pages that turn. No tab bar. | Newsreader + Hanken Grotesk | Paper · Slate · Night (three ink pots) |
+| `Deck.dc.html` | 4 · Deck | The Round 1 app, polished: dark hero over a light sheet, cards, bottom tabs. Fonts follow the look. | Space Grotesk + IBM Plex Sans (Horizon, Night) · Fraunces + Figtree (Sailcloth) | Horizon · Sailcloth · Night (three dots in a pill) |
 
-Each build's looks are pure CSS custom-property blocks (`.root`, `.root.<look>`) on the root element, so the chosen build's token block becomes the app's design tokens, and the night look is the same token mechanism, not a separate theme.
+A fourth build, Bridge (an instrument-panel dashboard), was dropped as off-theme; it is in git history. Each build's looks are pure CSS custom-property blocks (`.root`, `.root.<look>`) on the root element, so the chosen build's token block becomes the app's design tokens, and the night look is the same token mechanism, not a separate theme.
 
 ### Round 1 · one app, three looks (two kept for reference)
 
@@ -27,3 +27,7 @@ Each build's looks are pure CSS custom-property blocks (`.root`, `.root.<look>`)
 | `Horizon.dc.html` | C · Horizon. Dark hero over a light sheet, regatta-orange action. Space Grotesk + IBM Plex Sans. |
 
 The Round 1 files share one template; only the font link and the `.root{…}` token block differ. A · Deep Water (`Main.dc.html`) was dropped from the canvas in the editor; it is still in git history if needed.
+
+## tools/
+
+Lint, logic check and a screenshot harness for the artboards. See [tools/README.md](tools/README.md).
