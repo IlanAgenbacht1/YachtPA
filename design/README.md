@@ -1,5 +1,7 @@
 # Design
 
+Decision (2026-09-25): **Deck** (Round 2, build 4) is the base for the app; its token blocks are now `mobile/src/theme/tokens.ts`. The other builds stay here as reference to fold aspects in from after testing.
+
 ## prototype/
 
 Source of the interactive UI prototypes. Each `.dc.html` is one phone artboard (390×844) with the full demo flow inside it: Home → Start voyage → Stop → Confirm → Log today → voice → confirm, plus the secondary views, a live indicator while a voyage runs in the background, and a red night-watch look. Same sample data throughout.

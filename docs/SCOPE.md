@@ -1,7 +1,7 @@
 # YachtPA — Scope v0.1 (draft for discussion)
 
 Date: 2026-09-24
-Status: draft. Nothing here is decided until the open decisions in §11 are answered.
+Status: draft. Nothing here is decided until the open decisions in §11 are answered (stack and UI build now are; see §11).
 Sources: [01-product-requirements.md](source/01-product-requirements.md), [02-initial-concept.md](source/02-initial-concept.md)
 
 ## 1. Product in one line
@@ -162,7 +162,7 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 
 ## 11. Open decisions
 
-1. **Mobile stack:** Expo/React Native (recommended) or Flutter?
+1. **Mobile stack:** Expo/React Native. Decided 2026-09-25; scaffold in `mobile/`.
 2. **Backend:** Supabase (recommended for speed) or Azure/.NET (ecosystem fit)?
 3. **MVP boundary:** include the certificate wallet? Captain sign-off in MVP or Phase 2?
 4. **First qualifications to seed:** RYA Yachtmaster Coastal + Offshore and STCW basic set?
