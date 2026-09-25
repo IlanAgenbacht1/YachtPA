@@ -12,14 +12,14 @@
 <style>
 body{margin:0;background:#0C1A27;font-family:"Instrument Sans",system-ui,sans-serif}
 a{color:#22D3EE}a:hover{color:#67E8F9}
-.root{--water:#0C1A27;--contour:#1E3A4F;--land:#16242F;--land-edge:#2E4557;--grid:rgba(120,170,200,.10);--maptext:#8FA9BA;--sounding:#4A687A;--glass:rgba(14,26,39,.74);--glass-border:rgba(255,255,255,.10);--sheet:#0F1D2B;--fg:#EAF2F7;--muted:#9AB0BF;--accent:#22D3EE;--accent-fg:#062A33;--track:#22D3EE;--danger:#FB7185;--ok:#34D399;--warn:#FBBF24;--backdrop:rgba(4,10,16,.55);--display:"Bricolage Grotesque",system-ui,sans-serif;--body:"Instrument Sans",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace}
-.root.day{--water:#D7E6EC;--contour:#A9C6D3;--land:#EEE8D8;--land-edge:#C9BFA5;--grid:rgba(30,58,75,.10);--maptext:#3D5866;--sounding:#6E8A97;--glass:rgba(255,255,255,.78);--glass-border:rgba(19,35,46,.10);--sheet:#FBFAF7;--fg:#13232E;--muted:#536873;--accent:#0E7490;--accent-fg:#FFFFFF;--track:#0E7490;--danger:#B91C1C;--ok:#047857;--warn:#B45309;--backdrop:rgba(19,35,46,.30)}
-.root.night{--water:#000000;--contour:#2A0A08;--land:#0E0303;--land-edge:#3A0E0B;--grid:rgba(255,69,58,.10);--maptext:#8A2A24;--sounding:#5C1B17;--glass:rgba(0,0,0,.82);--glass-border:#3A0E0B;--sheet:#000000;--fg:#FF453A;--muted:#D93E34;--accent:#FF453A;--accent-fg:#000000;--track:#FF453A;--danger:#FF453A;--ok:#FF453A;--warn:#FF453A;--backdrop:rgba(0,0,0,.6)}
+.root{--water:#0C1A27;--contour:#1E3A4F;--land:#16242F;--land-edge:#2E4557;--grid:rgba(120,170,200,.10);--maptext:#8FA9BA;--sounding:#4A687A;--glass:rgba(24,40,58,.96);--glass-border:rgba(255,255,255,.18);--scrim:#0A1622;--ui-shadow:0 10px 30px rgba(0,0,0,.45);--sheet:#0F1D2B;--fg:#EAF2F7;--muted:#9AB0BF;--accent:#22D3EE;--accent-fg:#062A33;--track:#22D3EE;--danger:#FB7185;--ok:#34D399;--warn:#FBBF24;--backdrop:rgba(4,10,16,.55);--display:"Bricolage Grotesque",system-ui,sans-serif;--body:"Instrument Sans",system-ui,sans-serif;--mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace}
+.root.day{--water:#D7E6EC;--contour:#A9C6D3;--land:#EEE8D8;--land-edge:#C9BFA5;--grid:rgba(30,58,75,.10);--maptext:#3D5866;--sounding:#6E8A97;--glass:rgba(255,255,255,.96);--glass-border:rgba(19,35,46,.16);--scrim:#D7E6EC;--ui-shadow:0 10px 30px rgba(19,35,46,.16);--sheet:#FBFAF7;--fg:#13232E;--muted:#536873;--accent:#0E7490;--accent-fg:#FFFFFF;--track:#0E7490;--danger:#B91C1C;--ok:#047857;--warn:#B45309;--backdrop:rgba(19,35,46,.30)}
+.root.night{--water:#000000;--contour:#2A0A08;--land:#0E0303;--land-edge:#3A0E0B;--grid:rgba(255,69,58,.10);--maptext:#8A2A24;--sounding:#5C1B17;--glass:rgba(16,4,4,.97);--glass-border:#6B1F1A;--scrim:#000000;--ui-shadow:none;--sheet:#000000;--fg:#FF453A;--muted:#D93E34;--accent:#FF453A;--accent-fg:#000000;--track:#FF453A;--danger:#FF453A;--ok:#FF453A;--warn:#FF453A;--backdrop:rgba(0,0,0,.6)}
 .root,.root *{transition:background-color .55s ease,color .55s ease,border-color .55s ease,fill .55s ease,stroke .55s ease,box-shadow .55s ease,transform .15s ease,opacity .35s ease}
 button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;color:inherit;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 .root button:active{transform:scale(.97)}
 .root button.flat:active{transform:none}
-.glass{background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.glass{background:var(--glass);border:1px solid var(--glass-border);box-shadow:var(--ui-shadow);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .glow{filter:drop-shadow(0 0 6px var(--track))}
 .root.night .glow{filter:none}
@@ -159,6 +159,8 @@ button{font:inherit;cursor:pointer;border:0;background:none;padding:0;margin:0;c
 </sc-if>
 
 <!-- ===== UI OVERLAY ===== -->
+<div aria-hidden="true" style="position:absolute;left:0;right:0;top:0;height:230px;background:var(--scrim);opacity:.82;pointer-events:none;z-index:1;-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 45%,transparent 100%);mask-image:linear-gradient(180deg,#000 0%,#000 45%,transparent 100%)"></div>
+<div aria-hidden="true" style="position:absolute;left:0;right:0;bottom:0;height:300px;background:var(--scrim);opacity:.82;pointer-events:none;z-index:1;-webkit-mask-image:linear-gradient(0deg,#000 0%,#000 40%,transparent 100%);mask-image:linear-gradient(0deg,#000 0%,#000 40%,transparent 100%)"></div>
 <div style="position:absolute;inset:0;display:flex;flex-direction:column;z-index:2">
 
   <div class="glass rise" style="margin:56px 16px 0;height:60px;border-radius:18px;display:flex;align-items:center;justify-content:space-between;padding:0 8px 0 16px;box-sizing:border-box;flex-shrink:0">
