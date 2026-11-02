@@ -10,3 +10,5 @@ export { Ring } from './Ring';
 export { Sheet } from './Sheet';
 export { Tile } from './Tile';
 export { Display, Eyebrow, Txt, useColor, type ColorProp } from './Txt';
+export { HeroButton } from './BackButton';
+export { DateField, Field, isoDate, Segmented } from './Field';

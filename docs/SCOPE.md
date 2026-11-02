@@ -65,13 +65,13 @@ Captain sign-off and locking, certificate OCR, career-path wizard, B2B yacht das
 | Layer | Recommended | Alternative | Why |
 |---|---|---|---|
 | Mobile | Expo (React Native) + Expo Router | Swift / SwiftUI | iOS only for now (§11). Scaffold already exists; background location via expo-location + TaskManager; Reanimated and Skia give the fluid, animated UI the brief wants; EAS builds and submits to TestFlight without needing Xcode for every build. Keeps Android possible later without a rewrite. |
-| Local store | SQLite via PowerSync client | WatermelonDB | Offline-first with proper sync semantics, not hand-rolled. |
+| Local store | SQLite (expo-sqlite) on the phone; PowerSync added with cloud sync (M6) | WatermelonDB | The phone is the source of truth. Built 2026-11-02. |
 | Backend | Supabase (Postgres, Auth, Storage, RLS, Edge Functions) | .NET API on Azure | Fastest path to MVP; row-level security gives "the user owns their data" for free. Azure/.NET is viable if staying in that ecosystem matters more than speed. |
 | Sync | PowerSync ↔ Supabase | Custom queue | Battle-tested offline sync, conflict handling included. |
 | Speech to text | On-device recogniser (iOS Speech framework) offline; cloud transcription when online | Whisper on-device | Offline is non-negotiable for crew. |
 | AI structuring | Claude with structured output against a fixed schema | | Model choice at implementation time. |
-| Maps | MapLibre | Mapbox | Open, offline tile packs possible later. |
-| PDF | Server-side HTML → PDF | On-device PDF | Consistent output, emailable, one template. |
+| Maps | Track drawn from GPS points, no tiles, for MVP | MapLibre | No map dependency until crew ask for one. |
+| PDF | On-device HTML → PDF (expo-print), shared from the phone | Server-side | No server needed; one template either way. |
 | Push | Expo Notifications | | |
 | Captain sign-off page (Phase 2) | Small web app, magic link | | Captains must not need to install anything. |
 
@@ -180,3 +180,25 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 - App Store review needs a visible, user-triggered reason for background location. START VOYAGE is that reason.
 - Users can export everything (JSON + PDF) and delete their account.
 - Battery: target under 10% per 12 h of tracking on an iPhone two or more generations old. Measured in the spike.
+
+## 13. Build plan to MVP
+
+Decided 2026-11-02: build local-first and add the cloud last, so nothing waits on the backend decision. Each milestone ends with a working app.
+
+| # | Milestone | Needs | Status |
+|---|---|---|---|
+| M1 | **Local records.** On-device database; onboarding (name, yacht, position); edit vessel and engagement, move to a new yacht; START/STOP with foreground GPS (works in Expo Go) or simulated GPS; track maths per §9 with tests; summary with sanity checks and editable place names; daily log (dictate with the iOS keyboard, one duty per line, activity tick-list); diary; voyage detail; documents wallet with traffic lights; experience totals; look saved. | Nothing | Done |
+| M2 | **Qualifications.** Rules as data (§4.4), seeded from official RYA pages with source URL and date: Yachtmaster Coastal and Offshore. Progress ring, requirement checklist, "appears to meet" wording. | Nothing | Next |
+| M3 | **iPhone build.** EAS development build; background location via TaskManager ("Always" permission, START VOYAGE as the reason); local notifications: expiry, "still underway?", missed days; 24 h battery run (Phase 0 spike). | Apple Developer Program ($99/yr), an iPhone | |
+| M4 | **Voice → AI draft.** On-device speech recognition; transcript → structured entry via Claude against a fixed schema, through a small server function holding the API key. | M3; a function host (only an API proxy, not the full backend) | |
+| M5 | **Export.** PDF sea-service record and full JSON export, shared from the phone. | Nothing | |
+| M6 | **Account and cloud.** Sign-in, sync and backup (Supabase + PowerSync per §5). Until then, data is in the iPhone's own iCloud backup and the JSON export. | Backend decision (§11.2) | |
+| M7 | **TestFlight with crew.** | M3 | |
+
+Shortcuts taken in M1, on purpose:
+
+- **No account yet.** "Account" in §3 moves to M6. Profile is local.
+- **Voice is the keyboard's dictation mic** until M4. It works today and needs nothing.
+- **Tracking needs the app open with the screen on** until M3 (YachtPA keeps the screen awake while tracking).
+- **Night hours use sunset to sunrise** (sun 0.833° below the horizon). Per-authority definitions plug in with M2.
+- **Distance, hours and speeds only count while underway** (§9 thresholds), so drift at anchor adds no miles.

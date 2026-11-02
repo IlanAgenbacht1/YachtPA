@@ -5,16 +5,13 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Toast } from '@/components/Toast';
-import { AppStoreProvider } from '@/store/AppStore';
+import { AppStoreProvider, useAppStore } from '@/store/AppStore';
 import { LookProvider, useAppFonts, useTokens } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
-  useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
   if (!fontsLoaded && !fontError) return null;
 
   return (
@@ -30,6 +27,11 @@ export default function RootLayout() {
 
 function Shell() {
   const t = useTokens();
+  const { ready } = useAppStore();
+  // Keep the splash up until fonts and the database are both ready.
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
   const base = t.look === 'night' ? DarkTheme : DefaultTheme;
   const navTheme = {
     ...base,
@@ -40,8 +42,12 @@ function Shell() {
       <StatusBar style={t.heroIsDark ? 'light' : 'dark'} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.bg } }}>
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" options={{ animation: 'fade', gestureEnabled: false }} />
         <Stack.Screen name="live" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="summary" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+        <Stack.Screen name="vessel" />
+        <Stack.Screen name="document" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="voyage/[id]" />
       </Stack>
       <Toast />
     </ThemeProvider>

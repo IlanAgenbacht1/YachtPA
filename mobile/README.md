@@ -1,21 +1,23 @@
 # YachtPA app
 
-Expo (React Native) app built from the Deck prototype (`design/prototype/Deck.dc.html`), with all three of its looks: Horizon, Sailcloth and Night watch.
+Expo (React Native) iPhone app built from the Deck prototype (`design/prototype/Deck.dc.html`), with all three of its looks: Horizon, Sailcloth and Night watch. Milestone M1 of the build plan in [docs/SCOPE.md §13](../docs/SCOPE.md#13-build-plan-to-mvp).
 
 ## Run
 
 ```
 npm install
 npx expo start      # scan the QR code with the iPhone camera, opens in Expo Go
-npm run web         # or in a browser, at phone width
+npm run web         # or in a browser, at phone width (data in the browser, not shared with the phone)
 ```
 
-Everything used so far ships inside Expo Go, so no development build is needed yet.
+Everything used so far ships inside Expo Go, so no development build is needed yet. To test a voyage at a desk, turn on Profile → Simulate GPS.
 
 ## Checks
 
 ```
+npm test            # track maths and sun position (node --test, no extra deps)
 npm run typecheck   # tsc --noEmit
+npm run lint
 npm run export:web  # proves the bundle builds; output in dist/
 ```
 
@@ -29,14 +31,17 @@ npm run export:web  # proves the bundle builds; output in dist/
 | `src/components/ui/` | Primitives: `Txt`, `Hero`, `Sheet`, `Card`, `Button`, `Chip`, `Tile`, `Ring`, `Icon`, `LookPill`. |
 | `src/components/motion.tsx` | Reveal, blink, breathe, pulse, bars, drift, and the `useProgress` count-up hook. |
 | `src/components/TabBar.tsx` | Custom bottom tabs with the live-voyage mini bar docked above. |
-| `src/store/AppStore.tsx` | Voyage and log flows. Also where the simulated position feed lives. |
-| `src/data/sample.ts` | The sample data every prototype used. |
+| `src/store/AppStore.tsx` | Current yacht, the live voyage, toast. `useQuery` re-reads the database after every write. |
+| `src/db/` | SQLite: schema and migrations (`db.ts`, append-only), all reads and writes (`repo.ts`). |
+| `src/domain/` | Pure TypeScript, tested with `node --test`: distance, sun position, track filtering, underway detection, night hours, sanity checks. |
+| `src/location/feed.ts` | GPS (expo-location, foreground) and the simulator. Background tracking plugs in here in M3. |
 
-## What is real and what is simulated
+## What is real and what is not yet
 
-- Real: navigation, looks and fonts, layout, animations, haptics on START and STOP.
-- Simulated: GPS (one "minute" every 600 ms), speech to text, the AI draft. All of it is in `AppStore.tsx` and `sample.ts`, so nothing else changes when the real feeds land.
-- Not persisted: the look choice and everything else reset on relaunch.
+- Real: onboarding, yacht and position, voyages from GPS with distance, hours underway, night hours and speeds, sanity checks, daily log and diary, documents with expiry status, experience totals. All saved on the phone.
+- Needs the app open: GPS tracking stops if the phone locks or YachtPA goes to the background. Background tracking needs the development build (M3).
+- Not built yet: qualifications (M2), notifications and background GPS (M3), voice → AI draft (M4; use the keyboard mic for now), PDF export (M5), account and sync (M6).
+- Place names come from Apple's geocoder when online, coordinates when not. They can be edited on the summary.
 - App icon and splash are still the Expo placeholders.
 
 ## Notes

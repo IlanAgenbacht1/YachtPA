@@ -42,7 +42,10 @@ export function Sheet({ children, gap = 12, padding = 20, paddingTop, paddingBot
           paddingBottom: paddingBottom ?? padding,
           gap,
         }}
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+        automaticallyAdjustKeyboardInsets>
         {children}
       </ScrollView>
     </View>

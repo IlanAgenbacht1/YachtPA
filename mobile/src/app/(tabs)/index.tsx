@@ -3,21 +3,29 @@ import { Pressable, View } from 'react-native';
 
 import { FadeUp, Blink } from '@/components/motion';
 import { Screen } from '@/components/Screen';
-import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Ring, Row, Sheet, Txt } from '@/components/ui';
-import { docCounts, experience, qualification, vessel } from '@/data/sample';
-import { fmtDateShort, fmtDur, fmtInt } from '@/lib/format';
+import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Row, Sheet, Txt } from '@/components/ui';
+import { getDraftVoyage, getExperience, getLog, listDocs, localDate } from '@/db/repo';
+import { docCounts } from '@/lib/docs';
+import { fmtDateShort, fmtDur, fmtNum } from '@/lib/format';
 import { thump } from '@/lib/haptics';
-import { useAppStore, type LiveVoyage } from '@/store/AppStore';
+import { useAppStore, useQuery, type LiveVoyage } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 export default function HomeScreen() {
   const t = useTokens();
-  const { voyage, loggedToday, startVoyage, totals } = useAppStore();
+  const { voyage, startVoyage, current, simulate } = useAppStore();
+  const exp = useQuery(getExperience);
+  const docs = useQuery(listDocs);
+  const draft = useQuery(getDraftVoyage);
+  const todayLog = useQuery(() => (current ? getLog(current.engagement.id, localDate()) : Promise.resolve(null)), [current?.engagement.id]);
+  if (!current) return null;
+  const loggedToday = todayLog?.status === 'confirmed';
+  const counts = docCounts(docs ?? []);
+  const maxMonth = Math.max(1, ...(exp?.months.map((m) => m.nm) ?? [0]));
 
-  const onStart = () => {
+  const onStart = async () => {
     thump();
-    startVoyage();
-    router.push('/live');
+    if (await startVoyage()) router.push('/live');
   };
 
   return (
@@ -27,9 +35,9 @@ export default function HomeScreen() {
           <Eyebrow color="heroMuted">Today · {fmtDateShort(new Date())}</Eyebrow>
           <Row gap={10}>
             <Row gap={6}>
-              <Dot color="ok" size={6} />
+              <Dot color={simulate ? 'warn' : 'ok'} size={6} />
               <Txt size={11} weight={700} color="heroMuted">
-                Synced
+                {simulate ? 'Simulated GPS' : 'On this iPhone'}
               </Txt>
             </Row>
             <LookPill />
@@ -52,10 +60,10 @@ export default function HomeScreen() {
           </View>
           <Col gap={3} flex={1}>
             <Display size={38} color="heroFg" numberOfLines={1}>
-              {vessel.name}
+              {current.vessel.name}
             </Display>
             <Txt size={14} color="heroMuted">
-              {vessel.position} · {vessel.place}
+              {current.engagement.position} · {current.profile.name}
             </Txt>
           </Col>
         </Row>
@@ -71,39 +79,61 @@ export default function HomeScreen() {
       </Hero>
 
       <Sheet gap={12}>
+        {draft && !voyage && (
+          <Card
+            row
+            gap={12}
+            paddingV={14}
+            borderColor="brass"
+            onPress={() => router.push({ pathname: '/summary', params: { id: draft.id } })}
+            accessibilityLabel="Review unconfirmed voyage">
+            <Icon name="send" size={20} color="brass" />
+            <Col gap={2} flex={1}>
+              <Txt size={15} weight={700}>
+                Voyage to confirm
+              </Txt>
+              <Txt size={12} color="muted">
+                {draft.distanceNm.toFixed(1)} NM · {fmtDateShort(new Date(draft.startedAt))}
+              </Txt>
+            </Col>
+            <Icon name="chevronRight" size={18} color="muted" />
+          </Card>
+        )}
         <FadeUp delay={50}>
           <Card onPress={() => router.navigate('/experience')} accessibilityLabel="My experience">
             <Row justify="space-between">
               <Eyebrow>My experience</Eyebrow>
-              <Txt size={12} weight={800} color="brass">
-                {experience.weekDelta}
-              </Txt>
+              {exp && exp.weekNm > 0 ? (
+                <Txt size={12} weight={800} color="brass">
+                  +{fmtNum(exp.weekNm)} NM this week
+                </Txt>
+              ) : null}
             </Row>
             <Row gap={8} align="flex-start">
-              <Stat value={fmtInt(totals.nm)} label="NM logged" />
-              <Stat value={fmtInt(totals.hours)} label="hours underway" />
-              <Stat value={fmtInt(totals.nightHours)} label="night hours" />
+              <Stat value={fmtNum(exp?.nm ?? 0)} label="NM logged" />
+              <Stat value={fmtNum(exp?.underwayHours ?? 0)} label="hours underway" />
+              <Stat value={fmtNum(exp?.nightHours ?? 0)} label="night hours" />
             </Row>
             <Col gap={6}>
               <Row gap={4} align="flex-end" style={{ height: 40 }}>
-                {experience.months.map((h, i) => (
+                {(exp?.months ?? []).map((m, i, all) => (
                   <View
-                    key={i}
+                    key={m.label}
                     style={{
                       flex: 1,
-                      height: h,
+                      height: 4 + (36 * m.nm) / maxMonth,
                       borderRadius: 3,
-                      backgroundColor: i === experience.months.length - 1 ? t.colors.accent : t.colors.track,
+                      backgroundColor: i === all.length - 1 ? t.colors.accent : t.colors.track,
                     }}
                   />
                 ))}
               </Row>
               <Row justify="space-between">
                 <Txt size={11} weight={600} color="muted">
-                  {experience.monthsFrom}
+                  {exp?.months[0]?.label}
                 </Txt>
                 <Txt size={11} weight={600} color="muted">
-                  {experience.monthsTo}
+                  {exp?.months[11]?.label}
                 </Txt>
               </Row>
             </Col>
@@ -116,41 +146,36 @@ export default function HomeScreen() {
             <Txt size={15} weight={700} style={{ flex: 1 }}>
               Documents
             </Txt>
-            <Dot color="ok" />
-            <Txt size={13} weight={600} color="muted">
-              {docCounts.valid} valid
-            </Txt>
-            <View style={{ marginLeft: 4 }}>
-              <Dot color="warn" />
-            </View>
-            <Txt size={13} weight={600} color="muted">
-              {docCounts.expiring} expiring
-            </Txt>
+            {(docs?.length ?? 0) === 0 ? (
+              <Txt size={13} weight={600} color="muted">
+                Add your certificates
+              </Txt>
+            ) : (
+              <>
+                {counts.ok > 0 && (
+                  <>
+                    <Dot color="ok" />
+                    <Txt size={13} weight={600} color="muted">
+                      {counts.ok} valid
+                    </Txt>
+                  </>
+                )}
+                {counts.warn + counts.danger > 0 && (
+                  <>
+                    <View style={{ marginLeft: 4 }}>
+                      <Dot color={counts.danger ? 'danger' : 'warn'} />
+                    </View>
+                    <Txt size={13} weight={600} color="muted">
+                      {counts.warn + counts.danger} {counts.danger ? 'to renew' : 'expiring'}
+                    </Txt>
+                  </>
+                )}
+              </>
+            )}
             <Icon name="chevronRight" size={18} color="muted" />
           </Card>
         </FadeUp>
 
-        <FadeUp delay={190}>
-          <Card row gap={14} paddingV={14} onPress={() => router.navigate('/experience')} accessibilityLabel={qualification.name}>
-            <Ring size={64} stroke={6} value={qualification.pct}>
-              <Txt size={14} weight={800} tabular>
-                {Math.round(qualification.pct * 100)}%
-              </Txt>
-            </Ring>
-            <Col gap={4} flex={1}>
-              <Txt size={15} weight={700}>
-                {qualification.name}
-              </Txt>
-              <Txt size={12} color="muted">
-                {qualification.summary}
-              </Txt>
-              <Txt size={12} weight={700} color="brass">
-                {qualification.done}
-              </Txt>
-            </Col>
-            <Icon name="chevronRight" size={18} color="muted" />
-          </Card>
-        </FadeUp>
       </Sheet>
     </Screen>
   );
@@ -197,7 +222,7 @@ function LiveCard({ voyage }: { voyage: LiveVoyage }) {
         <Dot color="accent" size={10} />
       </Blink>
       <Col gap={3} flex={1}>
-        <Eyebrow color="heroMuted">Underway · to {voyage.to}</Eyebrow>
+        <Eyebrow color="heroMuted">Underway{voyage.source === 'sim' ? ' · simulated' : ''}</Eyebrow>
         <Row gap={8} align="baseline">
           <Display size={30} tabular ls={-0.6} color="heroFg">
             {voyage.nm.toFixed(1)}

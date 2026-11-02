@@ -1,33 +1,63 @@
 import { Redirect, router } from 'expo-router';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 
-import { Blink, Breathe, Drift, FadeUp, Pulse, useProgress } from '@/components/motion';
+import { Blink, Breathe, Drift, FadeUp, Pulse } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Row, Sheet, Spacer, Tile, Txt } from '@/components/ui';
-import { passage, vessel } from '@/data/sample';
-import { fmtClock, fmtDur } from '@/lib/format';
+import { nextCrossing, isNight } from '@/domain/sun';
+import type { Fix } from '@/domain/track';
+import { fmtClock, fmtDur, minutesOfDay } from '@/lib/format';
 import { thump } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 const WAVE_A = 'M0 22q48.75 -18 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
 const WAVE_B = 'M0 22q48.75 -14 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
-const TRACK = 'M14 84C62 76 96 40 144 44S222 72 262 40 300 24 308 20';
-const TRACK_LEN = 340;
+const BOX_W = 320;
+const BOX_H = 110;
+const PAD = 14;
+
+/** Fits the track into the card, north up, keeping proportions. */
+function project(fixes: Fix[]): { path: string; start: [number, number]; end: [number, number] } | null {
+  if (fixes.length === 0) return null;
+  const k = Math.cos((fixes[0].lat * Math.PI) / 180);
+  const xs = fixes.map((f) => f.lon * k);
+  const ys = fixes.map((f) => f.lat);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  const span = Math.max(maxX - minX, (maxY - minY) * ((BOX_W - 2 * PAD) / (BOX_H - 2 * PAD)), 1e-4);
+  const scale = (BOX_W - 2 * PAD) / span;
+  const offX = (BOX_W - (maxX - minX) * scale) / 2;
+  const offY = (BOX_H - (maxY - minY) * scale) / 2;
+  const pts = xs.map((x, i): [number, number] => [offX + (x - minX) * scale, BOX_H - (offY + (ys[i] - minY) * scale)]);
+  const path = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
+  return { path, start: pts[0], end: pts[pts.length - 1] };
+}
 
 export default function LiveScreen() {
   const t = useTokens();
-  const { voyage, stopVoyage } = useAppStore();
-  const draw = useProgress(2200);
+  const { voyage, stopVoyage, current } = useAppStore();
+  const [stopping, setStopping] = useState(false);
 
-  if (!voyage) return <Redirect href="/" />;
+  if (!voyage) return stopping ? null : <Redirect href="/" />;
 
-  const onStop = () => {
+  const last = voyage.fixes[voyage.fixes.length - 1];
+  const proj = project(voyage.fixes);
+  const startMin = minutesOfDay(new Date(voyage.startedAt));
+  const clock = last?.ts ?? voyage.startedAt;
+  const night = last ? isNight(clock, last.lat, last.lon) : false;
+  const nextSun = last ? nextCrossing(clock, last.lat, last.lon, night ? 'sunrise' : 'sunset') : null;
+
+  const onStop = async () => {
     thump();
-    stopVoyage();
-    router.replace('/summary');
+    setStopping(true);
+    const id = await stopVoyage();
+    if (id) router.replace({ pathname: '/summary', params: { id } });
+    else setStopping(false);
   };
 
   return (
@@ -38,7 +68,9 @@ export default function LiveScreen() {
             <Blink>
               <Dot color="accent" size={8} />
             </Blink>
-            <Eyebrow color="heroMuted">Underway · {vessel.name}</Eyebrow>
+            <Eyebrow color="heroMuted">
+              Underway · {current?.vessel.name}
+            </Eyebrow>
           </Row>
           <Row gap={8}>
             <LookPill />
@@ -74,7 +106,8 @@ export default function LiveScreen() {
             </Txt>
           </Row>
           <Txt size={14} color="heroMuted">
-            From {voyage.from} · {fmtClock(voyage.startMin)} · Heading {voyage.headingDeg}°
+            Since {fmtClock(startMin)}
+            {voyage.track.headingDeg != null ? ` · Heading ${voyage.track.headingDeg}°` : ''}
           </Txt>
         </Col>
 
@@ -86,7 +119,7 @@ export default function LiveScreen() {
             <Tile on="hero" label="Speed" value={`${voyage.speed.toFixed(1)} kn`} />
           </View>
           <View style={{ flex: 1 }}>
-            <Tile on="hero" label="Night" value="0h 00m" />
+            <Tile on="hero" label="Night" value={fmtDur(voyage.track.nightMin)} />
           </View>
         </Row>
       </Hero>
@@ -97,7 +130,11 @@ export default function LiveScreen() {
             <Row justify="space-between">
               <Eyebrow>Track</Eyebrow>
               <Txt size={12} weight={600} color="muted">
-                GPS ±{passage.gpsAccuracyM} m · 1 fix per minute
+                {voyage.source === 'sim'
+                  ? 'Simulated · 1 min per second'
+                  : last
+                    ? `GPS ±${Math.round(last.accuracy ?? 0)} m · ${voyage.fixes.length} fixes`
+                    : 'Waiting for GPS…'}
               </Txt>
             </Row>
             <View style={{ width: '100%', height: 110 }}>
@@ -107,26 +144,22 @@ export default function LiveScreen() {
                   stroke={t.colors.chart}
                   strokeWidth="1"
                 />
-                <Path d="M-10 95C40 80 70 100 120 88S200 60 250 78 300 70 330 60" stroke={t.colors.chart} strokeWidth="1.2" strokeDasharray="3 4" />
-                <Path d="M-10 60C30 50 60 70 110 58S180 30 240 48 290 40 330 28" stroke={t.colors.chart} strokeWidth="1.2" strokeDasharray="3 4" />
-                <Path d={TRACK} stroke={t.colors.track} strokeWidth="7" strokeLinecap="round" />
-                <Path
-                  d={TRACK}
-                  stroke={t.colors.accent}
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeDasharray={`${TRACK_LEN}`}
-                  strokeDashoffset={TRACK_LEN * (1 - draw)}
-                />
-                <Circle cx="14" cy="84" r="8" stroke={t.colors.muted} strokeWidth="1.5" />
-                <Circle cx="14" cy="84" r="3.5" fill={t.colors.muted} />
-                <Circle cx="308" cy="20" r="6" fill={t.colors.accent} />
+                {proj && (
+                  <>
+                    <Path d={proj.path} stroke={t.colors.track} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
+                    <Path d={proj.path} stroke={t.colors.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+                    <Circle cx={proj.start[0]} cy={proj.start[1]} r="8" stroke={t.colors.muted} strokeWidth="1.5" />
+                    <Circle cx={proj.start[0]} cy={proj.start[1]} r="3.5" fill={t.colors.muted} />
+                    <Circle cx={proj.end[0]} cy={proj.end[1]} r="6" fill={t.colors.accent} />
+                  </>
+                )}
               </Svg>
+              {proj && (
               <Pulse
                 style={{
                   position: 'absolute',
-                  left: '96.25%',
-                  top: '18.2%',
+                  left: `${(proj.end[0] / BOX_W) * 100}%`,
+                  top: `${(proj.end[1] / BOX_H) * 100}%`,
                   width: 12,
                   height: 12,
                   marginLeft: -6,
@@ -135,15 +168,13 @@ export default function LiveScreen() {
                   backgroundColor: t.colors.accent,
                 }}
               />
+              )}
             </View>
-            <Row justify="space-between">
-              <Txt size={12} weight={600} color="muted">
-                {voyage.from} · {fmtClock(voyage.startMin)}
+            {voyage.source === 'gps' && (
+              <Txt size={12} color="muted">
+                Keep YachtPA open with the screen on. Tracking with the phone locked comes with the full iPhone build.
               </Txt>
-              <Txt size={12} weight={600} color="muted">
-                {voyage.to} · {passage.aheadNm} NM ahead
-              </Txt>
-            </Row>
+            )}
           </Card>
         </FadeUp>
 
@@ -151,10 +182,10 @@ export default function LiveScreen() {
           <Card row gap={14} paddingV={10}>
             <Col gap={3} flex={1}>
               <Txt size={15} weight={700}>
-                Sunset {passage.sunset}
+                {nextSun ? `${night ? 'Sunrise' : 'Sunset'} ${fmtClock(minutesOfDay(new Date(nextSun)))}` : 'Sun times need a GPS fix'}
               </Txt>
               <Txt size={12} color="muted">
-                Night hours start automatically
+                {night ? 'Night hours are counting' : 'Night hours start automatically'}
               </Txt>
             </Col>
             <Svg viewBox="0 0 120 44" width={120} height={44} fill="none">
@@ -167,7 +198,7 @@ export default function LiveScreen() {
         </FadeUp>
 
         <Spacer />
-        <Button variant="danger" icon="stop" label="Stop voyage" onPress={onStop} />
+        <Button variant="danger" icon="stop" label={stopping ? 'Saving…' : 'Stop voyage'} onPress={stopping ? () => {} : onStop} />
       </Sheet>
     </Screen>
   );

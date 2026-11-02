@@ -6,7 +6,7 @@ Work → speak → confirm.
 
 ## Status
 
-The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobile/` carries Deck's design tokens and all six prototype screens, running on sample data. Aspects of the other builds may be folded in once the flows have been tested on real phones.
+The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobile/` carries Deck's design tokens and saves real records on the phone: voyages from GPS, daily log, documents, experience totals. Aspects of the other builds may be folded in once the flows have been tested on real phones.
 
 | Where | What |
 |---|---|
@@ -19,4 +19,4 @@ The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobi
 
 1. Run the app on an iPhone with Expo Go, walk the flows, note what to fold in from Still, Chart and Ledger.
 2. Phase 0 spike: background GPS on iPhone for 24 h (development build), voice → structured log entry.
-3. Replace the sample data with real stores, starting with vessels and engagements.
+3. Build plan to MVP: [docs/SCOPE.md §13](docs/SCOPE.md#13-build-plan-to-mvp). M1 (local records) is done; M2 (qualifications) is next.

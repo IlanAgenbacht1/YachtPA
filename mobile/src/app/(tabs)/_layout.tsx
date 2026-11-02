@@ -1,10 +1,15 @@
+import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
 import { TabBar } from '@/components/TabBar';
+import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 export default function TabsLayout() {
   const t = useTokens();
+  const { ready, current } = useAppStore();
+  if (!ready) return null;
+  if (!current) return <Redirect href="/onboarding" />;
   return (
     <Tabs
       tabBar={(props) => <TabBar {...props} />}

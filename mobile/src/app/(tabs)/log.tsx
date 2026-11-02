@@ -1,204 +1,209 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { router } from 'expo-router';
+import { useEffect, useMemo, useState } from 'react';
+import { View } from 'react-native';
 
-import { Bar, Blink, FadeUp, Rise } from '@/components/motion';
+import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
-import { Button, Card, Chip, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Spacer, Txt } from '@/components/ui';
-import { activities, draftActivities, draftDuties, vessel } from '@/data/sample';
-import { fmtDateLong } from '@/lib/format';
+import { Button, Card, Chip, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
+import { getLog, listLogs, listVoyages, localDate, saveLog, type LogEntry, type Voyage } from '@/db/repo';
+import { ACTIVITIES } from '@/lib/constants';
+import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
 import { tick } from '@/lib/haptics';
-import { transcriptSoFar, useAppStore } from '@/store/AppStore';
+import { useAppStore, useQuery } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
-const BAR_HEIGHTS = [18, 30, 40, 24, 36, 16, 42, 28, 20, 38, 26, 14, 32, 22];
-
+/**
+ * One entry per day per yacht: what you did (one duty per line, dictate with
+ * the keyboard mic) and what kind of work it was. Below it, the diary.
+ * The AI write-up from a voice note slots in above the text box later.
+ */
 export default function LogScreen() {
   const t = useTokens();
-  const { logPhase, transcriptWords, loggedToday, startRecording, resetLog, confirmLog, flash, soon } = useAppStore();
-  const [ticked, setTicked] = useState<Set<string>>(new Set());
-  const [chosen, setChosen] = useState<Set<string>>(new Set(draftActivities));
+  const { current, bump, flash } = useAppStore();
+  const today = localDate();
+  const [date, setDate] = useState(today);
+  const [text, setText] = useState('');
+  const [chosen, setChosen] = useState<Set<string>>(new Set());
+  const [saved, setSaved] = useState<LogEntry | null>(null);
 
-  // Leaving the tab abandons an unconfirmed recording, as in the prototype.
-  useFocusEffect(
-    useCallback(() => {
-      return () => resetLog();
-    }, [resetLog]),
-  );
+  const engagementId = current?.engagement.id;
+  const logs = useQuery(listLogs);
+  const voyages = useQuery(() => listVoyages(400));
 
-  const today = new Date();
-  const showEntry = logPhase === 'draft' || (loggedToday && logPhase === 'idle');
+  // Load the entry for the selected day.
+  useEffect(() => {
+    if (!engagementId) return;
+    let live = true;
+    getLog(engagementId, date).then((e) => {
+      if (!live) return;
+      setSaved(e);
+      setText(e ? e.duties.join('\n') : '');
+      setChosen(new Set(e?.activities ?? []));
+    });
+    return () => {
+      live = false;
+    };
+  }, [engagementId, date]);
 
-  const onConfirm = () => {
+  const dayVoyages = (voyages ?? []).filter((v) => localDate(new Date(v.startedAt)) === date);
+  const duties = text
+    .split('\n')
+    .map((l) => l.replace(/^[-•*\s]+/, '').trim())
+    .filter(Boolean);
+  const dirty =
+    !saved || saved.duties.join('\n') !== duties.join('\n') || [...chosen].sort().join() !== [...saved.activities].sort().join();
+
+  const onSave = async () => {
+    if (!engagementId) return;
+    if (duties.length === 0 && chosen.size === 0) {
+      flash('Tick an activity or add a duty first');
+      return;
+    }
+    await saveLog({ engagementId, date, duties, activities: [...chosen], notes: '', status: 'confirmed' });
     tick();
-    confirmLog();
-    router.navigate('/');
-    flash(`Logged · ${fmtDateLong(today)}`);
+    bump();
+    setSaved(await getLog(engagementId, date));
+    flash(`Logged · ${fmtIsoShort(date)}`);
   };
 
-  const toggle = (set: Set<string>, setter: (s: Set<string>) => void, key: string) => {
-    const next = new Set(set);
-    if (next.has(key)) next.delete(key);
-    else next.add(key);
-    setter(next);
+  const toggle = (a: string) => {
+    const next = new Set(chosen);
+    if (next.has(a)) next.delete(a);
+    else next.add(a);
+    setChosen(next);
   };
+
+  const diary = useMemo(() => buildDiary(logs ?? [], voyages ?? []), [logs, voyages]);
 
   return (
     <Screen>
       <Hero gap={10}>
-        <Eyebrow color="heroMuted">Log today</Eyebrow>
+        <Eyebrow color="heroMuted">{date === today ? 'Log today' : 'Edit entry'}</Eyebrow>
         <Display size={36} color="heroFg">
-          {fmtDateLong(today)}
+          {fmtIsoShort(date)}
         </Display>
         <Txt size={14} color="heroMuted">
-          {vessel.name} · {vessel.position}
+          {current?.vessel.name} · {current?.engagement.position}
         </Txt>
       </Hero>
 
       <Sheet gap={16} paddingTop={24}>
-        {logPhase === 'idle' && !showEntry && (
-          <>
-            <FadeUp>
-              <Col align="center" gap={20} style={{ paddingTop: 22, paddingBottom: 8 }}>
-                <View style={{ width: 116, height: 116, alignItems: 'center', justifyContent: 'center' }}>
-                  <View style={{ position: 'absolute', top: -30, left: -30, right: -30, bottom: -30, borderRadius: 999, backgroundColor: t.colors.accent, opacity: 0.07 }} />
-                  <View style={{ position: 'absolute', top: -14, left: -14, right: -14, bottom: -14, borderRadius: 999, backgroundColor: t.colors.accent, opacity: 0.12 }} />
-                  <Pressable
-                    onPress={startRecording}
-                    accessibilityRole="button"
-                    accessibilityLabel="Start recording"
-                    style={({ pressed }) => [
-                      {
-                        width: 116,
-                        height: 116,
-                        borderRadius: 58,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        backgroundColor: t.colors.accent,
-                        boxShadow: t.shadows.button,
-                      },
-                      pressed && { transform: [{ scale: 0.97 }] },
-                    ]}>
-                    <Icon name="mic" size={46} color="accentFg" strokeWidth={1.9} />
-                  </Pressable>
+        <FadeUp>
+          <Col gap={10}>
+            <Row justify="space-between">
+              <Eyebrow>What did you do?</Eyebrow>
+              {saved && (
+                <View style={{ paddingVertical: 4, paddingHorizontal: 9, borderRadius: 99, borderWidth: 1, borderColor: dirty ? t.colors.brass : t.colors.ok }}>
+                  <Eyebrow size={10} ls={1.2} color={dirty ? 'brass' : 'ok'}>
+                    {dirty ? 'Unsaved changes' : 'Saved'}
+                  </Eyebrow>
                 </View>
-                <Col align="center" gap={4}>
-                  <Txt size={17} weight={700}>
-                    Tap and say what you did today
-                  </Txt>
-                  <Txt size={13} color="muted">
-                    The app writes it up. You confirm.
-                  </Txt>
-                </Col>
-              </Col>
-            </FadeUp>
-            <FadeUp delay={100}>
-              <Col gap={10}>
-                <Eyebrow>Or tick what you did</Eyebrow>
-                <Row gap={8} wrap>
-                  {activities.map((a) => (
-                    <Chip key={a} label={a} selected={ticked.has(a)} onPress={() => toggle(ticked, setTicked, a)} />
-                  ))}
-                </Row>
-              </Col>
-            </FadeUp>
-          </>
-        )}
-
-        {logPhase === 'rec' && (
-          <>
-            <Col align="center" gap={18} style={{ paddingTop: 22, paddingBottom: 4 }}>
-              <View style={{ width: 116, height: 116, alignItems: 'center', justifyContent: 'center' }}>
-                <View style={{ position: 'absolute', top: -14, left: -14, right: -14, bottom: -14, borderRadius: 999, backgroundColor: t.colors.accent, opacity: 0.12 }} />
-                <View
-                  style={{
-                    width: 116,
-                    height: 116,
-                    borderRadius: 58,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    backgroundColor: t.colors.accent,
-                    boxShadow: t.shadows.button,
-                  }}>
-                  <Icon name="mic" size={46} color="accentFg" strokeWidth={1.9} />
-                </View>
-              </View>
-              <Row gap={4} style={{ height: 44 }}>
-                {BAR_HEIGHTS.map((h, i) => (
-                  <Bar key={i} height={h} color={t.colors.accent} delay={i * 70} />
-                ))}
-              </Row>
-              <Blink>
-                <Eyebrow color="accent">Listening</Eyebrow>
-              </Blink>
-            </Col>
-            <Card style={{ minHeight: 120 }}>
-              <Txt size={16} lh={24}>
-                {transcriptSoFar(transcriptWords)}
-              </Txt>
-            </Card>
-          </>
-        )}
-
-        {showEntry && (
-          <>
-            <Rise>
-              <Card gap={12}>
-                <Row justify="space-between">
-                  <Eyebrow>{vessel.position} duties</Eyebrow>
-                  <View
-                    style={{
-                      paddingVertical: 4,
-                      paddingHorizontal: 9,
-                      borderRadius: 99,
-                      borderWidth: 1,
-                      borderColor: loggedToday ? t.colors.ok : t.colors.brass,
-                    }}>
-                    <Eyebrow size={10} ls={1.2} color={loggedToday ? 'ok' : 'brass'}>
-                      {loggedToday ? 'Saved' : 'AI draft'}
-                    </Eyebrow>
-                  </View>
-                </Row>
-                <Col gap={10}>
-                  {draftDuties.map((d, i) => (
-                    <FadeUp key={d} delay={50 + i * 130}>
-                      <Row gap={10} align="flex-start">
-                        <View style={{ marginTop: 2 }}>
-                          <Icon name="check" size={18} color="accent" strokeWidth={2.4} />
-                        </View>
-                        <Txt size={15} lh={20} style={{ flex: 1 }}>
-                          {d}
-                        </Txt>
-                      </Row>
-                    </FadeUp>
-                  ))}
-                </Col>
-              </Card>
-            </Rise>
-            <FadeUp delay={700}>
-              <Row gap={8} wrap>
-                {[...draftActivities, ...activities.filter((a) => !draftActivities.includes(a))].map((a) => (
-                  <Chip key={a} label={a} selected={chosen.has(a)} onPress={() => toggle(chosen, setChosen, a)} />
-                ))}
-              </Row>
-            </FadeUp>
-            <FadeUp delay={800}>
-              <Txt size={12} weight={600} color="muted">
-                {loggedToday ? 'Confirmed. Edit anything and it stays a draft until you confirm again.' : 'Nothing added that you did not say. Edit anything before you confirm.'}
-              </Txt>
-            </FadeUp>
-            <Spacer />
-            <FadeUp delay={850}>
-              {loggedToday ? (
-                <Button variant="ghost" label="Edit entry" onPress={soon} />
-              ) : (
-                <Button label="Confirm and save" icon="check" iconStrokeWidth={2.4} height={62} onPress={onConfirm} />
               )}
-            </FadeUp>
-            <View style={{ height: 12 }} />
-          </>
+            </Row>
+            <Field
+              label="Duties, one per line"
+              value={text}
+              onChangeText={setText}
+              multiline
+              placeholder={'Washed down the exterior\nChanged generator fuel filters\nSafety inspection before departure'}
+              hint="Tap the mic on the keyboard to dictate."
+            />
+          </Col>
+        </FadeUp>
+
+        <FadeUp delay={80}>
+          <Col gap={10}>
+            <Eyebrow>Tick what applies</Eyebrow>
+            <Row gap={8} wrap>
+              {ACTIVITIES.map((a) => (
+                <Chip key={a} label={a} selected={chosen.has(a)} onPress={() => toggle(a)} />
+              ))}
+            </Row>
+          </Col>
+        </FadeUp>
+
+        {dayVoyages.length > 0 && (
+          <Col gap={8}>
+            <Eyebrow>Voyages this day</Eyebrow>
+            {dayVoyages.map((v) => (
+              <VoyageRow key={v.id} v={v} />
+            ))}
+          </Col>
         )}
+
+        <Button
+          label={saved && !dirty ? 'Saved' : saved ? 'Save changes' : 'Confirm and save'}
+          icon="check"
+          iconStrokeWidth={2.4}
+          height={62}
+          onPress={saved && !dirty ? () => {} : onSave}
+        />
+        {date !== today && <Button variant="ghost" label="Back to today" onPress={() => setDate(today)} />}
+
+        <Col gap={10} style={{ paddingTop: 12 }}>
+          <Eyebrow>Diary</Eyebrow>
+          {diary.length === 0 && (
+            <Txt size={13} color="muted">
+              Confirmed voyages and daily entries show up here.
+            </Txt>
+          )}
+          {diary.map((d) => (
+            <Card key={d.date} gap={8} paddingV={12} onPress={() => setDate(d.date)} accessibilityLabel={`Diary ${d.date}`}>
+              <Row justify="space-between">
+                <Txt size={15} weight={700}>
+                  {fmtIsoShort(d.date)}
+                </Txt>
+                <Row gap={8}>
+                  {d.nm > 0 && (
+                    <Txt size={13} weight={700} color="accent" tabular>
+                      {d.nm < 10 ? d.nm.toFixed(1) : fmtInt(d.nm)} NM
+                    </Txt>
+                  )}
+                  {d.log ? <Icon name="check" size={16} color="ok" strokeWidth={2.4} /> : null}
+                </Row>
+              </Row>
+              {d.log && (d.log.activities.length > 0 || d.log.duties.length > 0) ? (
+                <Txt size={12} color="muted" numberOfLines={2}>
+                  {[...d.log.activities, ...d.log.duties].join(' · ')}
+                </Txt>
+              ) : null}
+            </Card>
+          ))}
+        </Col>
       </Sheet>
     </Screen>
   );
+}
+
+function VoyageRow({ v }: { v: Voyage }) {
+  return (
+    <Card row gap={12} paddingV={12} onPress={() => router.push({ pathname: '/voyage/[id]', params: { id: v.id } })} accessibilityLabel="Voyage">
+      <Icon name="send" size={18} color="accent" />
+      <Col gap={2} flex={1}>
+        <Txt size={14} weight={700} numberOfLines={1}>
+          {v.fromName} → {v.toName}
+        </Txt>
+        <Txt size={12} color="muted">
+          {fmtDur(v.underwayMin)} underway{v.nightMin > 0 ? ` · ${fmtDur(v.nightMin)} night` : ''}
+        </Txt>
+      </Col>
+      <Txt size={14} weight={800} tabular>
+        {v.distanceNm.toFixed(1)} NM
+      </Txt>
+    </Card>
+  );
+}
+
+type DiaryDay = { date: string; nm: number; log: LogEntry | null };
+
+function buildDiary(logs: LogEntry[], voyages: Voyage[]): DiaryDay[] {
+  const days = new Map<string, DiaryDay>();
+  const day = (date: string) => {
+    let d = days.get(date);
+    if (!d) days.set(date, (d = { date, nm: 0, log: null }));
+    return d;
+  };
+  for (const l of logs) day(l.date).log = l;
+  for (const v of voyages) day(localDate(new Date(v.startedAt))).nm += v.distanceNm;
+  return [...days.values()].sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 60);
 }

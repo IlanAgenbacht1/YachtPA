@@ -36,3 +36,31 @@ export function fmtDateLong(d: Date): string {
 export function minutesOfDay(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
+
+/** "Wed 24 Sep" from "2026-09-24". */
+export function fmtIsoShort(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return fmtDateShort(new Date(y, m - 1, d));
+}
+
+/** "24 Sep 2026" from "2026-09-24". */
+export function fmtIsoMedium(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number);
+  return `${d} ${MONTHS[m - 1].slice(0, 3)} ${y}`;
+}
+
+/** "Mar 2025" from "2025-03-14". */
+export function fmtIsoMonth(iso: string): string {
+  const [y, m] = iso.split('-').map(Number);
+  return `${MONTHS[m - 1].slice(0, 3)} ${y}`;
+}
+
+/** "42 m" or "—". */
+export function fmtLoa(m: number | null): string {
+  return m ? `${Number.isInteger(m) ? m : m.toFixed(1)} m` : '—';
+}
+
+/** One decimal under 10 so a first short passage does not read as 0; whole numbers above. */
+export function fmtNum(n: number): string {
+  return n > 0 && n < 10 ? n.toFixed(1) : fmtInt(n);
+}

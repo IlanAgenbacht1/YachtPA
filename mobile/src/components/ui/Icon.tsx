@@ -29,6 +29,10 @@ const ICONS = {
   user: [{ d: 'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2' }, { c: [12, 7, 4] }],
   plus: [{ d: 'M12 5v14M5 12h14' }],
   stop: [{ r: [5, 5, 14, 14, 3] }],
+  chevronLeft: [{ d: 'M15 18l-6-6 6-6' }],
+  x: [{ d: 'M18 6L6 18M6 6l12 12' }],
+  trash: [{ d: 'M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15' }],
+  ship: [{ d: 'M2 20c2 1 4 1 6 0s4-1 6 0 4 1 6 0M4 17l-1-5h18l-2 5M12 3v9M12 4l6 7H12' }],
 } as const;
 
 export type IconName = keyof typeof ICONS;

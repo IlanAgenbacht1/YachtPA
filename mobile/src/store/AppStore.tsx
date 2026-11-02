@@ -1,13 +1,9 @@
 /**
- * App state for the demo flows: voyage START → live → STOP → summary → confirm,
- * and log entry: idle → recording → AI draft → confirm.
- *
- * The voyage numbers come from a simulated feed (one "minute" every 600 ms)
- * so the flow can be exercised on any phone today. `startVoyage` / `stopVoyage`
- * are the seam where the background-GPS spike plugs in: the feed will become
- * expo-location fixes and the maths moves to the computation rules in
- * docs/SCOPE.md §9.
+ * App state that outlives a screen: the current yacht, the live voyage and the
+ * toast. Everything durable lives in SQLite (`@/db/repo`); screens read it
+ * with `useQuery`, which re-runs whenever `bump()` signals a write.
  */
+import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import {
   createContext,
   useCallback,
@@ -16,224 +12,204 @@ import {
   useMemo,
   useRef,
   useState,
+  type DependencyList,
   type ReactNode,
 } from 'react';
 
-import { experience, passage, simStart, transcript } from '@/data/sample';
+import * as repo from '@/db/repo';
+import { onboard as saveOnboarding, type Current } from '@/db/repo';
+import { summarise, type Fix, type TrackSummary } from '@/domain/track';
+import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/location/feed';
+
+type OnboardInput = Parameters<typeof saveOnboarding>[0];
 
 export type LiveVoyage = {
-  from: string;
-  to: string;
-  startMin: number;
-  headingDeg: number;
+  id: string;
+  startedAt: number;
+  source: FeedSource;
+  fromName: string | null;
+  fixes: Fix[];
+  track: TrackSummary;
+  nm: number;
   elapsedMin: number;
-  nm: number;
   speed: number;
-  maxSpeed: number;
-  speedSum: number;
-  speedN: number;
-};
-
-export type VoyageSummary = {
-  from: string;
-  to: string;
-  startMin: number;
-  endMin: number;
-  nm: number;
-  durationMin: number;
-  avgSpeed: number;
-  maxSpeed: number;
-  nightMin: number;
-};
-
-export type LogPhase = 'idle' | 'rec' | 'draft';
-
-export type Totals = { nm: number; hours: number; nightHours: number };
-
-type State = {
-  voyage: LiveVoyage | null;
-  summary: VoyageSummary | null;
-  totals: Totals;
-  loggedToday: boolean;
-  logPhase: LogPhase;
-  transcriptWords: number;
-  toast: string;
 };
 
 type Actions = {
-  startVoyage: () => void;
-  stopVoyage: () => void;
-  confirmVoyage: () => number;
-  startRecording: () => void;
-  resetLog: () => void;
-  confirmLog: () => void;
+  refresh: () => Promise<void>;
+  bump: () => void;
+  onboard: (input: OnboardInput) => Promise<void>;
+  startVoyage: () => Promise<boolean>;
+  /** Stops tracking and returns the id of the draft voyage to confirm. */
+  stopVoyage: () => Promise<string | null>;
+  setSimulate: (on: boolean) => void;
   flash: (msg: string) => void;
   soon: () => void;
+};
+
+type State = {
+  ready: boolean;
+  current: Current | null;
+  voyage: LiveVoyage | null;
+  simulate: boolean;
+  rev: number;
+  toast: string;
 };
 
 export type AppStore = State & Actions;
 
 const Ctx = createContext<AppStore | null>(null);
-
-const WORDS = transcript.split(' ');
-const TICK_MS = 600;
-const WORD_MS = 130;
+const KEEP_AWAKE_TAG = 'voyage';
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [voyage, setVoyage] = useState<LiveVoyage | null>(null);
-  const [summary, setSummary] = useState<VoyageSummary | null>(null);
-  const [totals, setTotals] = useState<Totals>({
-    nm: experience.totalNm,
-    hours: experience.hoursUnderway,
-    nightHours: experience.nightHours,
-  });
-  const [loggedToday, setLoggedToday] = useState(false);
-  const [logPhase, setLogPhase] = useState<LogPhase>('idle');
-  const [transcriptWords, setTranscriptWords] = useState(0);
+  const [ready, setReady] = useState(false);
+  const [current, setCurrent] = useState<Current | null>(null);
+  const [live, setLive] = useState<{ id: string; startedAt: number; source: FeedSource; fromName: string | null; fixes: Fix[] } | null>(null);
+  const [simulate, setSimulateState] = useState(false);
+  const [rev, setRev] = useState(0);
   const [toast, setToast] = useState('');
+  const [now, setNow] = useState(() => Date.now());
 
+  const feedStop = useRef<Stop | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Simulated position feed while a voyage is live.
-  useEffect(() => {
-    if (!voyage) return;
-    const id = setInterval(() => {
-      setVoyage((v) => {
-        if (!v) return v;
-        const tick = v.speedN + 1;
-        const speed = 9.6 + 2.2 * Math.sin(tick / 2.4);
-        return {
-          ...v,
-          elapsedMin: v.elapsedMin + 1,
-          nm: v.nm + speed / 60,
-          speed,
-          maxSpeed: Math.max(v.maxSpeed, speed),
-          speedSum: v.speedSum + speed,
-          speedN: tick,
-        };
-      });
-    }, TICK_MS);
-    return () => clearInterval(id);
-    // Only the presence of a voyage matters here, not its ticking fields.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voyage !== null]);
-
-  // Word-by-word transcript while "listening", then hand over to the draft.
-  useEffect(() => {
-    if (logPhase !== 'rec') return;
-    const id = setInterval(() => {
-      setTranscriptWords((w) => {
-        if (w + 1 >= WORDS.length) {
-          clearInterval(id);
-          draftTimer.current = setTimeout(() => setLogPhase('draft'), 700);
-          return WORDS.length;
-        }
-        return w + 1;
-      });
-    }, WORD_MS);
-    return () => {
-      clearInterval(id);
-      if (draftTimer.current) clearTimeout(draftTimer.current);
-    };
-  }, [logPhase]);
+  const bump = useCallback(() => setRev((r) => r + 1), []);
 
   const flash = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(msg);
-    toastTimer.current = setTimeout(() => setToast(''), 2600);
+    toastTimer.current = setTimeout(() => setToast(''), 2800);
   }, []);
 
   const soon = useCallback(() => flash('Not built yet'), [flash]);
 
-  const startVoyage = useCallback(() => {
-    setVoyage({
-      from: passage.from,
-      to: passage.to,
-      startMin: passage.startMin,
-      headingDeg: passage.headingDeg,
-      elapsedMin: simStart.elapsedMin,
-      nm: simStart.nm,
-      speed: simStart.speed,
-      maxSpeed: simStart.maxSpeed,
-      speedSum: 0,
-      speedN: 0,
-    });
+  const refresh = useCallback(async () => {
+    setCurrent(await repo.getCurrent());
+    bump();
+  }, [bump]);
+
+  /** Appends a fix in memory and on disk. */
+  const onFix = useCallback((voyageId: string, f: Fix) => {
+    setLive((v) => (v && v.id === voyageId ? { ...v, fixes: [...v.fixes, f] } : v));
+    repo.addFix(voyageId, f).catch(() => {});
   }, []);
 
-  const stopVoyage = useCallback(() => {
-    setVoyage((v) => {
-      if (!v) return v;
-      const avg = v.speedN ? v.speedSum / v.speedN : v.speed;
-      setSummary({
-        from: v.from,
-        to: v.to,
-        startMin: v.startMin,
-        endMin: v.startMin + v.elapsedMin,
-        nm: v.nm,
-        durationMin: v.elapsedMin,
-        avgSpeed: avg,
-        maxSpeed: v.maxSpeed,
-        nightMin: 0,
-      });
-      return null;
-    });
+  const startFeed = useCallback(
+    async (v: { id: string; startedAt: number; source: FeedSource; fixes: Fix[] }) => {
+      feedStop.current?.();
+      if (v.source === 'sim') {
+        const from = await repo.lastKnownPosition();
+        feedStop.current = startSim((f) => onFix(v.id, f), from, v.startedAt, v.fixes[v.fixes.length - 1]);
+      } else {
+        feedStop.current = await startGps((f) => onFix(v.id, f));
+        activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+      }
+    },
+    [onFix],
+  );
+
+  const stopFeed = useCallback(() => {
+    feedStop.current?.();
+    feedStop.current = null;
+    deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
   }, []);
 
-  const confirmVoyage = useCallback((): number => {
-    let added = 0;
-    setSummary((s) => {
-      if (!s) return s;
-      added = Math.round(s.nm);
-      setTotals((t) => ({ ...t, nm: t.nm + added, hours: t.hours + Math.round(s.durationMin / 60) }));
-      return null;
-    });
-    return added;
-  }, []);
+  // Boot: open the database, load the yacht, settings, and resume a voyage left running.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const [c, sim, lv] = await Promise.all([repo.getCurrent(), repo.getSetting('simulate'), repo.getLiveVoyage()]);
+        if (cancelled) return;
+        setCurrent(c);
+        setSimulateState(sim === '1');
+        if (lv) {
+          const fixes = await repo.getTrack(lv.id);
+          const v = { id: lv.id, startedAt: lv.startedAt, source: lv.source === 'sim' ? ('sim' as const) : ('gps' as const), fromName: lv.fromName, fixes };
+          setLive(v);
+          startFeed(v).catch((e: Error) => flash(e.message));
+        }
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [startFeed, flash]);
 
-  const startRecording = useCallback(() => {
-    setTranscriptWords(0);
-    setLogPhase('rec');
-  }, []);
-
-  const resetLog = useCallback(() => {
-    setTranscriptWords(0);
-    setLogPhase('idle');
-  }, []);
-
-  const confirmLog = useCallback(() => {
-    setLoggedToday(true);
-    setLogPhase('idle');
-    setTranscriptWords(0);
-  }, []);
+  // A one-second clock while live, for elapsed time.
+  useEffect(() => {
+    if (!live) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [live !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(
     () => () => {
+      stopFeed();
       if (toastTimer.current) clearTimeout(toastTimer.current);
-      if (draftTimer.current) clearTimeout(draftTimer.current);
     },
-    [],
+    [stopFeed],
   );
 
+  const onboard = useCallback(
+    async (input: OnboardInput) => {
+      await saveOnboarding(input);
+      await refresh();
+    },
+    [refresh],
+  );
+
+  const startVoyage = useCallback(async (): Promise<boolean> => {
+    if (!current || live) return !!live;
+    const source: FeedSource = simulate ? 'sim' : 'gps';
+    const startedAt = Date.now();
+    const id = await repo.startVoyage(current.engagement.id, startedAt, source);
+    const v = { id, startedAt, source, fromName: null, fixes: [] as Fix[] };
+    setLive(v);
+    try {
+      await startFeed(v);
+      return true;
+    } catch (e) {
+      setLive(null);
+      await repo.deleteVoyage(id);
+      flash((e as Error).message);
+      return false;
+    }
+  }, [current, live, simulate, startFeed, flash]);
+
+  const stopVoyage = useCallback(async (): Promise<string | null> => {
+    if (!live) return null;
+    stopFeed();
+    const fixes = await repo.getTrack(live.id);
+    const last = fixes[fixes.length - 1];
+    const endedAt = live.source === 'sim' && last ? last.ts : Date.now();
+    const s = summarise(fixes, { startedAt: live.startedAt, endedAt });
+    const [from, to] = await Promise.all([s.first ? placeName(s.first) : null, s.last ? placeName(s.last) : null]);
+    await repo.stopVoyage(live.id, endedAt, s, { from, to });
+    const id = live.id;
+    setLive(null);
+    bump();
+    return id;
+  }, [live, stopFeed, bump]);
+
+  const setSimulate = useCallback((on: boolean) => {
+    setSimulateState(on);
+    repo.setSetting('simulate', on ? '1' : '0').catch(() => {});
+  }, []);
+
+  const voyage = useMemo<LiveVoyage | null>(() => {
+    if (!live) return null;
+    const last = live.fixes[live.fixes.length - 1];
+    const clock = live.source === 'sim' ? (last?.ts ?? live.startedAt) : now;
+    const track = summarise(live.fixes, { startedAt: live.startedAt, endedAt: clock });
+    return { ...live, track, nm: track.distanceNm, elapsedMin: track.durationMin, speed: track.currentKn };
+  }, [live, now]);
+
   const value = useMemo<AppStore>(
-    () => ({
-      voyage,
-      summary,
-      totals,
-      loggedToday,
-      logPhase,
-      transcriptWords,
-      toast,
-      startVoyage,
-      stopVoyage,
-      confirmVoyage,
-      startRecording,
-      resetLog,
-      confirmLog,
-      flash,
-      soon,
-    }),
-    [voyage, summary, totals, loggedToday, logPhase, transcriptWords, toast, startVoyage, stopVoyage, confirmVoyage, startRecording, resetLog, confirmLog, flash, soon],
+    () => ({ ready, current, voyage, simulate, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, flash, soon }),
+    [ready, current, voyage, simulate, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, flash, soon],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
@@ -245,7 +221,19 @@ export function useAppStore(): AppStore {
   return ctx;
 }
 
-/** The transcript as far as it has been "heard". */
-export function transcriptSoFar(words: number): string {
-  return WORDS.slice(0, words).join(' ');
+/**
+ * Runs an async read and re-runs it after every write (`bump`) or when `deps`
+ * change. Returns undefined until the first result arrives.
+ */
+export function useQuery<T>(fn: () => Promise<T>, deps: DependencyList = []): T | undefined {
+  const { rev } = useAppStore();
+  const [data, setData] = useState<T | undefined>(undefined);
+  useEffect(() => {
+    let live = true;
+    fn().then((d) => live && setData(d)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [rev, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
+  return data;
 }

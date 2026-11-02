@@ -1,9 +1,11 @@
-import { Pressable, View } from 'react-native';
+import { router } from 'expo-router';
+import { Alert, Pressable, Switch, View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
-import { Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
-import { vessel } from '@/data/sample';
+import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
+import { resetDb } from '@/db/db';
+import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
 import { LOOKS, useLook, type Look } from '@/theme';
 
@@ -13,21 +15,44 @@ const LOOK_COPY: Record<Look, { name: string; blurb: string }> = {
   night: { name: 'Night watch', blurb: 'Pure black, everything in red. For the bridge after dark.' },
 };
 
-const ROWS = ['Vessels and engagements', 'Units', 'Sync and backup', 'Export my record', 'Permissions'];
 
 export default function ProfileScreen() {
   const { look, tokens, setLook } = useLook();
-  const { soon } = useAppStore();
+  const { current, simulate, setSimulate, voyage, refresh } = useAppStore();
+  if (!current) return null;
+
+  const rows: { label: string; onPress: () => void }[] = [
+    { label: 'Vessel and position', onPress: () => router.push('/vessel') },
+    { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
+  ];
+
+  const onDeleteAll = () => {
+    if (voyage) {
+      Alert.alert('Stop the live voyage first.');
+      return;
+    }
+    Alert.alert('Delete all data?', 'Every voyage, log entry and document on this iPhone is erased. This cannot be undone.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete everything',
+        style: 'destructive',
+        onPress: async () => {
+          await resetDb();
+          await refresh();
+        },
+      },
+    ]);
+  };
 
   return (
     <Screen>
       <Hero gap={10}>
         <Eyebrow color="heroMuted">Profile</Eyebrow>
         <Display size={36} color="heroFg">
-          {vessel.position}
+          {current.profile.name}
         </Display>
         <Txt size={14} color="heroMuted">
-          {vessel.name} · since March 2025
+          {current.engagement.position} · {current.vessel.name} · since {fmtIsoMonth(current.engagement.startDate)}
         </Txt>
       </Hero>
 
@@ -77,10 +102,10 @@ export default function ProfileScreen() {
 
         <FadeUp delay={120}>
           <Card gap={0} paddingV={4} paddingH={0}>
-            {ROWS.map((label, i) => (
+            {rows.map(({ label, onPress }, i) => (
               <Pressable
                 key={label}
-                onPress={soon}
+                onPress={onPress}
                 accessibilityRole="button"
                 style={({ pressed }) => [
                   {
@@ -104,12 +129,28 @@ export default function ProfileScreen() {
         </FadeUp>
 
         <FadeUp delay={190}>
-          <Row gap={8} justify="center" style={{ paddingTop: 8 }}>
-            <Txt size={12} weight={600} color="muted">
-              YachtPA 0.1 · Deck build
-            </Txt>
-          </Row>
+          <Card row gap={12} paddingV={12}>
+            <Col gap={2} flex={1}>
+              <Txt size={15} weight={600}>
+                Simulate GPS
+              </Txt>
+              <Txt size={12} color="muted">
+                For testing ashore: a boat at 9 kn, one minute per second.
+              </Txt>
+            </Col>
+            <Switch value={simulate} onValueChange={setSimulate} disabled={!!voyage} trackColor={{ true: tokens.colors.accent, false: tokens.colors.track }} />
+          </Card>
         </FadeUp>
+
+        <FadeUp delay={240}>
+          <Button variant="ghost" label="Delete all data" onPress={onDeleteAll} />
+        </FadeUp>
+
+        <Row gap={8} justify="center" style={{ paddingTop: 8 }}>
+          <Txt size={12} weight={600} color="muted">
+            YachtPA 0.1 · data stays on this iPhone
+          </Txt>
+        </Row>
       </Sheet>
     </Screen>
   );

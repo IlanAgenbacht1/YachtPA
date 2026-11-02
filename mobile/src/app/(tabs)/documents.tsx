@@ -3,55 +3,80 @@ import { View } from 'react-native';
 import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Row, Sheet, Txt } from '@/components/ui';
-import { docCounts, documents } from '@/data/sample';
-import { useAppStore } from '@/store/AppStore';
+import { router } from 'expo-router';
+
+import { listDocs } from '@/db/repo';
+import { docCounts, docStatus } from '@/lib/docs';
+import { fmtIsoMedium } from '@/lib/format';
+import { useQuery } from '@/store/AppStore';
+
+const openDoc = (id?: string) => router.push(id ? { pathname: '/document', params: { id } } : '/document');
 
 export default function DocumentsScreen() {
-  const { soon } = useAppStore();
-  const expiring = documents.filter((d) => d.status !== 'ok').length;
+  const docs = useQuery(listDocs) ?? [];
+  const counts = docCounts(docs);
+  const expiring = counts.warn + counts.danger;
 
   return (
     <Screen>
       <Hero gap={10}>
         <Eyebrow color="heroMuted">Documents</Eyebrow>
         <Display size={36} color="heroFg">
-          {expiring === 0 ? 'All in date' : expiring === 1 ? 'One to renew' : `${expiring} to renew`}
+          {docs.length === 0 ? 'Your wallet' : expiring === 0 ? 'All in date' : expiring === 1 ? 'One to renew' : `${expiring} to renew`}
         </Display>
-        <Row gap={8}>
-          <Dot color="ok" />
+        {docs.length === 0 ? (
           <Txt size={14} color="heroMuted">
-            {docCounts.valid} valid
+            Certificates, passport, medical. Reminders before they expire.
           </Txt>
-          <View style={{ marginLeft: 6 }}>
-            <Dot color="warn" />
-          </View>
-          <Txt size={14} color="heroMuted">
-            {docCounts.expiring} expiring
-          </Txt>
-        </Row>
+        ) : (
+          <Row gap={8}>
+            {counts.ok > 0 && (
+              <>
+                <Dot color="ok" />
+                <Txt size={14} color="heroMuted">
+                  {counts.ok} valid
+                </Txt>
+              </>
+            )}
+            {expiring > 0 && (
+              <>
+                <View style={{ marginLeft: counts.ok > 0 ? 6 : 0 }}>
+                  <Dot color={counts.danger ? 'danger' : 'warn'} />
+                </View>
+                <Txt size={14} color="heroMuted">
+                  {counts.warn} expiring{counts.danger ? ` · ${counts.danger} expired` : ''}
+                </Txt>
+              </>
+            )}
+          </Row>
+        )}
       </Hero>
 
       <Sheet gap={10}>
-        {documents.map((d, i) => (
+        {docs.map((d, i) => {
+          const st = docStatus(d);
+          const detail = [d.issuer, d.expires ? `expires ${fmtIsoMedium(d.expires)}` : 'no expiry'].filter(Boolean).join(' · ');
+          return (
           <FadeUp key={d.id} delay={40 + i * 50}>
-            <Card row gap={12} paddingV={14} paddingH={16} borderColor={d.status === 'warn' ? 'warn' : 'cardBorder'} onPress={soon} accessibilityLabel={d.name}>
-              <Dot color={d.status} size={10} />
+            <Card row gap={12} paddingV={14} paddingH={16} borderColor={st.status === 'ok' ? 'cardBorder' : st.status} onPress={() => openDoc(d.id)} accessibilityLabel={d.name}>
+              <Dot color={st.status} size={10} />
               <Col gap={2} flex={1}>
                 <Txt size={15} weight={700}>
                   {d.name}
                 </Txt>
                 <Txt size={12} color="muted">
-                  {d.detail}
+                  {detail}
                 </Txt>
               </Col>
-              <Txt size={13} weight={d.status === 'warn' ? 800 : 700} color={d.status === 'warn' ? 'warn' : 'muted'} tabular>
-                {d.remaining}
+              <Txt size={13} weight={st.status === 'ok' ? 700 : 800} color={st.status === 'ok' ? 'muted' : st.status} tabular>
+                {st.remaining}
               </Txt>
             </Card>
           </FadeUp>
-        ))}
-        <FadeUp delay={40 + documents.length * 50}>
-          <Button variant="dashed" icon="plus" iconStrokeWidth={2} label="Add a document" onPress={soon} />
+          );
+        })}
+        <FadeUp delay={40 + docs.length * 50}>
+          <Button variant="dashed" icon="plus" iconStrokeWidth={2} label="Add a document" onPress={() => openDoc()} />
         </FadeUp>
       </Sheet>
     </Screen>
