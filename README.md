@@ -18,6 +18,6 @@ The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobi
 
 ## Next
 
-1. Test on your Android phone, then send to iPhone testers via TestFlight: [docs/BETA.md](docs/BETA.md).
+1. Optional cloud backup (free Supabase project), test on your Android phone, then TestFlight for iPhone testers: [docs/BETA.md](docs/BETA.md).
 2. Phase 0 spike: background GPS for 24 h on a real phone, voice → structured log entry.
 3. Build plan to MVP: [docs/SCOPE.md §13](docs/SCOPE.md#13-build-plan-to-mvp). M1 (local records) is done; M2 (qualifications) is next.

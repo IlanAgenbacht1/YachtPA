@@ -66,6 +66,7 @@ function Shell() {
         <Stack.Screen name="voyage/[id]" />
         <Stack.Screen name="qualification/[id]" />
         <Stack.Screen name="voyage-new" options={{ animation: 'slide_from_bottom' }} />
+        <Stack.Screen name="cloud" />
       </Stack>
       <Toast />
     </ThemeProvider>

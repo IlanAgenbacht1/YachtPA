@@ -1,4 +1,4 @@
-import { Redirect } from 'expo-router';
+import { Redirect, router } from 'expo-router';
 import { useState } from 'react';
 
 import { FadeUp } from '@/components/motion';
@@ -7,6 +7,7 @@ import { Button, Col, DateField, Display, Eyebrow, Field, Hero, isoDate, Segment
 import type { Propulsion } from '@/db/repo';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
+import { cloudConfigured } from '@/sync/supabase';
 
 /** First launch: who you are and which yacht you are on. Three things, then you are in. */
 export default function Onboarding() {
@@ -49,7 +50,7 @@ export default function Onboarding() {
           Your sea time, logged for you
         </Display>
         <Txt size={14} color="heroMuted">
-          Everything stays on this iPhone.
+          Everything is saved on this phone. Cloud backup is optional.
         </Txt>
       </Hero>
       <Sheet gap={16} paddingTop={24}>
@@ -73,6 +74,7 @@ export default function Onboarding() {
         </FadeUp>
         <Spacer />
         <Button label={busy ? 'Saving…' : 'Get started'} icon="check" iconStrokeWidth={2.4} onPress={busy ? () => {} : onDone} />
+        {cloudConfigured && <Button variant="ghost" label="Restore from a backup" onPress={() => router.push('/cloud')} />}
       </Sheet>
     </Screen>
   );

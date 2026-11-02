@@ -15,7 +15,7 @@ Everything used so far ships inside Expo Go, so no development build is needed y
 ## Checks
 
 ```
-npm test            # track maths, sun, qualification rules, PDF record (node --test, no extra deps)
+npm test            # track maths, sun, qualifications, PDF, log draft, migrations, backup engine (node --test)
 npm run typecheck   # tsc --noEmit
 npm run lint
 npm run export:web  # proves the bundle builds; output in dist/
@@ -37,6 +37,9 @@ npm run export:web  # proves the bundle builds; output in dist/
 | `src/location/feed.ts` | GPS and the simulator. Picks background tracking when allowed, foreground otherwise. |
 | `src/domain/qualifications.ts` | Qualification rules as data (RYA, with source URL and date) and the engine that measures a record against them. |
 | `src/domain/recordHtml.ts` | The sea-service record as HTML; `src/lib/exportPdf.ts` turns it into a PDF. |
+| `src/db/migrations.ts` | SQLite schema, append-only, plus the outbox triggers that record changes for backup. |
+| `src/sync/engine.ts` | Backup and restore logic (pure; tested with node:sqlite and a fake cloud). `backup.ts` wires it to the app, `supabase.ts` makes the client. |
+| `src/domain/draft.ts` | Dictated text → duties and activity ticks. |
 | `src/lib/reminders.ts` | Local notifications, rebuilt from the database after every change. |
 | `src/location/background.ts` | The background location task. Writes fixes straight to SQLite. Imported at start-up. |
 
@@ -44,7 +47,8 @@ npm run export:web  # proves the bundle builds; output in dist/
 
 - Real: onboarding; yacht and position; voyages from GPS (or typed in by hand) with miles, hours underway, night hours, overnight detection and sanity checks; daily log and diary; documents with expiry status; experience totals and breakdowns; RYA Yachtmaster Coastal and Offshore progress; reminders; PDF sea-service record; JSON export. All on the phone.
 - Tracking with the phone locked works in real builds (APK, TestFlight) once location is set to "Always". In Expo Go it tracks only while the app is open. Not yet run on a real phone.
-- Not built yet: voice → AI draft (M4; use the keyboard mic), account and cloud sync (M6).
+- Log draft: dictate with the keyboard mic, then "Tidy into duties" (`src/domain/draft.ts`, on the phone).
+- Cloud backup: optional, Supabase (`src/sync/`, schema in `../supabase/migrations/`). Off unless `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are set in `.env`. Not yet run against a live project.
 - Place names come from the phone's geocoder when online, coordinates when not. Editable on the summary.
 - App icon and splash are still the Expo placeholders.
 - Builds and testers: [docs/BETA.md](../docs/BETA.md).

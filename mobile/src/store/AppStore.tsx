@@ -23,6 +23,8 @@ import { summarise, type Fix, type TrackSummary } from '@/domain/track';
 import { setBackgroundListener } from '@/location/background';
 import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/location/feed';
 import { ensureNotificationPermission, rescheduleReminders } from '@/lib/reminders';
+import { pushChanges } from '@/sync/backup';
+import { cloudConfigured } from '@/sync/supabase';
 
 type OnboardInput = Parameters<typeof saveOnboarding>[0];
 
@@ -176,6 +178,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (ready) rescheduleReminders();
   }, [ready, rev, liveId]);
+
+  // Cloud backup: push queued changes a few seconds after writes settle, and when the app comes back.
+  useEffect(() => {
+    if (!ready || !cloudConfigured) return;
+    const id = setTimeout(() => pushChanges().catch(() => {}), 4000);
+    return () => clearTimeout(id);
+  }, [ready, rev]);
+  useEffect(() => {
+    if (!cloudConfigured) return;
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st === 'active') pushChanges().catch(() => {});
+    });
+    return () => sub.remove();
+  }, []);
 
   // A one-second clock while live, for elapsed time.
   useEffect(() => {

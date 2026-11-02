@@ -26,6 +26,7 @@ export default function ProfileScreen() {
   const rows: { label: string; onPress: () => void }[] = [
     { label: 'Vessel and position', onPress: () => router.push('/vessel') },
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
+    { label: 'Cloud backup', onPress: () => router.push('/cloud') },
     { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().catch((e: Error) => flash(e.message)) },
     { label: 'Export all my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
@@ -35,7 +36,7 @@ export default function ProfileScreen() {
       Alert.alert('Stop the live voyage first.');
       return;
     }
-    Alert.alert('Delete all data?', 'Every voyage, log entry and document on this iPhone is erased. This cannot be undone.', [
+    Alert.alert('Delete all data on this phone?', 'Every voyage, log entry and document on this phone is erased. A cloud backup, if you have one, is kept and can be restored.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete everything',
@@ -147,7 +148,7 @@ export default function ProfileScreen() {
         </FadeUp>
 
         <FadeUp delay={240}>
-          <Button variant="ghost" label="Delete all data" onPress={onDeleteAll} />
+          <Button variant="ghost" label="Delete all data on this phone" onPress={onDeleteAll} />
         </FadeUp>
 
         <Row gap={8} justify="center" style={{ paddingTop: 8 }}>

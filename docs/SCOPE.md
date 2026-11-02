@@ -66,10 +66,10 @@ Captain sign-off and locking, certificate OCR, career-path wizard, B2B yacht das
 |---|---|---|---|
 | Mobile | Expo (React Native) + Expo Router | Swift / SwiftUI | iOS only for now (§11). Scaffold already exists; background location via expo-location + TaskManager; Reanimated and Skia give the fluid, animated UI the brief wants; EAS builds and submits to TestFlight without needing Xcode for every build. Keeps Android possible later without a rewrite. |
 | Local store | SQLite (expo-sqlite) on the phone; PowerSync added with cloud sync (M6) | WatermelonDB | The phone is the source of truth. Built 2026-11-02. |
-| Backend | Supabase (Postgres, Auth, Storage, RLS, Edge Functions) | .NET API on Azure | Fastest path to MVP; row-level security gives "the user owns their data" for free. Azure/.NET is viable if staying in that ecosystem matters more than speed. |
-| Sync | PowerSync ↔ Supabase | Custom queue | Battle-tested offline sync, conflict handling included. |
-| Speech to text | On-device recogniser (iOS Speech framework) offline; cloud transcription when online | Whisper on-device | Offline is non-negotiable for crew. |
-| AI structuring | Claude with structured output against a fixed schema | | Model choice at implementation time. |
+| Backend | Supabase free tier (Postgres, Auth with emailed codes, RLS) | .NET API on Azure | Decided 2026-11-02: free and reliable. Row-level security gives "the user owns their data" for free. Schema in `supabase/migrations/`. |
+| Sync | Backup and restore: SQLite triggers fill an outbox; the phone pushes it to Supabase; a new phone restores everything | PowerSync | Decided 2026-11-02. One user, usually one phone, so no merging is needed; on first sign-in with data on both sides the user picks which wins. PowerSync is a second service and needs a different SQLite library. Tested against node:sqlite and a fake cloud. |
+| Speech to text | The keyboard's dictation mic | On-device recogniser module | Free, offline, already on every phone, no development build needed. |
+| Log draft | On-device rules: split into one duty per job, tick activities by keyword (`src/domain/draft.ts`) | Claude via a Supabase Edge Function | Decided 2026-11-02: free and offline. An LLM costs per call and needs signal; it can replace the rules behind the same function later. |
 | Maps | Track drawn from GPS points, no tiles, for MVP | MapLibre | No map dependency until crew ask for one. |
 | PDF | On-device HTML → PDF (expo-print), shared from the phone | Server-side | No server needed; one template either way. |
 | Push | Expo Notifications | | |
@@ -165,7 +165,7 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 1. **Mobile stack:** Expo/React Native. Decided 2026-09-25; scaffold in `mobile/`.
    - **Platform:** iOS only. Decided 2026-11-02. No Android store listing or Android-specific features. The developer has no iPhone, so Android builds (APK, internal only) are used for the developer's own testing; keep them working, they cost nothing extra in React Native.
    - **iOS distribution:** TestFlight via EAS cloud builds; no Mac or iPhone needed. Needs the Apple Developer Program ($99/yr). Testers on iPhone are the first iOS test. Steps in [BETA.md](BETA.md).
-2. **Backend:** Supabase (recommended for speed) or Azure/.NET (ecosystem fit)?
+2. **Backend:** Supabase free tier. Decided 2026-11-02 ("free but reliable"). Backup is optional; the app works without it.
 3. **MVP boundary:** include the certificate wallet? Captain sign-off in MVP or Phase 2?
 4. **First qualifications to seed:** RYA Yachtmaster Coastal + Offshore and STCW basic set?
 5. **Whose product:** personal project with a friend, no client (confirmed 2026-09-24). Optimise for speed and free tiers; put IP and revenue split in writing between the two of you.
@@ -190,15 +190,15 @@ Decided 2026-11-02: build local-first and add the cloud last, so nothing waits o
 | M1 | **Local records.** On-device database; onboarding (name, yacht, position); edit vessel and engagement, move to a new yacht; START/STOP with foreground GPS (works in Expo Go) or simulated GPS; track maths per §9 with tests; summary with sanity checks and editable place names; daily log (dictate with the iOS keyboard, one duty per line, activity tick-list); diary; voyage detail; documents wallet with traffic lights; experience totals; look saved. | Nothing | Done |
 | M2 | **Qualifications.** Rules as data (§4.4), seeded from official RYA pages with source URL and date: Yachtmaster Coastal and Offshore, Sail or Power. Progress ring, requirement checklist, "appears to meet" wording. Skipper flag per voyage. Manual voyage entry for past sea time. Experience breakdowns (passage type, size band, position); track map on summary. | Nothing | Done |
 | M3 | **Phone builds.** Background location via TaskManager ("Always" permission, START VOYAGE as the reason) with foreground fallback; JSON export; EAS config; local notifications (document expiry at 90/30/7/0 days, "still underway?" at 24/48 h, nudge after 3 days without a log); Android APK for the developer's own test; TestFlight for crew; 24 h battery run (Phase 0 spike). | Apple Developer Program ($99/yr) for TestFlight | Code done; not yet run on a phone |
-| M4 | **Voice → AI draft.** On-device speech recognition; transcript → structured entry via Claude against a fixed schema, through a small server function holding the API key. | M3; a function host (only an API proxy, not the full backend) | |
+| M4 | **Voice → draft.** Keyboard dictation, then "Tidy into duties": on-device rules split the text into duties and tick activities, adding nothing that was not said. | Nothing | Done (LLM upgrade optional, paid) |
 | M5 | **Export.** PDF sea-service record made on the phone: totals, vessels with days aboard and sea days, voyages, daily log, master's signature block per vessel, method note. | Nothing | Done |
-| M6 | **Account and cloud.** Sign-in, sync and backup (Supabase + PowerSync per §5). Until then, data is in the iPhone's own iCloud backup and the JSON export. | Backend decision (§11.2) | |
+| M6 | **Account and cloud backup.** Sign in with an emailed code; changes upload automatically; restore on a new phone; delete account. Schema with row-level security tested on Postgres 16; backup engine tested against node:sqlite and a fake cloud. | A free Supabase project ([BETA.md](BETA.md) step 0) | Done, not yet run against a live project |
 | M7 | **TestFlight with crew.** | M3 | |
 
 Shortcuts taken in M1, on purpose:
 
-- **No account yet.** "Account" in §3 moves to M6. Profile is local.
-- **Voice is the keyboard's dictation mic** until M4. It works today and needs nothing.
+- **Account is optional.** The app works fully without signing in; the account exists only for cloud backup (M6).
+- **Voice is the keyboard's dictation mic.** It works today and needs nothing.
 - **In Expo Go, tracking needs the app open with the screen on** (YachtPA keeps the screen awake). Real builds track with the phone locked once "Always" is allowed.
 - **Night hours use sunset to sunrise** (sun 0.833° below the horizon).
 

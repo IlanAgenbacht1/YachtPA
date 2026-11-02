@@ -13,8 +13,29 @@ You have an Android phone and no Mac; your testers have iPhones. Nothing below n
 | Sea service record | Profile → Sea service record (PDF). |
 | Qualifications | RYA Yachtmaster Coastal and Offshore progress from the official requirements. |
 | Past sea time | Log → + Add a past voyage. |
-| Data export | Profile → Export all my data (JSON via the share sheet). The safety net until cloud backup exists. |
+| Data export | Profile → Export all my data (JSON via the share sheet). |
+| Cloud backup | Profile → Cloud backup. Optional; needs Step 0. Sign in with an emailed code; backs up automatically; restore from the welcome screen on a new phone. |
+| Log draft | Dictate with the keyboard mic, then "Tidy into duties". On the phone, offline. |
 | Data on the phone | Saved on the phone; survives restarts. |
+
+## Step 0 (optional): cloud backup, free
+
+Without this the app works fully offline and testers use Profile → Export all my data. With it, they sign in with an emailed code and their record backs up by itself and can be restored on a new phone.
+
+1. Create a free project at supabase.com.
+2. SQL Editor → paste and run [`supabase/migrations/20261102000000_backup.sql`](../supabase/migrations/20261102000000_backup.sql). It creates the tables, row-level security (each user sees only their own rows) and the delete-account function.
+3. Authentication → Emails → "Magic Link" template: put the code in the email, e.g. `Your YachtPA code is {{ .Token }}`. The app asks for the 6-digit code; it does not use links.
+4. Project Settings → API: copy the Project URL and the publishable (anon) key into `mobile/.env`, then commit it. Both are public by design; row-level security protects the data.
+
+```
+EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
+EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_xxxx
+```
+
+Free tier limits worth knowing:
+
+- **Email:** Supabase's built-in email sends at most 2 emails an hour for the whole project. Fine for a few testers signing in once. For more, connect a free SMTP sender (Resend's free tier is plenty) under Authentication → SMTP.
+- **Pausing:** free projects pause after about a week with no activity. Any tester opening the app counts as activity. If it does pause, nothing is lost: phones keep their data and queue the uploads; restore the project from the dashboard.
 
 ## Step 1: test it yourself on Android (free)
 
