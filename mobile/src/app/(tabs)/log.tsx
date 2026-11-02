@@ -6,6 +6,7 @@ import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Chip, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { getLog, listLogs, listVoyages, localDate, saveLog, type LogEntry, type Voyage } from '@/db/repo';
+import { draftFromText } from '@/domain/draft';
 import { ACTIVITIES } from '@/lib/constants';
 import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
 import { tick } from '@/lib/haptics';
@@ -66,6 +67,16 @@ export default function LogScreen() {
     flash(`Logged · ${fmtIsoShort(date)}`);
   };
 
+  // Offer the tidy-up when the text reads like speech: long lines or sentences rather than a list.
+  const canTidy = text.trim().length > 0 && (/[.;,]/.test(text) || text.split('\n').some((l) => l.length > 60));
+  const onTidy = () => {
+    const d = draftFromText(text);
+    if (d.duties.length === 0 && d.activities.length === 0) return;
+    setText(d.duties.join('\n'));
+    setChosen(new Set([...chosen, ...d.activities]));
+    tick();
+  };
+
   const toggle = (a: string) => {
     const next = new Set(chosen);
     if (next.has(a)) next.delete(a);
@@ -118,8 +129,9 @@ export default function LogScreen() {
               onChangeText={setText}
               multiline
               placeholder={'Washed down the exterior\nChanged generator fuel filters\nSafety inspection before departure'}
-              hint="Tap the mic on the keyboard to dictate."
+              hint="Tap the mic on the keyboard and say what you did. Then tidy it into duties."
             />
+            {canTidy && <Button variant="ghost" icon="check" label="Tidy into duties" onPress={onTidy} />}
           </Col>
         </FadeUp>
 
