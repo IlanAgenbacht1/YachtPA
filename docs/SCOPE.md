@@ -1,12 +1,12 @@
 # YachtPA — Scope v0.1 (draft for discussion)
 
-Date: 2026-09-24
+Date: 2026-09-24 (platform updated 2026-11-02: iOS only)
 Status: draft. Nothing here is decided until the open decisions in §11 are answered (stack and UI build now are; see §11).
 Sources: [01-product-requirements.md](source/01-product-requirements.md), [02-initial-concept.md](source/02-initial-concept.md)
 
 ## 1. Product in one line
 
-An offline-first mobile app that builds a yacht crew member's sea-service record automatically: GPS-tracked voyages, voice-logged duties, a certificate wallet, and qualification progress, exportable as a professional PDF and (later) verifiable by a captain.
+An offline-first iPhone app that builds a yacht crew member's sea-service record automatically: GPS-tracked voyages, voice-logged duties, a certificate wallet, and qualification progress, exportable as a professional PDF and (later) verifiable by a captain.
 
 Philosophy: **Work → speak → confirm.** Under two minutes a day. Open → Log → Done.
 
@@ -52,7 +52,7 @@ Captain sign-off and locking, certificate OCR, career-path wizard, B2B yacht das
 
 ## 4. Hardest problems, ranked
 
-1. **Background GPS.** Battery over an 18-hour passage, iOS suspending the app, Android foreground-service rules, and the "Always allow location" permission prompt. This gets a spike before anything else is built.
+1. **Background GPS.** Battery over an 18-hour passage, iOS suspending the app, and the "Always allow location" permission prompt. This gets a spike before anything else is built.
 2. **Underway detection and distance quality.** GPS jitter at anchor produces phantom miles. Needs an accuracy filter, a speed threshold, outlier rejection and a "you look stationary" prompt. Good news: boats are slow, so one fix per 30–60 s is accurate enough and battery-friendly.
 3. **Sea-time definitions differ by authority.** RYA, MCA and IYT count "days", "night hours" and "passages" differently. Store raw facts (underway segments, days aboard, positions, watches); compute each metric per authority in the rules layer.
 4. **Qualification rules engine.** A single qualification can combine rule types: total miles, days aboard, days as skipper, passages over a distance measured along the rhumb line, overnight passages, night hours, share of time in tidal waters, a rolling time window, vessel-size limits, plus prerequisite certificates. Rules must be data, not code.
@@ -64,11 +64,11 @@ Captain sign-off and locking, certificate OCR, career-path wizard, B2B yacht das
 
 | Layer | Recommended | Alternative | Why |
 |---|---|---|---|
-| Mobile | Expo (React Native) + Expo Router | Flutter | One codebase for iOS and Android; background location via expo-location + TaskManager; Reanimated and Skia give the fluid, animated UI the brief wants; EAS handles builds and store submission. |
+| Mobile | Expo (React Native) + Expo Router | Swift / SwiftUI | iOS only for now (§11). Scaffold already exists; background location via expo-location + TaskManager; Reanimated and Skia give the fluid, animated UI the brief wants; EAS builds and submits to TestFlight without needing Xcode for every build. Keeps Android possible later without a rewrite. |
 | Local store | SQLite via PowerSync client | WatermelonDB | Offline-first with proper sync semantics, not hand-rolled. |
 | Backend | Supabase (Postgres, Auth, Storage, RLS, Edge Functions) | .NET API on Azure | Fastest path to MVP; row-level security gives "the user owns their data" for free. Azure/.NET is viable if staying in that ecosystem matters more than speed. |
 | Sync | PowerSync ↔ Supabase | Custom queue | Battle-tested offline sync, conflict handling included. |
-| Speech to text | On-device recogniser (iOS / Android) offline; cloud transcription when online | Whisper on-device | Offline is non-negotiable for crew. |
+| Speech to text | On-device recogniser (iOS Speech framework) offline; cloud transcription when online | Whisper on-device | Offline is non-negotiable for crew. |
 | AI structuring | Claude with structured output against a fixed schema | | Model choice at implementation time. |
 | Maps | MapLibre | Mapbox | Open, offline tile packs possible later. |
 | PDF | Server-side HTML → PDF | On-device PDF | Consistent output, emailable, one template. |
@@ -155,14 +155,16 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 
 | Phase | Weeks (rough) | Outcome |
 |---|---|---|
-| 0 — Spike | 1–2 | Background GPS proven on both platforms over a 24 h run. Voice → structured log proven end to end. Stack confirmed. |
-| 1 — MVP | 8–12 | §3 "In" list, TestFlight / internal testing with real crew. |
+| 0 — Spike | 1–2 | Background GPS proven on iPhone over a 24 h run (needs a development build, not Expo Go). Voice → structured log proven end to end. Stack confirmed. |
+| 1 — MVP | 8–12 | §3 "In" list, TestFlight testing with real crew. |
 | 2 — Trust | 4–6 | Captain sign-off and locking, smart notifications, certificate OCR, career-path wizard, richer stats. |
 | 3 — Network | later | B2B yacht dashboard, jobs, references, schools, visa assistant, marketplace. |
 
 ## 11. Open decisions
 
 1. **Mobile stack:** Expo/React Native. Decided 2026-09-25; scaffold in `mobile/`.
+   - **Platform:** iOS only. Decided 2026-11-02. Android is out of scope until further notice; no Android testing, store listing or platform-specific work.
+   - **iOS distribution:** Expo Go is enough while GPS, voice and AI are simulated. Background location does not run in Expo Go, so the Phase 0 spike needs a development build (free Apple ID + Xcode on a Mac, 7-day signing, own phone only) and crew testing needs TestFlight, which needs the Apple Developer Program ($99/yr). Buy it when the spike starts.
 2. **Backend:** Supabase (recommended for speed) or Azure/.NET (ecosystem fit)?
 3. **MVP boundary:** include the certificate wallet? Captain sign-off in MVP or Phase 2?
 4. **First qualifications to seed:** RYA Yachtmaster Coastal + Offshore and STCW basic set?
@@ -177,4 +179,4 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 - Location is tracked only between START and STOP. Clear consent, clear off switch.
 - App Store review needs a visible, user-triggered reason for background location. START VOYAGE is that reason.
 - Users can export everything (JSON + PDF) and delete their account.
-- Battery: target under 10% per 12 h of tracking on a mid-range phone. Measured in the spike.
+- Battery: target under 10% per 12 h of tracking on an iPhone two or more generations old. Measured in the spike.

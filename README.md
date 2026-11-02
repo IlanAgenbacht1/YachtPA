@@ -1,6 +1,6 @@
 # YachtPA
 
-A sea-service logbook for yacht crew that does the paperwork for you: GPS-tracked voyages, voice-logged duties, a certificate wallet and qualification progress, all offline-first.
+An iPhone sea-service logbook for yacht crew that does the paperwork for you: GPS-tracked voyages, voice-logged duties, a certificate wallet and qualification progress, all offline-first.
 
 Work → speak → confirm.
 
@@ -17,6 +17,6 @@ The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobi
 
 ## Next
 
-1. Run the app on both phones with Expo Go, walk the flows, note what to fold in from Still, Chart and Ledger.
-2. Phase 0 spike: background GPS on iOS and Android for 24 h, voice → structured log entry.
+1. Run the app on an iPhone with Expo Go, walk the flows, note what to fold in from Still, Chart and Ledger.
+2. Phase 0 spike: background GPS on iPhone for 24 h (development build), voice → structured log entry.
 3. Replace the sample data with real stores, starting with vessels and engagements.

@@ -6,7 +6,7 @@ Expo (React Native) app built from the Deck prototype (`design/prototype/Deck.dc
 
 ```
 npm install
-npx expo start      # scan the QR code with Expo Go on iOS or Android
+npx expo start      # scan the QR code with the iPhone camera, opens in Expo Go
 npm run web         # or in a browser, at phone width
 ```
 
