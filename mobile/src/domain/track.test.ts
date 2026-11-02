@@ -93,6 +93,20 @@ describe('summarise', () => {
   });
 });
 
+describe('passage type', () => {
+  it('a passage from afternoon to next morning is overnight', () => {
+    // 2026-11-02 12:00 UTC = 16:00 Mauritius, 18 h at 7 kn ends 10:00 local.
+    const s = summarise(run(PORT_LOUIS, 90, 7, 18 * 60, Date.UTC(2026, 10, 2, 12, 0, 0)));
+    assert.equal(s.overnight, true);
+    assert.ok(s.nightMin > 9 * 60, `night ${s.nightMin}`);
+  });
+  it('an evening passage into the dark is a night passage, not overnight', () => {
+    const s = summarise(run(PORT_LOUIS, 90, 7, 5 * 60, Date.UTC(2026, 10, 2, 12, 0, 0)));
+    assert.equal(s.overnight, false);
+    assert.ok(s.nightMin > 0);
+  });
+});
+
 describe('sun', () => {
   it('London sunset on the 2024 equinox is about 18:14 UTC', () => {
     const t = nextCrossing(Date.UTC(2024, 2, 20, 12), 51.48, 0, 'sunset')!;

@@ -53,6 +53,8 @@ export type TrackSummary = {
   /** course over ground from the last window, null when stationary */
   headingDeg: number | null;
   segments: Segment[];
+  /** underway through a whole night: a segment that starts and ends in daylight with night inside (SCOPE §9) */
+  overnight: boolean;
   first: Fix | null;
   last: Fix | null;
   kept: number;
@@ -131,9 +133,11 @@ export function summarise(
   let underwayMs = 0;
   let nightMs = 0;
   let maxKn = 0;
+  let overnight = false;
   const segments: Segment[] = [];
   for (const [a, b] of ranges) {
     let segNm = 0;
+    let segNight = 0;
     for (let i = a + 1; i <= b; i++) {
       const p = fixes[i - 1];
       const q = fixes[i];
@@ -141,10 +145,16 @@ export function summarise(
       segNm += distanceNm(p, q);
       underwayMs += dt;
       const mid = (p.ts + q.ts) / 2;
-      if (isNight(mid, (p.lat + q.lat) / 2, (p.lon + q.lon) / 2)) nightMs += dt;
+      if (isNight(mid, (p.lat + q.lat) / 2, (p.lon + q.lon) / 2)) {
+        nightMs += dt;
+        segNight += dt;
+      }
       maxKn = Math.max(maxKn, speeds[i]);
     }
     distance += segNm;
+    const fa = fixes[a];
+    const fb = fixes[b];
+    if (segNight > 0 && !isNight(fa.ts, fa.lat, fa.lon) && !isNight(fb.ts, fb.lat, fb.lon)) overnight = true;
     segments.push({ start: fixes[a].ts, end: fixes[b].ts, distanceNm: segNm });
   }
 
@@ -172,6 +182,7 @@ export function summarise(
     currentKn,
     headingDeg,
     segments,
+    overnight,
     first,
     last,
     kept: fixes.length,

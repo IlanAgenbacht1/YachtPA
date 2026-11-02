@@ -37,6 +37,7 @@ export type Voyage = {
   nightMin: number;
   avgKn: number;
   maxKn: number;
+  overnight: boolean;
   source: VoyageSource;
   status: VoyageStatus;
 };
@@ -50,6 +51,7 @@ export type LogEntry = {
   notes: string;
   status: RecordStatus;
   updatedAt: number;
+  vesselName?: string;
 };
 
 export type Doc = { id: string; name: string; issuer: string | null; number: string | null; expires: string | null };
@@ -180,7 +182,7 @@ export async function stopVoyage(id: string, endedAt: number, s: TrackSummary, n
     `UPDATE voyages SET ended_at = ?, from_name = ?, to_name = ?,
        start_lat = ?, start_lon = ?, end_lat = ?, end_lon = ?,
        distance_nm = ?, duration_min = ?, underway_min = ?, night_min = ?, avg_kn = ?, max_kn = ?,
-       status = 'draft'
+       overnight = ?, status = 'draft'
      WHERE id = ?`,
     endedAt,
     names.from,
@@ -195,6 +197,7 @@ export async function stopVoyage(id: string, endedAt: number, s: TrackSummary, n
     s.nightMin,
     s.avgKn,
     s.maxKn,
+    s.overnight ? 1 : 0,
     id,
   );
 }
@@ -240,7 +243,27 @@ export type Experience = {
   /** NM per month for the last 12 months, oldest first; label is "Nov 2025". */
   months: { label: string; nm: number }[];
   weekNm: number;
+  bySize: Breakdown[];
+  byPosition: Breakdown[];
+  byPassage: Breakdown[];
+  overnightPassages: number;
 };
+
+/** One row of a breakdown: miles and hours underway in a category. */
+export type Breakdown = { label: string; nm: number; hours: number; voyages: number };
+
+/** Length bands crew and authorities talk in. Unknown length gets its own row. */
+export const SIZE_BANDS: { label: string; max: number }[] = [
+  { label: 'Under 24 m', max: 24 },
+  { label: '24–40 m', max: 40 },
+  { label: '40–60 m', max: 60 },
+  { label: '60 m and over', max: Infinity },
+];
+
+function sizeBand(loa: number | null): string {
+  if (!loa) return 'Length not set';
+  return SIZE_BANDS.find((b) => loa < b.max)!.label;
+}
 
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -258,9 +281,31 @@ export async function getExperience(): Promise<Experience> {
   const vs = await db.getFirstAsync<{ n: number; loa: number | null; since: string | null }>(
     'SELECT COUNT(DISTINCT e.vessel_id) AS n, MAX(v.loa_m) AS loa, MIN(e.start_date) AS since FROM engagements e JOIN vessels v ON v.id = e.vessel_id',
   );
-  const startedAts = await db.getAllAsync<{ started_at: number; distance_nm: number }>(
-    `SELECT started_at, distance_nm FROM voyages vg WHERE ${done} AND underway_min > 0`,
+  const rows = await db.getAllAsync<{ started_at: number; distance_nm: number; underway_min: number; night_min: number; overnight: number; loa_m: number | null; position: string }>(
+    `SELECT vg.started_at, vg.distance_nm, vg.underway_min, vg.night_min, vg.overnight, v.loa_m, e.position
+       FROM voyages vg JOIN engagements e ON e.id = vg.engagement_id JOIN vessels v ON v.id = e.vessel_id
+      WHERE ${done} AND vg.underway_min > 0`,
   );
+  const size = new Map<string, Breakdown>();
+  const pos = new Map<string, Breakdown>();
+  const passage = new Map<string, Breakdown>();
+  const add = (m: Map<string, Breakdown>, label: string, r: { distance_nm: number; underway_min: number }) => {
+    const b = m.get(label) ?? { label, nm: 0, hours: 0, voyages: 0 };
+    b.nm += r.distance_nm;
+    b.hours += r.underway_min / 60;
+    b.voyages += 1;
+    m.set(label, b);
+  };
+  let overnightPassages = 0;
+  for (const r of rows) {
+    add(size, sizeBand(r.loa_m), r);
+    add(pos, r.position, r);
+    add(passage, r.overnight ? 'Overnight' : r.night_min > 0 ? 'Night' : 'Day', r);
+    if (r.overnight) overnightPassages++;
+  }
+  const bySize = [...SIZE_BANDS.map((b) => b.label), 'Length not set'].flatMap((l) => (size.has(l) ? [size.get(l)!] : []));
+  const byPassage = ['Day', 'Night', 'Overnight'].flatMap((l) => (passage.has(l) ? [passage.get(l)!] : []));
+  const byPosition = [...pos.values()].sort((a, b) => b.nm - a.nm);
 
   const now = new Date();
   const months: { label: string; nm: number; key: string }[] = [];
@@ -271,7 +316,7 @@ export async function getExperience(): Promise<Experience> {
   const days = new Set<string>();
   const weekAgo = now.getTime() - 7 * 86400000;
   let weekNm = 0;
-  for (const r of startedAts) {
+  for (const r of rows) {
     const d = new Date(r.started_at);
     days.add(localDate(d));
     const m = months.find((x) => x.key === `${d.getFullYear()}-${d.getMonth()}`);
@@ -293,6 +338,10 @@ export async function getExperience(): Promise<Experience> {
     since: vs?.since ?? null,
     months: months.map(({ label, nm }) => ({ label, nm })),
     weekNm,
+    bySize,
+    byPosition,
+    byPassage,
+    overnightPassages,
   };
 }
 
@@ -325,8 +374,13 @@ export async function saveLog(e: Omit<LogEntry, 'id' | 'updatedAt'> & { id?: str
 
 export async function listLogs(limit = 60): Promise<LogEntry[]> {
   const db = await getDb();
-  const rows = await db.getAllAsync<LogRow>('SELECT * FROM log_entries ORDER BY date DESC LIMIT ?', limit);
-  return rows.map(toLog);
+  const rows = await db.getAllAsync<LogRow & { vessel_name: string }>(
+    `SELECT l.*, v.name AS vessel_name FROM log_entries l
+       JOIN engagements e ON e.id = l.engagement_id JOIN vessels v ON v.id = e.vessel_id
+      ORDER BY l.date DESC LIMIT ?`,
+    limit,
+  );
+  return rows.map((r) => ({ ...toLog(r), vesselName: r.vessel_name }));
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────
@@ -406,6 +460,7 @@ type VoyageRow = {
   night_min: number;
   avg_kn: number;
   max_kn: number;
+  overnight: number;
   source: VoyageSource;
   status: VoyageStatus;
 };
@@ -460,6 +515,7 @@ function toVoyage(r: VoyageRow): Voyage {
     nightMin: r.night_min,
     avgKn: r.avg_kn,
     maxKn: r.max_kn,
+    overnight: r.overnight === 1,
     source: r.source,
     status: r.status,
   };

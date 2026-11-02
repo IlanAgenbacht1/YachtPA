@@ -2,8 +2,9 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Alert, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
-import { Button, Display, Eyebrow, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
-import { deleteVoyage, getVoyage } from '@/db/repo';
+import { TrackMap } from '@/components/TrackMap';
+import { Button, Card, Display, Eyebrow, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
+import { deleteVoyage, getTrack, getVoyage } from '@/db/repo';
 import { fmtClock, fmtDateShort, fmtDur, minutesOfDay } from '@/lib/format';
 import { useAppStore, useQuery } from '@/store/AppStore';
 
@@ -11,6 +12,7 @@ export default function VoyageDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { bump } = useAppStore();
   const v = useQuery(() => getVoyage(id), [id]);
+  const fixes = useQuery(() => getTrack(id), [id]);
   if (!v) return null;
 
   const started = new Date(v.startedAt);
@@ -57,6 +59,11 @@ export default function VoyageDetail() {
             NM
           </Txt>
         </Row>
+        {fixes && fixes.length > 1 && (
+          <Card paddingV={12} paddingH={12}>
+            <TrackMap fixes={fixes} />
+          </Card>
+        )}
         <Row gap={10} align="stretch">
           <View style={{ flex: 1 }}>
             <Tile label="Underway" value={fmtDur(v.underwayMin)} />
@@ -74,7 +81,7 @@ export default function VoyageDetail() {
           </View>
         </Row>
         <Row gap={8} wrap>
-          <Tag accent label={v.nightMin > 0 ? 'Night passage' : 'Day passage'} />
+          <Tag accent label={v.overnight ? 'Overnight passage' : v.nightMin > 0 ? 'Night passage' : 'Day passage'} />
           <Tag label={v.status === 'confirmed' ? 'Confirmed' : v.status} />
         </Row>
         <Spacer />

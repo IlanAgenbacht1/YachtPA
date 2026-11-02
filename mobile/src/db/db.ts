@@ -86,6 +86,10 @@ const MIGRATIONS: string[] = [
     value TEXT NOT NULL
   );
   `,
+  // 2: overnight passages (SCOPE §9).
+  `
+  ALTER TABLE voyages ADD COLUMN overnight INTEGER NOT NULL DEFAULT 0;
+  `,
 ];
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;

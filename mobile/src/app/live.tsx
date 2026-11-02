@@ -3,11 +3,11 @@ import { useId, useState } from 'react';
 import { Pressable, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 
-import { Blink, Breathe, Drift, FadeUp, Pulse } from '@/components/motion';
+import { Blink, Breathe, Drift, FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
+import { TrackMap } from '@/components/TrackMap';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Row, Sheet, Spacer, Tile, Txt } from '@/components/ui';
 import { nextCrossing, isNight } from '@/domain/sun';
-import type { Fix } from '@/domain/track';
 import { fmtClock, fmtDur, minutesOfDay } from '@/lib/format';
 import { thump } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
@@ -15,29 +15,6 @@ import { useTokens } from '@/theme';
 
 const WAVE_A = 'M0 22q48.75 -18 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
 const WAVE_B = 'M0 22q48.75 -14 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
-const BOX_W = 320;
-const BOX_H = 110;
-const PAD = 14;
-
-/** Fits the track into the card, north up, keeping proportions. */
-function project(fixes: Fix[]): { path: string; start: [number, number]; end: [number, number] } | null {
-  if (fixes.length === 0) return null;
-  const k = Math.cos((fixes[0].lat * Math.PI) / 180);
-  const xs = fixes.map((f) => f.lon * k);
-  const ys = fixes.map((f) => f.lat);
-  const minX = Math.min(...xs);
-  const maxX = Math.max(...xs);
-  const minY = Math.min(...ys);
-  const maxY = Math.max(...ys);
-  const span = Math.max(maxX - minX, (maxY - minY) * ((BOX_W - 2 * PAD) / (BOX_H - 2 * PAD)), 1e-4);
-  const scale = (BOX_W - 2 * PAD) / span;
-  const offX = (BOX_W - (maxX - minX) * scale) / 2;
-  const offY = (BOX_H - (maxY - minY) * scale) / 2;
-  const pts = xs.map((x, i): [number, number] => [offX + (x - minX) * scale, BOX_H - (offY + (ys[i] - minY) * scale)]);
-  const path = pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join('');
-  return { path, start: pts[0], end: pts[pts.length - 1] };
-}
-
 export default function LiveScreen() {
   const t = useTokens();
   const { voyage, stopVoyage, current } = useAppStore();
@@ -46,7 +23,6 @@ export default function LiveScreen() {
   if (!voyage) return stopping ? null : <Redirect href="/" />;
 
   const last = voyage.fixes[voyage.fixes.length - 1];
-  const proj = project(voyage.fixes);
   const startMin = minutesOfDay(new Date(voyage.startedAt));
   const clock = last?.ts ?? voyage.startedAt;
   const night = last ? isNight(clock, last.lat, last.lon) : false;
@@ -137,39 +113,7 @@ export default function LiveScreen() {
                     : 'Waiting for GPS…'}
               </Txt>
             </Row>
-            <View style={{ width: '100%', height: 110 }}>
-              <Svg viewBox="0 0 320 110" width="100%" height="110" fill="none">
-                <Path
-                  d="M0 22H320M0 44H320M0 66H320M0 88H320M32 0V110M64 0V110M96 0V110M128 0V110M160 0V110M192 0V110M224 0V110M256 0V110M288 0V110"
-                  stroke={t.colors.chart}
-                  strokeWidth="1"
-                />
-                {proj && (
-                  <>
-                    <Path d={proj.path} stroke={t.colors.track} strokeWidth="7" strokeLinecap="round" strokeLinejoin="round" />
-                    <Path d={proj.path} stroke={t.colors.accent} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                    <Circle cx={proj.start[0]} cy={proj.start[1]} r="8" stroke={t.colors.muted} strokeWidth="1.5" />
-                    <Circle cx={proj.start[0]} cy={proj.start[1]} r="3.5" fill={t.colors.muted} />
-                    <Circle cx={proj.end[0]} cy={proj.end[1]} r="6" fill={t.colors.accent} />
-                  </>
-                )}
-              </Svg>
-              {proj && (
-              <Pulse
-                style={{
-                  position: 'absolute',
-                  left: `${(proj.end[0] / BOX_W) * 100}%`,
-                  top: `${(proj.end[1] / BOX_H) * 100}%`,
-                  width: 12,
-                  height: 12,
-                  marginLeft: -6,
-                  marginTop: -6,
-                  borderRadius: 6,
-                  backgroundColor: t.colors.accent,
-                }}
-              />
-              )}
-            </View>
+            <TrackMap fixes={voyage.fixes} live />
             {voyage.mode === 'foreground' && (
               <Txt size={12} color="warn">
                 Keep YachtPA open with the screen on. To track with the phone locked, allow location “Always” in Settings.

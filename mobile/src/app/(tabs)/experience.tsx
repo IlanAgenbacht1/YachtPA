@@ -3,7 +3,7 @@ import { View } from 'react-native';
 import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Card, Col, Display, Dot, Eyebrow, Hero, Row, Sheet, Tile, Txt } from '@/components/ui';
-import { getExperience } from '@/db/repo';
+import { getExperience, type Breakdown } from '@/db/repo';
 import { fmtInt, fmtNum, fmtIsoMonth, fmtLoa } from '@/lib/format';
 import { useQuery } from '@/store/AppStore';
 import { useTokens } from '@/theme';
@@ -93,7 +93,51 @@ export default function ExperienceScreen() {
             </Row>
           </Card>
         </FadeUp>
+        {exp.voyages > 0 && (
+          <FadeUp delay={170}>
+            <BreakdownCard title="By passage type" rows={exp.byPassage} />
+          </FadeUp>
+        )}
+        {exp.voyages > 0 && (
+          <FadeUp delay={210}>
+            <BreakdownCard title="By vessel size" rows={exp.bySize} />
+          </FadeUp>
+        )}
+        {exp.byPosition.length > 1 && (
+          <FadeUp delay={250}>
+            <BreakdownCard title="By position" rows={exp.byPosition} />
+          </FadeUp>
+        )}
       </Sheet>
     </Screen>
+  );
+}
+
+/** Miles per category with a proportional bar; hours and voyage count underneath. */
+function BreakdownCard({ title, rows }: { title: string; rows: Breakdown[] }) {
+  const t = useTokens();
+  const max = Math.max(1e-9, ...rows.map((r) => r.nm));
+  return (
+    <Card gap={12} paddingV={14}>
+      <Eyebrow>{title}</Eyebrow>
+      {rows.map((r) => (
+        <Col key={r.label} gap={6}>
+          <Row justify="space-between">
+            <Txt size={14} weight={700}>
+              {r.label}
+            </Txt>
+            <Txt size={14} weight={800} tabular>
+              {fmtNum(r.nm)} NM
+            </Txt>
+          </Row>
+          <View style={{ height: 6, borderRadius: 99, backgroundColor: t.colors.track, overflow: 'hidden' }}>
+            <View style={{ width: `${(r.nm / max) * 100}%`, height: '100%', backgroundColor: t.colors.accent }} />
+          </View>
+          <Txt size={12} color="muted">
+            {fmtNum(r.hours)} h underway · {r.voyages} voyage{r.voyages === 1 ? '' : 's'}
+          </Txt>
+        </Col>
+      ))}
+    </Card>
   );
 }

@@ -4,9 +4,10 @@ import { Alert, View } from 'react-native';
 
 import { Rise, useProgress } from '@/components/motion';
 import { Screen } from '@/components/Screen';
-import { Button, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
+import { TrackMap } from '@/components/TrackMap';
+import { Button, Card, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
 import { confirmVoyage, deleteVoyage, getTrack, getVoyage, lastKnownPosition, type Voyage } from '@/db/repo';
-import { sanityCheck, summarise, type SanityFlag } from '@/domain/track';
+import { sanityCheck, summarise, type Fix, type SanityFlag } from '@/domain/track';
 import { fmtClock, fmtDateShort, fmtDur, fmtInt, minutesOfDay } from '@/lib/format';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
@@ -17,6 +18,7 @@ export default function SummaryScreen() {
   const { current, bump, flash } = useAppStore();
   const [voyage, setVoyage] = useState<Voyage | null | undefined>(undefined);
   const [flags, setFlags] = useState<SanityFlag[]>([]);
+  const [fixes, setFixes] = useState<Fix[]>([]);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const p = useProgress(1100, 250);
@@ -30,6 +32,7 @@ export default function SummaryScreen() {
       setFrom(v.fromName ?? '');
       setTo(v.toName ?? '');
       const [fixes, prev] = await Promise.all([getTrack(id), lastKnownPosition()]);
+      setFixes(fixes);
       setFlags(sanityCheck(summarise(fixes, { startedAt: v.startedAt, endedAt: v.endedAt ?? undefined }), prev));
     })();
   }, [id]);
@@ -103,8 +106,14 @@ export default function SummaryScreen() {
             </View>
           </Row>
 
+          {fixes.length > 1 && (
+            <Card paddingV={12} paddingH={12}>
+              <TrackMap fixes={fixes} />
+            </Card>
+          )}
+
           <Row gap={8} wrap>
-            <Tag accent label={voyage.nightMin > 0 ? 'Night passage' : 'Day passage'} />
+            <Tag accent label={voyage.overnight ? 'Overnight passage' : voyage.nightMin > 0 ? 'Night passage' : 'Day passage'} />
             {current && <Tag label={current.vessel.propulsion === 'sail' ? 'Sailing yacht' : 'Motor yacht'} />}
             {current && <Tag label={current.engagement.position} />}
           </Row>

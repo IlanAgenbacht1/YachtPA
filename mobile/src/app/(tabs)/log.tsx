@@ -73,7 +73,19 @@ export default function LogScreen() {
     setChosen(next);
   };
 
-  const diary = useMemo(() => buildDiary(logs ?? [], voyages ?? []), [logs, voyages]);
+  const [vesselFilter, setVesselFilter] = useState<string | null>(null);
+  const vesselNames = useMemo(
+    () => [...new Set([...(voyages ?? []).map((v) => v.vesselName), ...(logs ?? []).map((l) => l.vesselName ?? '')].filter(Boolean))],
+    [logs, voyages],
+  );
+  const diary = useMemo(
+    () =>
+      buildDiary(
+        (logs ?? []).filter((l) => !vesselFilter || l.vesselName === vesselFilter),
+        (voyages ?? []).filter((v) => !vesselFilter || v.vesselName === vesselFilter),
+      ),
+    [logs, voyages, vesselFilter],
+  );
 
   return (
     <Screen>
@@ -142,6 +154,14 @@ export default function LogScreen() {
 
         <Col gap={10} style={{ paddingTop: 12 }}>
           <Eyebrow>Diary</Eyebrow>
+          {vesselNames.length > 1 && (
+            <Row gap={8} wrap>
+              <Chip label="All yachts" selected={!vesselFilter} onPress={() => setVesselFilter(null)} />
+              {vesselNames.map((n) => (
+                <Chip key={n} label={n} selected={vesselFilter === n} onPress={() => setVesselFilter(n)} />
+              ))}
+            </Row>
+          )}
           {diary.length === 0 && (
             <Txt size={13} color="muted">
               Confirmed voyages and daily entries show up here.
