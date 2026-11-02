@@ -22,6 +22,7 @@ import { onboard as saveOnboarding, type Current } from '@/db/repo';
 import { summarise, type Fix, type TrackSummary } from '@/domain/track';
 import { setBackgroundListener } from '@/location/background';
 import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/location/feed';
+import { ensureNotificationPermission, rescheduleReminders } from '@/lib/reminders';
 
 type OnboardInput = Parameters<typeof saveOnboarding>[0];
 
@@ -171,6 +172,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [liveId]);
 
+  // Reminders follow the data: rebuild after every write and when a voyage starts or stops.
+  useEffect(() => {
+    if (ready) rescheduleReminders();
+  }, [ready, rev, liveId]);
+
   // A one-second clock while live, for elapsed time.
   useEffect(() => {
     if (!live) return;
@@ -196,6 +202,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const startVoyage = useCallback(async (): Promise<boolean> => {
     if (!current || live) return !!live;
+    await ensureNotificationPermission().catch(() => false);
     const source: FeedSource = simulate ? 'sim' : 'gps';
     const startedAt = Date.now();
     const id = await repo.startVoyage(current.engagement.id, startedAt, source);

@@ -6,6 +6,7 @@ import { Screen } from '@/components/Screen';
 import { Button, Chip, Col, DateField, Display, Eyebrow, Field, Hero, HeroButton, isoDate, Row, Segmented, Sheet, Spacer } from '@/components/ui';
 import { deleteDoc, getDoc, saveDoc } from '@/db/repo';
 import { tick } from '@/lib/haptics';
+import { ensureNotificationPermission } from '@/lib/reminders';
 import { useAppStore } from '@/store/AppStore';
 
 const COMMON = ['STCW Basic Safety', 'ENG1 Medical', 'Passport', 'VHF SRC', 'Powerboat Level 2', 'Yachtmaster Offshore', 'Seaman’s book', 'Schengen visa'];
@@ -47,6 +48,7 @@ export default function DocumentEditor() {
     }
     await saveDoc({ id, name: name.trim(), issuer: issuer.trim() || null, number: number.trim() || null, expires: hasExpiry === 'yes' ? expires : null });
     tick();
+    if (hasExpiry === 'yes') await ensureNotificationPermission().catch(() => false);
     bump();
     router.back();
   };
