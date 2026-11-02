@@ -188,10 +188,10 @@ Decided 2026-11-02: build local-first and add the cloud last, so nothing waits o
 | # | Milestone | Needs | Status |
 |---|---|---|---|
 | M1 | **Local records.** On-device database; onboarding (name, yacht, position); edit vessel and engagement, move to a new yacht; START/STOP with foreground GPS (works in Expo Go) or simulated GPS; track maths per §9 with tests; summary with sanity checks and editable place names; daily log (dictate with the iOS keyboard, one duty per line, activity tick-list); diary; voyage detail; documents wallet with traffic lights; experience totals; look saved. | Nothing | Done |
-| M2 | **Qualifications.** Rules as data (§4.4), seeded from official RYA pages with source URL and date: Yachtmaster Coastal and Offshore. Progress ring, requirement checklist, "appears to meet" wording. | Nothing | Next |
-| M3 | **Phone builds.** Background location via TaskManager ("Always" permission, START VOYAGE as the reason) with foreground fallback; JSON export; EAS config; Android APK for the developer's own test; TestFlight for crew. Then local notifications: expiry, "still underway?", missed days; 24 h battery run (Phase 0 spike). | Apple Developer Program ($99/yr) for TestFlight | Tracking, export and build config done, not yet run on a phone |
+| M2 | **Qualifications.** Rules as data (§4.4), seeded from official RYA pages with source URL and date: Yachtmaster Coastal and Offshore, Sail or Power. Progress ring, requirement checklist, "appears to meet" wording. Skipper flag per voyage. Manual voyage entry for past sea time. Experience breakdowns (passage type, size band, position); track map on summary. | Nothing | Done |
+| M3 | **Phone builds.** Background location via TaskManager ("Always" permission, START VOYAGE as the reason) with foreground fallback; JSON export; EAS config; local notifications (document expiry at 90/30/7/0 days, "still underway?" at 24/48 h, nudge after 3 days without a log); Android APK for the developer's own test; TestFlight for crew; 24 h battery run (Phase 0 spike). | Apple Developer Program ($99/yr) for TestFlight | Code done; not yet run on a phone |
 | M4 | **Voice → AI draft.** On-device speech recognition; transcript → structured entry via Claude against a fixed schema, through a small server function holding the API key. | M3; a function host (only an API proxy, not the full backend) | |
-| M5 | **Export.** PDF sea-service record, shared from the phone (JSON export already done in M3). | Nothing | |
+| M5 | **Export.** PDF sea-service record made on the phone: totals, vessels with days aboard and sea days, voyages, daily log, master's signature block per vessel, method note. | Nothing | Done |
 | M6 | **Account and cloud.** Sign-in, sync and backup (Supabase + PowerSync per §5). Until then, data is in the iPhone's own iCloud backup and the JSON export. | Backend decision (§11.2) | |
 | M7 | **TestFlight with crew.** | M3 | |
 
@@ -200,5 +200,12 @@ Shortcuts taken in M1, on purpose:
 - **No account yet.** "Account" in §3 moves to M6. Profile is local.
 - **Voice is the keyboard's dictation mic** until M4. It works today and needs nothing.
 - **In Expo Go, tracking needs the app open with the screen on** (YachtPA keeps the screen awake). Real builds track with the phone locked once "Always" is allowed.
-- **Night hours use sunset to sunrise** (sun 0.833° below the horizon). Per-authority definitions plug in with M2.
+- **Night hours use sunset to sunrise** (sun 0.833° below the horizon).
+
+How RYA terms are measured (M2), both erring low so the app never overstates:
+
+- **Day at sea / as skipper:** a local calendar day with at least 4 h underway (RYA: 8 consecutive hours living aboard, mostly at sea).
+- **Passage over 60 miles:** one voyage whose track distance and straight-line start → end both reach 60 NM (RYA: planned shortest route and distance run both exceed it). Manual voyages use the entered miles for both.
+- **Tidal waters, age, reduced-sea-time routes:** not computed. Tidal is a tick-box; the reduced routes are noted with a link to the RYA page.
+- **Simulated voyages** never count towards qualifications or the PDF.
 - **Distance, hours and speeds only count while underway** (§9 thresholds), so drift at anchor adds no miles.

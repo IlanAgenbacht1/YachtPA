@@ -1,16 +1,19 @@
 import { View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
+import { QualCard } from '@/components/QualCard';
 import { Screen } from '@/components/Screen';
 import { Card, Col, Display, Dot, Eyebrow, Hero, Row, Sheet, Tile, Txt } from '@/components/ui';
 import { getExperience, type Breakdown } from '@/db/repo';
 import { fmtInt, fmtNum, fmtIsoMonth, fmtLoa } from '@/lib/format';
+import { getQualificationResults } from '@/lib/quals';
 import { useQuery } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 export default function ExperienceScreen() {
   const t = useTokens();
   const exp = useQuery(getExperience);
+  const quals = useQuery(getQualificationResults);
   if (!exp) return null;
   const motor = exp.motorNm;
   const sail = exp.sailNm;
@@ -41,6 +44,16 @@ export default function ExperienceScreen() {
       </Hero>
 
       <Sheet gap={12}>
+        {quals && (
+          <FadeUp delay={20}>
+            <Col gap={10}>
+              <Eyebrow>Qualifications</Eyebrow>
+              {quals.map((r) => (
+                <QualCard key={r.qualification.id} r={r} />
+              ))}
+            </Col>
+          </FadeUp>
+        )}
         <FadeUp delay={50}>
           <Col gap={10}>
             <Row gap={10} align="stretch">

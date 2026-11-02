@@ -15,7 +15,7 @@ Everything used so far ships inside Expo Go, so no development build is needed y
 ## Checks
 
 ```
-npm test            # track maths and sun position (node --test, no extra deps)
+npm test            # track maths, sun, qualification rules, PDF record (node --test, no extra deps)
 npm run typecheck   # tsc --noEmit
 npm run lint
 npm run export:web  # proves the bundle builds; output in dist/
@@ -35,17 +35,19 @@ npm run export:web  # proves the bundle builds; output in dist/
 | `src/db/` | SQLite: schema and migrations (`db.ts`, append-only), all reads and writes (`repo.ts`). |
 | `src/domain/` | Pure TypeScript, tested with `node --test`: distance, sun position, track filtering, underway detection, night hours, sanity checks. |
 | `src/location/feed.ts` | GPS and the simulator. Picks background tracking when allowed, foreground otherwise. |
+| `src/domain/qualifications.ts` | Qualification rules as data (RYA, with source URL and date) and the engine that measures a record against them. |
+| `src/domain/recordHtml.ts` | The sea-service record as HTML; `src/lib/exportPdf.ts` turns it into a PDF. |
+| `src/lib/reminders.ts` | Local notifications, rebuilt from the database after every change. |
 | `src/location/background.ts` | The background location task. Writes fixes straight to SQLite. Imported at start-up. |
 
 ## What is real and what is not yet
 
-- Real: onboarding, yacht and position, voyages from GPS with distance, hours underway, night hours and speeds, sanity checks, daily log and diary, documents with expiry status, experience totals. All saved on the phone.
-- Tracking with the phone locked: built (`src/location/background.ts`), works in real builds (APK, TestFlight) once location is set to "Always". In Expo Go it falls back to tracking only while the app is open. Not yet run on a real phone.
-- Export: Profile → Export all my data writes a JSON file to the share sheet.
-- Not built yet: qualifications (M2), notifications (M3), voice → AI draft (M4; use the keyboard mic for now), PDF export (M5), account and sync (M6).
-- Builds: see [docs/BETA.md](../docs/BETA.md).
-- Place names come from Apple's geocoder when online, coordinates when not. They can be edited on the summary.
+- Real: onboarding; yacht and position; voyages from GPS (or typed in by hand) with miles, hours underway, night hours, overnight detection and sanity checks; daily log and diary; documents with expiry status; experience totals and breakdowns; RYA Yachtmaster Coastal and Offshore progress; reminders; PDF sea-service record; JSON export. All on the phone.
+- Tracking with the phone locked works in real builds (APK, TestFlight) once location is set to "Always". In Expo Go it tracks only while the app is open. Not yet run on a real phone.
+- Not built yet: voice → AI draft (M4; use the keyboard mic), account and cloud sync (M6).
+- Place names come from the phone's geocoder when online, coordinates when not. Editable on the summary.
 - App icon and splash are still the Expo placeholders.
+- Builds and testers: [docs/BETA.md](../docs/BETA.md).
 
 ## Notes
 

@@ -1,6 +1,6 @@
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { Alert, View } from 'react-native';
+import { Alert, Switch, View } from 'react-native';
 
 import { Rise, useProgress } from '@/components/motion';
 import { Screen } from '@/components/Screen';
@@ -16,11 +16,13 @@ import { useAppStore } from '@/store/AppStore';
 export default function SummaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { current, bump, flash } = useAppStore();
+  const position = current?.engagement.position ?? '';
   const [voyage, setVoyage] = useState<Voyage | null | undefined>(undefined);
   const [flags, setFlags] = useState<SanityFlag[]>([]);
   const [fixes, setFixes] = useState<Fix[]>([]);
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
+  const [skipper, setSkipper] = useState(false);
   const p = useProgress(1100, 250);
 
   useEffect(() => {
@@ -31,18 +33,19 @@ export default function SummaryScreen() {
       if (!v) return;
       setFrom(v.fromName ?? '');
       setTo(v.toName ?? '');
+      setSkipper(v.skipper || /captain|skipper|master/i.test(position));
       const [fixes, prev] = await Promise.all([getTrack(id), lastKnownPosition()]);
       setFixes(fixes);
       setFlags(sanityCheck(summarise(fixes, { startedAt: v.startedAt, endedAt: v.endedAt ?? undefined }), prev));
     })();
-  }, [id]);
+  }, [id, position]);
 
   if (!id || voyage === null) return <Redirect href="/" />;
   if (!voyage) return null;
 
   const onConfirm = async () => {
     tick();
-    await confirmVoyage(voyage.id, { from: from.trim() || 'Unknown', to: to.trim() || 'Unknown' });
+    await confirmVoyage(voyage.id, { from: from.trim() || 'Unknown', to: to.trim() || 'Unknown' }, skipper);
     bump();
     router.dismissTo('/');
     flash(`Voyage saved · ${fmtInt(voyage.distanceNm)} NM added to your record`);
@@ -137,6 +140,18 @@ export default function SummaryScreen() {
               <Field label="To" value={to} onChangeText={setTo} autoCapitalize="words" />
             </View>
           </Row>
+
+          <Card row gap={12} paddingV={12}>
+            <Col gap={2} flex={1}>
+              <Txt size={15} weight={600}>
+                I was skipper
+              </Txt>
+              <Txt size={12} color="muted">
+                Responsible for planning and running this passage, start to finish.
+              </Txt>
+            </Col>
+            <Switch value={skipper} onValueChange={setSkipper} />
+          </Card>
 
           <Spacer />
           <Button label="Confirm voyage" icon="check" iconStrokeWidth={2.4} onPress={onConfirm} />

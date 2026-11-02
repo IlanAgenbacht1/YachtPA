@@ -55,12 +55,22 @@ export type TrackSummary = {
   segments: Segment[];
   /** underway through a whole night: a segment that starts and ends in daylight with night inside (SCOPE §9) */
   overnight: boolean;
+  /** underway minutes per local calendar day ("2026-11-02"), for sea-day rules */
+  underwayByDay: Record<string, number>;
   first: Fix | null;
   last: Fix | null;
   kept: number;
 };
 
 const HOUR = 3600000;
+
+/** Local calendar day of a timestamp, "2026-11-02". */
+export function dayKey(ts: number): string {
+  const d = new Date(ts);
+  const m = d.getMonth() + 1;
+  const day = d.getDate();
+  return `${d.getFullYear()}-${m < 10 ? '0' : ''}${m}-${day < 10 ? '0' : ''}${day}`;
+}
 
 export function filterFixes(fixes: Fix[], rules: TrackRules = DEFAULT_RULES): Fix[] {
   const out: Fix[] = [];
@@ -134,6 +144,7 @@ export function summarise(
   let nightMs = 0;
   let maxKn = 0;
   let overnight = false;
+  const underwayByDay: Record<string, number> = {};
   const segments: Segment[] = [];
   for (const [a, b] of ranges) {
     let segNm = 0;
@@ -145,6 +156,8 @@ export function summarise(
       segNm += distanceNm(p, q);
       underwayMs += dt;
       const mid = (p.ts + q.ts) / 2;
+      const day = dayKey(mid);
+      underwayByDay[day] = (underwayByDay[day] ?? 0) + dt / 60000;
       if (isNight(mid, (p.lat + q.lat) / 2, (p.lon + q.lon) / 2)) {
         nightMs += dt;
         segNight += dt;
@@ -183,6 +196,7 @@ export function summarise(
     headingDeg,
     segments,
     overnight,
+    underwayByDay,
     first,
     last,
     kept: fixes.length,

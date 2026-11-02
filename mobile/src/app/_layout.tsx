@@ -64,6 +64,8 @@ function Shell() {
         <Stack.Screen name="vessel" />
         <Stack.Screen name="document" options={{ animation: 'slide_from_bottom' }} />
         <Stack.Screen name="voyage/[id]" />
+        <Stack.Screen name="qualification/[id]" />
+        <Stack.Screen name="voyage-new" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
       <Toast />
     </ThemeProvider>

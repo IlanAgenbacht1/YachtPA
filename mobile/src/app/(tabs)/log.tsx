@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useEffect, useMemo, useState } from 'react';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
@@ -153,7 +153,14 @@ export default function LogScreen() {
         {date !== today && <Button variant="ghost" label="Back to today" onPress={() => setDate(today)} />}
 
         <Col gap={10} style={{ paddingTop: 12 }}>
-          <Eyebrow>Diary</Eyebrow>
+          <Row justify="space-between">
+            <Eyebrow>Diary</Eyebrow>
+            <Pressable onPress={() => router.push('/voyage-new')} accessibilityRole="button" hitSlop={8}>
+              <Txt size={13} weight={700} color="accent">
+                + Add a past voyage
+              </Txt>
+            </Pressable>
+          </Row>
           {vesselNames.length > 1 && (
             <Row gap={8} wrap>
               <Chip label="All yachts" selected={!vesselFilter} onPress={() => setVesselFilter(null)} />

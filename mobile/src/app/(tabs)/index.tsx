@@ -2,10 +2,12 @@ import { router } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import { FadeUp, Blink } from '@/components/motion';
+import { QualCard } from '@/components/QualCard';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Row, Sheet, Txt } from '@/components/ui';
 import { getDraftVoyage, getExperience, getLog, listDocs, localDate } from '@/db/repo';
 import { docCounts } from '@/lib/docs';
+import { getQualificationResults } from '@/lib/quals';
 import { fmtDateShort, fmtDur, fmtNum } from '@/lib/format';
 import { thump } from '@/lib/haptics';
 import { useAppStore, useQuery, type LiveVoyage } from '@/store/AppStore';
@@ -17,10 +19,13 @@ export default function HomeScreen() {
   const exp = useQuery(getExperience);
   const docs = useQuery(listDocs);
   const draft = useQuery(getDraftVoyage);
+  const quals = useQuery(getQualificationResults);
   const todayLog = useQuery(() => (current ? getLog(current.engagement.id, localDate()) : Promise.resolve(null)), [current?.engagement.id]);
   if (!current) return null;
   const loggedToday = todayLog?.status === 'confirmed';
   const counts = docCounts(docs ?? []);
+  // The next one to work towards: furthest along that is not yet met, else the last met.
+  const nextQual = quals ? ([...quals].filter((q) => !q.seaTimeMet).sort((a, b) => b.progress - a.progress)[0] ?? quals[quals.length - 1]) : undefined;
   const maxMonth = Math.max(1, ...(exp?.months.map((m) => m.nm) ?? [0]));
 
   const onStart = async () => {
@@ -176,6 +181,11 @@ export default function HomeScreen() {
           </Card>
         </FadeUp>
 
+        {nextQual && (
+          <FadeUp delay={190}>
+            <QualCard r={nextQual} />
+          </FadeUp>
+        )}
       </Sheet>
     </Screen>
   );

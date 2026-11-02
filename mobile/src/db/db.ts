@@ -90,6 +90,11 @@ const MIGRATIONS: string[] = [
   `
   ALTER TABLE voyages ADD COLUMN overnight INTEGER NOT NULL DEFAULT 0;
   `,
+  // 3: skipper flag and underway minutes per day, for qualification rules.
+  `
+  ALTER TABLE voyages ADD COLUMN skipper INTEGER NOT NULL DEFAULT 0;
+  ALTER TABLE voyages ADD COLUMN underway_by_day TEXT NOT NULL DEFAULT '{}';
+  `,
 ];
 
 let dbPromise: Promise<SQLite.SQLiteDatabase> | null = null;

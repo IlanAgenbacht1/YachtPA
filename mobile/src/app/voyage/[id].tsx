@@ -1,10 +1,10 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import { Alert, View } from 'react-native';
+import { Alert, Switch, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { TrackMap } from '@/components/TrackMap';
-import { Button, Card, Display, Eyebrow, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
-import { deleteVoyage, getTrack, getVoyage } from '@/db/repo';
+import { Button, Card, Col, Display, Eyebrow, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
+import { deleteVoyage, getTrack, getVoyage, setVoyageSkipper } from '@/db/repo';
 import { fmtClock, fmtDateShort, fmtDur, minutesOfDay } from '@/lib/format';
 import { useAppStore, useQuery } from '@/store/AppStore';
 
@@ -84,6 +84,23 @@ export default function VoyageDetail() {
           <Tag accent label={v.overnight ? 'Overnight passage' : v.nightMin > 0 ? 'Night passage' : 'Day passage'} />
           <Tag label={v.status === 'confirmed' ? 'Confirmed' : v.status} />
         </Row>
+        <Card row gap={12} paddingV={12}>
+          <Col gap={2} flex={1}>
+            <Txt size={15} weight={600}>
+              I was skipper
+            </Txt>
+            <Txt size={12} color="muted">
+              Counts towards days and passages as skipper.
+            </Txt>
+          </Col>
+          <Switch
+            value={v.skipper}
+            onValueChange={async (on) => {
+              await setVoyageSkipper(v.id, on);
+              bump();
+            }}
+          />
+        </Card>
         <Spacer />
         <Button variant="ghost" label="Delete voyage" onPress={onDelete} />
       </Sheet>

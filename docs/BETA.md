@@ -9,6 +9,10 @@ You have an Android phone and no Mac; your testers have iPhones. Nothing below n
 | iOS and Android bundles compile | Checked with `expo export` |
 | iOS permissions and background mode | Checked with `expo prebuild`: `UIBackgroundModes: location`, "Always" prompt text, no-encryption flag set (skips the export-compliance question) |
 | Tracking with the phone locked | Built (`src/location/background.ts`). **Not yet run on a real phone.** |
+| Reminders | Document expiry, "Still underway?", missed days. Local, no server. |
+| Sea service record | Profile → Sea service record (PDF). |
+| Qualifications | RYA Yachtmaster Coastal and Offshore progress from the official requirements. |
+| Past sea time | Log → + Add a past voyage. |
 | Data export | Profile → Export all my data (JSON via the share sheet). The safety net until cloud backup exists. |
 | Data on the phone | Saved on the phone; survives restarts. |
 
@@ -56,3 +60,5 @@ Notes for the boat:
 - Battery used over a long passage (Settings → Battery on iPhone).
 - Any voyage that says "No movement detected" when they were moving.
 - Anything confusing in the daily log.
+- Do the qualification numbers match their own logbook?
+- Is the PDF something they would hand to a captain?

@@ -38,6 +38,9 @@ export type Voyage = {
   avgKn: number;
   maxKn: number;
   overnight: boolean;
+  skipper: boolean;
+  underwayByDay: Record<string, number>;
+  vessel: { loaM: number | null; gt: number | null; propulsion: Propulsion };
   source: VoyageSource;
   status: VoyageStatus;
 };
@@ -194,7 +197,7 @@ export async function stopVoyage(id: string, endedAt: number, s: TrackSummary, n
     `UPDATE voyages SET ended_at = ?, from_name = ?, to_name = ?,
        start_lat = ?, start_lon = ?, end_lat = ?, end_lon = ?,
        distance_nm = ?, duration_min = ?, underway_min = ?, night_min = ?, avg_kn = ?, max_kn = ?,
-       overnight = ?, status = 'draft'
+       overnight = ?, underway_by_day = ?, status = 'draft'
      WHERE id = ?`,
     endedAt,
     names.from,
@@ -210,13 +213,68 @@ export async function stopVoyage(id: string, endedAt: number, s: TrackSummary, n
     s.avgKn,
     s.maxKn,
     s.overnight ? 1 : 0,
+    JSON.stringify(s.underwayByDay),
     id,
   );
 }
 
-export async function confirmVoyage(id: string, names: { from: string; to: string }): Promise<void> {
+export async function confirmVoyage(id: string, names: { from: string; to: string }, skipper: boolean): Promise<void> {
   const db = await getDb();
-  await db.runAsync("UPDATE voyages SET from_name = ?, to_name = ?, status = 'confirmed' WHERE id = ?", names.from, names.to, id);
+  await db.runAsync("UPDATE voyages SET from_name = ?, to_name = ?, skipper = ?, status = 'confirmed' WHERE id = ?", names.from, names.to, skipper ? 1 : 0, id);
+}
+
+export async function setVoyageSkipper(id: string, skipper: boolean): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE voyages SET skipper = ? WHERE id = ?', skipper ? 1 : 0, id);
+}
+
+/**
+ * A voyage typed in by hand: past sea time, or one where GPS failed. Hours
+ * underway are spread over consecutive days from the start date, at most
+ * 24 h a day, so the sea-day rules see them.
+ */
+export async function addManualVoyage(input: {
+  engagementId: string;
+  date: string;
+  from: string;
+  to: string;
+  distanceNm: number;
+  underwayHours: number;
+  nightHours: number;
+  overnight: boolean;
+  skipper: boolean;
+}): Promise<string> {
+  const db = await getDb();
+  const id = newId();
+  const [y, m, d] = input.date.split('-').map(Number);
+  const startedAt = new Date(y, m - 1, d, 8, 0, 0).getTime();
+  const underwayMin = input.underwayHours * 60;
+  const byDay: Record<string, number> = {};
+  let left = underwayMin;
+  for (let i = 0; left > 0; i++) {
+    byDay[localDate(new Date(y, m - 1, d + i))] = Math.min(left, 1440);
+    left -= 1440;
+  }
+  await db.runAsync(
+    `INSERT INTO voyages (id, engagement_id, started_at, ended_at, from_name, to_name, distance_nm, duration_min, underway_min, night_min,
+       avg_kn, max_kn, overnight, skipper, underway_by_day, source, status)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, 'manual', 'confirmed')`,
+    id,
+    input.engagementId,
+    startedAt,
+    startedAt + underwayMin * 60000,
+    input.from,
+    input.to,
+    input.distanceNm,
+    underwayMin,
+    underwayMin,
+    input.nightHours * 60,
+    underwayMin > 0 ? input.distanceNm / input.underwayHours : 0,
+    input.overnight ? 1 : 0,
+    input.skipper ? 1 : 0,
+    JSON.stringify(byDay),
+  );
+  return id;
 }
 
 export async function deleteVoyage(id: string): Promise<void> {
@@ -482,6 +540,11 @@ type VoyageRow = {
   avg_kn: number;
   max_kn: number;
   overnight: number;
+  skipper: number;
+  underway_by_day: string;
+  loa_m: number | null;
+  gt: number | null;
+  propulsion: Propulsion;
   source: VoyageSource;
   status: VoyageStatus;
 };
@@ -496,7 +559,7 @@ type LogRow = {
   updated_at: number;
 };
 
-const VOYAGE_SELECT = `SELECT vg.*, v.name AS vessel_name FROM voyages vg
+const VOYAGE_SELECT = `SELECT vg.*, v.name AS vessel_name, v.loa_m, v.gt, v.propulsion FROM voyages vg
   JOIN engagements e ON e.id = vg.engagement_id JOIN vessels v ON v.id = e.vessel_id `;
 
 async function firstVoyage(where: string, ...params: (string | number)[]): Promise<Voyage | null> {
@@ -537,6 +600,9 @@ function toVoyage(r: VoyageRow): Voyage {
     avgKn: r.avg_kn,
     maxKn: r.max_kn,
     overnight: r.overnight === 1,
+    skipper: r.skipper === 1,
+    underwayByDay: JSON.parse(r.underway_by_day || '{}') as Record<string, number>,
+    vessel: { loaM: r.loa_m, gt: r.gt, propulsion: r.propulsion },
     source: r.source,
     status: r.status,
   };
