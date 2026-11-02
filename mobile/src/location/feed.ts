@@ -1,13 +1,15 @@
 /**
  * Where fixes come from while a voyage is live.
  *
- * - `gps`: expo-location in the foreground. Works in Expo Go. Tracking pauses
- *   if the phone locks or the app is backgrounded; background tracking needs
- *   a development build and lands in the Phase 0 spike (SCOPE §10).
+ * - `gps`: background updates when the build supports them and "Always" is
+ *   granted (`background.ts`, which writes fixes to the database itself);
+ *   otherwise a foreground watch, which pauses when the phone locks.
  * - `sim`: a boat doing ~9 kn from the last known position, one simulated
  *   minute per real second, for testing at a desk.
  */
 import * as Location from 'expo-location';
+
+import { startBackground, stopBackground } from './background';
 
 import { destination, fmtLatLon, type LatLon } from '@/domain/geo';
 import type { Fix } from '@/domain/track';
@@ -15,16 +17,23 @@ import type { Fix } from '@/domain/track';
 export type FeedSource = 'gps' | 'sim';
 export type Stop = () => void;
 
-/** Requests permission and starts the GPS. Throws a user-facing message if location is off or refused. */
-export async function startGps(onFix: (f: Fix) => void): Promise<Stop> {
+/**
+ * Requests permission and starts the GPS for `voyageId`. Throws a user-facing
+ * message if location is off or refused. In `background` mode fixes are
+ * already saved by the task; in `foreground` mode the caller saves them.
+ */
+export async function startGps(voyageId: string, onFix: (f: Fix) => void): Promise<{ stop: Stop; mode: 'background' | 'foreground' }> {
   if (!(await Location.hasServicesEnabledAsync())) throw new Error('Location Services are off. Turn them on in Settings.');
   const perm = await Location.requestForegroundPermissionsAsync();
   if (perm.status !== 'granted') throw new Error('YachtPA needs location access to track a voyage.');
+  if (await startBackground(voyageId).catch(() => false)) {
+    return { stop: () => void stopBackground(), mode: 'background' };
+  }
   const sub = await Location.watchPositionAsync(
     { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 15000 },
     (loc) => onFix({ ts: loc.timestamp, lat: loc.coords.latitude, lon: loc.coords.longitude, accuracy: loc.coords.accuracy }),
   );
-  return () => sub.remove();
+  return { stop: () => sub.remove(), mode: 'foreground' };
 }
 
 const SIM_TICK_MS = 1000;

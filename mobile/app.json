@@ -8,7 +8,11 @@
     "scheme": "yachtpa",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "bundleIdentifier": "com.yachtpa.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +21,8 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.yachtpa.app"
     },
     "web": {
       "output": "single",
@@ -36,7 +41,10 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "YachtPA uses your location between START and STOP to log a voyage."
+          "locationWhenInUsePermission": "YachtPA uses your location between START and STOP to log a voyage.",
+          "locationAlwaysAndWhenInUsePermission": "Allow \u201cAlways\u201d so YachtPA keeps logging your voyage with the phone locked. Location is only used between START and STOP.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
         }
       ]
     ],

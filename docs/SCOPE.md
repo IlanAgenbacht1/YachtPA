@@ -163,8 +163,8 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 ## 11. Open decisions
 
 1. **Mobile stack:** Expo/React Native. Decided 2026-09-25; scaffold in `mobile/`.
-   - **Platform:** iOS only. Decided 2026-11-02. Android is out of scope until further notice; no Android testing, store listing or platform-specific work.
-   - **iOS distribution:** Expo Go is enough while GPS, voice and AI are simulated. Background location does not run in Expo Go, so the Phase 0 spike needs a development build (free Apple ID + Xcode on a Mac, 7-day signing, own phone only) and crew testing needs TestFlight, which needs the Apple Developer Program ($99/yr). Buy it when the spike starts.
+   - **Platform:** iOS only. Decided 2026-11-02. No Android store listing or Android-specific features. The developer has no iPhone, so Android builds (APK, internal only) are used for the developer's own testing; keep them working, they cost nothing extra in React Native.
+   - **iOS distribution:** TestFlight via EAS cloud builds; no Mac or iPhone needed. Needs the Apple Developer Program ($99/yr). Testers on iPhone are the first iOS test. Steps in [BETA.md](BETA.md).
 2. **Backend:** Supabase (recommended for speed) or Azure/.NET (ecosystem fit)?
 3. **MVP boundary:** include the certificate wallet? Captain sign-off in MVP or Phase 2?
 4. **First qualifications to seed:** RYA Yachtmaster Coastal + Offshore and STCW basic set?
@@ -189,9 +189,9 @@ Decided 2026-11-02: build local-first and add the cloud last, so nothing waits o
 |---|---|---|---|
 | M1 | **Local records.** On-device database; onboarding (name, yacht, position); edit vessel and engagement, move to a new yacht; START/STOP with foreground GPS (works in Expo Go) or simulated GPS; track maths per §9 with tests; summary with sanity checks and editable place names; daily log (dictate with the iOS keyboard, one duty per line, activity tick-list); diary; voyage detail; documents wallet with traffic lights; experience totals; look saved. | Nothing | Done |
 | M2 | **Qualifications.** Rules as data (§4.4), seeded from official RYA pages with source URL and date: Yachtmaster Coastal and Offshore. Progress ring, requirement checklist, "appears to meet" wording. | Nothing | Next |
-| M3 | **iPhone build.** EAS development build; background location via TaskManager ("Always" permission, START VOYAGE as the reason); local notifications: expiry, "still underway?", missed days; 24 h battery run (Phase 0 spike). | Apple Developer Program ($99/yr), an iPhone | |
+| M3 | **Phone builds.** Background location via TaskManager ("Always" permission, START VOYAGE as the reason) with foreground fallback; JSON export; EAS config; Android APK for the developer's own test; TestFlight for crew. Then local notifications: expiry, "still underway?", missed days; 24 h battery run (Phase 0 spike). | Apple Developer Program ($99/yr) for TestFlight | Tracking, export and build config done, not yet run on a phone |
 | M4 | **Voice → AI draft.** On-device speech recognition; transcript → structured entry via Claude against a fixed schema, through a small server function holding the API key. | M3; a function host (only an API proxy, not the full backend) | |
-| M5 | **Export.** PDF sea-service record and full JSON export, shared from the phone. | Nothing | |
+| M5 | **Export.** PDF sea-service record, shared from the phone (JSON export already done in M3). | Nothing | |
 | M6 | **Account and cloud.** Sign-in, sync and backup (Supabase + PowerSync per §5). Until then, data is in the iPhone's own iCloud backup and the JSON export. | Backend decision (§11.2) | |
 | M7 | **TestFlight with crew.** | M3 | |
 
@@ -199,6 +199,6 @@ Shortcuts taken in M1, on purpose:
 
 - **No account yet.** "Account" in §3 moves to M6. Profile is local.
 - **Voice is the keyboard's dictation mic** until M4. It works today and needs nothing.
-- **Tracking needs the app open with the screen on** until M3 (YachtPA keeps the screen awake while tracking).
+- **In Expo Go, tracking needs the app open with the screen on** (YachtPA keeps the screen awake). Real builds track with the phone locked once "Always" is allowed.
 - **Night hours use sunset to sunrise** (sun 0.833° below the horizon). Per-authority definitions plug in with M2.
 - **Distance, hours and speeds only count while underway** (§9 thresholds), so drift at anchor adds no miles.

@@ -5,6 +5,7 @@ import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { resetDb } from '@/db/db';
+import { exportAll } from '@/lib/exportData';
 import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
 import { LOOKS, useLook, type Look } from '@/theme';
@@ -18,12 +19,13 @@ const LOOK_COPY: Record<Look, { name: string; blurb: string }> = {
 
 export default function ProfileScreen() {
   const { look, tokens, setLook } = useLook();
-  const { current, simulate, setSimulate, voyage, refresh } = useAppStore();
+  const { current, simulate, setSimulate, voyage, refresh, flash } = useAppStore();
   if (!current) return null;
 
   const rows: { label: string; onPress: () => void }[] = [
     { label: 'Vessel and position', onPress: () => router.push('/vessel') },
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
+    { label: 'Export all my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
 
   const onDeleteAll = () => {

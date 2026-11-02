@@ -4,6 +4,7 @@
  * with `useQuery`, which re-runs whenever `bump()` signals a write.
  */
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
+import { AppState } from 'react-native';
 import {
   createContext,
   useCallback,
@@ -19,6 +20,7 @@ import {
 import * as repo from '@/db/repo';
 import { onboard as saveOnboarding, type Current } from '@/db/repo';
 import { summarise, type Fix, type TrackSummary } from '@/domain/track';
+import { setBackgroundListener } from '@/location/background';
 import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/location/feed';
 
 type OnboardInput = Parameters<typeof saveOnboarding>[0];
@@ -33,6 +35,8 @@ export type LiveVoyage = {
   nm: number;
   elapsedMin: number;
   speed: number;
+  /** gps only: whether tracking survives the phone locking */
+  mode: 'background' | 'foreground' | null;
 };
 
 type Actions = {
@@ -66,6 +70,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [current, setCurrent] = useState<Current | null>(null);
   const [live, setLive] = useState<{ id: string; startedAt: number; source: FeedSource; fromName: string | null; fixes: Fix[] } | null>(null);
   const [simulate, setSimulateState] = useState(false);
+  const [mode, setMode] = useState<'background' | 'foreground' | null>(null);
   const [rev, setRev] = useState(0);
   const [toast, setToast] = useState('');
   const [now, setNow] = useState(() => Date.now());
@@ -88,11 +93,24 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     bump();
   }, [bump]);
 
-  /** Appends a fix in memory and on disk. */
-  const onFix = useCallback((voyageId: string, f: Fix) => {
+  /** Appends a fix in memory only (the background task has already saved it). */
+  const showFix = useCallback((voyageId: string, f: Fix) => {
     setLive((v) => (v && v.id === voyageId ? { ...v, fixes: [...v.fixes, f] } : v));
-    repo.addFix(voyageId, f).catch(() => {});
   }, []);
+
+  /** Appends a fix in memory and on disk. */
+  const onFix = useCallback(
+    (voyageId: string, f: Fix) => {
+      showFix(voyageId, f);
+      repo.addFix(voyageId, f).catch(() => {});
+    },
+    [showFix],
+  );
+
+  useEffect(() => {
+    setBackgroundListener(showFix);
+    return () => setBackgroundListener(null);
+  }, [showFix]);
 
   const startFeed = useCallback(
     async (v: { id: string; startedAt: number; source: FeedSource; fixes: Fix[] }) => {
@@ -101,8 +119,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         const from = await repo.lastKnownPosition();
         feedStop.current = startSim((f) => onFix(v.id, f), from, v.startedAt, v.fixes[v.fixes.length - 1]);
       } else {
-        feedStop.current = await startGps((f) => onFix(v.id, f));
-        activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+        const gps = await startGps(v.id, (f) => onFix(v.id, f));
+        feedStop.current = gps.stop;
+        setMode(gps.mode);
+        // Foreground tracking stops when the screen locks, so keep it on.
+        if (gps.mode === 'foreground') activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
       }
     },
     [onFix],
@@ -111,6 +132,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const stopFeed = useCallback(() => {
     feedStop.current?.();
     feedStop.current = null;
+    setMode(null);
     deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
   }, []);
 
@@ -137,6 +159,17 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [startFeed, flash]);
+
+  // Coming back to the app: reload the track from disk in case fixes arrived while the UI slept.
+  const liveId = live?.id;
+  useEffect(() => {
+    if (!liveId) return;
+    const sub = AppState.addEventListener('change', (st) => {
+      if (st !== 'active') return;
+      repo.getTrack(liveId).then((fixes) => setLive((v) => (v && v.id === liveId ? { ...v, fixes } : v)));
+    });
+    return () => sub.remove();
+  }, [liveId]);
 
   // A one-second clock while live, for elapsed time.
   useEffect(() => {
@@ -204,8 +237,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     const last = live.fixes[live.fixes.length - 1];
     const clock = live.source === 'sim' ? (last?.ts ?? live.startedAt) : now;
     const track = summarise(live.fixes, { startedAt: live.startedAt, endedAt: clock });
-    return { ...live, track, nm: track.distanceNm, elapsedMin: track.durationMin, speed: track.currentKn };
-  }, [live, now]);
+    return { ...live, track, nm: track.distanceNm, elapsedMin: track.durationMin, speed: track.currentKn, mode };
+  }, [live, now, mode]);
 
   const value = useMemo<AppStore>(
     () => ({ ready, current, voyage, simulate, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, flash, soon }),

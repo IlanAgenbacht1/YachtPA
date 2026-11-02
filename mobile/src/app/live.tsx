@@ -170,9 +170,14 @@ export default function LiveScreen() {
               />
               )}
             </View>
-            {voyage.source === 'gps' && (
+            {voyage.mode === 'foreground' && (
+              <Txt size={12} color="warn">
+                Keep YachtPA open with the screen on. To track with the phone locked, allow location “Always” in Settings.
+              </Txt>
+            )}
+            {voyage.mode === 'background' && (
               <Txt size={12} color="muted">
-                Keep YachtPA open with the screen on. Tracking with the phone locked comes with the full iPhone build.
+                Tracking with the phone locked. You can put it away.
               </Txt>
             )}
           </Card>

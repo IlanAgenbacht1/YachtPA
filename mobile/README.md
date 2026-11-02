@@ -34,13 +34,16 @@ npm run export:web  # proves the bundle builds; output in dist/
 | `src/store/AppStore.tsx` | Current yacht, the live voyage, toast. `useQuery` re-reads the database after every write. |
 | `src/db/` | SQLite: schema and migrations (`db.ts`, append-only), all reads and writes (`repo.ts`). |
 | `src/domain/` | Pure TypeScript, tested with `node --test`: distance, sun position, track filtering, underway detection, night hours, sanity checks. |
-| `src/location/feed.ts` | GPS (expo-location, foreground) and the simulator. Background tracking plugs in here in M3. |
+| `src/location/feed.ts` | GPS and the simulator. Picks background tracking when allowed, foreground otherwise. |
+| `src/location/background.ts` | The background location task. Writes fixes straight to SQLite. Imported at start-up. |
 
 ## What is real and what is not yet
 
 - Real: onboarding, yacht and position, voyages from GPS with distance, hours underway, night hours and speeds, sanity checks, daily log and diary, documents with expiry status, experience totals. All saved on the phone.
-- Needs the app open: GPS tracking stops if the phone locks or YachtPA goes to the background. Background tracking needs the development build (M3).
-- Not built yet: qualifications (M2), notifications and background GPS (M3), voice → AI draft (M4; use the keyboard mic for now), PDF export (M5), account and sync (M6).
+- Tracking with the phone locked: built (`src/location/background.ts`), works in real builds (APK, TestFlight) once location is set to "Always". In Expo Go it falls back to tracking only while the app is open. Not yet run on a real phone.
+- Export: Profile → Export all my data writes a JSON file to the share sheet.
+- Not built yet: qualifications (M2), notifications (M3), voice → AI draft (M4; use the keyboard mic for now), PDF export (M5), account and sync (M6).
+- Builds: see [docs/BETA.md](../docs/BETA.md).
 - Place names come from Apple's geocoder when online, coordinates when not. They can be edited on the summary.
 - App icon and splash are still the Expo placeholders.
 

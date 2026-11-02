@@ -5,6 +5,8 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Toast } from '@/components/Toast';
+// Defines the background location task at start-up, before any fix arrives.
+import '@/location/background';
 import { AppStoreProvider, useAppStore } from '@/store/AppStore';
 import { LookProvider, useAppFonts, useTokens } from '@/theme';
 
