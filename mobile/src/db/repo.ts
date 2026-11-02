@@ -143,6 +143,18 @@ export async function changeVessel(input: { vesselName: string; propulsion: Prop
   });
 }
 
+export type EngagementWithVessel = Engagement & { vessel: Vessel };
+
+/** Every engagement, oldest first, for the sea-service record. */
+export async function listEngagements(): Promise<EngagementWithVessel[]> {
+  const db = await getDb();
+  const rows = await db.getAllAsync<EngagementRow & VesselRow>(
+    `SELECT e.*, v.id AS v_id, v.name AS v_name, v.propulsion, v.loa_m, v.gt, v.flag
+       FROM engagements e JOIN vessels v ON v.id = e.vessel_id ORDER BY e.start_date`,
+  );
+  return rows.map((r) => ({ ...toEngagement(r), vessel: toVessel(r) }));
+}
+
 // ── Voyages and track ─────────────────────────────────────────────────────────
 
 export async function startVoyage(engagementId: string, startedAt: number, source: VoyageSource): Promise<string> {
@@ -373,14 +385,23 @@ export async function saveLog(e: Omit<LogEntry, 'id' | 'updatedAt'> & { id?: str
 }
 
 export async function listLogs(limit = 60): Promise<LogEntry[]> {
+  return listLogsWhere('', limit);
+}
+
+async function listLogsWhere(where: string, limit: number): Promise<LogEntry[]> {
   const db = await getDb();
   const rows = await db.getAllAsync<LogRow & { vessel_name: string }>(
     `SELECT l.*, v.name AS vessel_name FROM log_entries l
        JOIN engagements e ON e.id = l.engagement_id JOIN vessels v ON v.id = e.vessel_id
-      ORDER BY l.date DESC LIMIT ?`,
+      ${where} ORDER BY l.date DESC LIMIT ?`,
     limit,
   );
   return rows.map((r) => ({ ...toLog(r), vesselName: r.vessel_name }));
+}
+
+/** Every confirmed log entry, for the sea-service record. */
+export async function listAllLogs(): Promise<LogEntry[]> {
+  return listLogsWhere("WHERE l.status != 'draft'", 100000);
 }
 
 // ── Documents ─────────────────────────────────────────────────────────────────

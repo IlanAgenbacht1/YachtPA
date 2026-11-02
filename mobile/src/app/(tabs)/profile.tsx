@@ -6,6 +6,7 @@ import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { resetDb } from '@/db/db';
 import { exportAll } from '@/lib/exportData';
+import { exportRecordPdf } from '@/lib/exportPdf';
 import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
 import { LOOKS, useLook, type Look } from '@/theme';
@@ -25,6 +26,7 @@ export default function ProfileScreen() {
   const rows: { label: string; onPress: () => void }[] = [
     { label: 'Vessel and position', onPress: () => router.push('/vessel') },
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
+    { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().catch((e: Error) => flash(e.message)) },
     { label: 'Export all my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
 
