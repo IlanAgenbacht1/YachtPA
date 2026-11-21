@@ -24,8 +24,9 @@ Without this the app works fully offline and testers use Profile → Export all 
 
 1. Create a free project at supabase.com.
 2. SQL Editor → paste and run [`supabase/migrations/20261102000000_backup.sql`](../supabase/migrations/20261102000000_backup.sql). It creates the tables, row-level security (each user sees only their own rows) and the delete-account function.
-3. Authentication → Emails → "Magic Link" template: put the code in the email, e.g. `Your YachtPA code is {{ .Token }}`. The app asks for the 6-digit code; it does not use links.
-4. Project Settings → API: copy the Project URL and the publishable (anon) key into `mobile/.env`, then commit it. Both are public by design; row-level security protects the data.
+3. Authentication → Emails → Templates: in **Magic Link**, and to be safe also **Confirm signup**, put the code in the email, e.g. `Your YachtPA code is {{ .Token }}`. The app asks for the code; it does not use links.
+4. Authentication → Sign In / Providers → Email: set the email OTP length to **6** (the app says "6-digit code").
+5. Project Settings → API Keys: copy the Project URL and the publishable (anon) key into `mobile/.env`, then commit it. Both are public by design; row-level security protects the data.
 
 ```
 EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
