@@ -10,7 +10,7 @@ npx expo start      # scan the QR code with Expo Go on iOS or Android
 npm run web         # exports the web build and serves it on :8081 (see "Web" below)
 ```
 
-Expo Go runs everything except **background** GPS: in Expo Go a voyage tracks while the app is open. For tracking with the screen off, make a development build (`npx expo run:ios|android`, or `npx eas-cli@latest build --profile development`).
+Expo Go runs most of the app, but two things need a development build (`npx expo run:ios|android`, or `npx eas-cli@latest build --profile development`): **background** GPS (in Expo Go a voyage tracks only while the app is open) and **speech-to-text** for the daily log (in Expo Go you record a voice note and type).
 
 ## Checks
 
@@ -40,7 +40,7 @@ Real, on the phone, offline:
 - Onboarding, profile, vessels and engagements.
 - Voyage START/STOP with GPS (background on a development build, foreground in Expo Go). Distance, underway time, night hours (from sun position), average and max speed, passage type and sanity flags, all computed from the track.
 - Manual voyages for passages without GPS.
-- Daily log: dictate or type → offline draft (splits and tidies only your words, tags activities, reads watch times) → edit → confirm. Voice note recorded and kept with the entry. Tick-list fallback.
+- Daily log: tap the mic and speak → live on-device transcription (expo-speech-recognition, works offline where the phone has an offline model; yachting vocabulary passed to the recogniser) → offline draft (splits and tidies only your words, tags activities, reads watch times) → edit → confirm. The audio is kept with the entry. Typing and the tick-list are fallbacks. Android phones can download the offline speech model from Profile → Settings.
 - Diary by day with vessel filter and missing-day prompts.
 - Experience totals and breakdowns; vessel history.
 - Qualification progress for RYA Yachtmaster Coastal and Offshore, from the official RYA pages.
@@ -51,7 +51,7 @@ Real, on the phone, offline:
 
 Not yet (waiting on the backend decision, SCOPE §11.2):
 - Account and login, cloud sync and backup.
-- AI-polished duty wording (Claude) and transcription of the recorded audio. Today the transcript comes from the keyboard's dictation.
+- AI-polished duty wording (Claude), and cloud re-transcription of the kept audio for phones without on-device recognition.
 - Server-rendered PDF (the PDF is built on the phone for now).
 
 Simulated GPS: turn it on in Profile → Settings to run a scripted Port Louis → Black River voyage at one minute per second. The web build always uses it.

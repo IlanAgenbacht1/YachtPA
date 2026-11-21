@@ -1,0 +1,166 @@
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, View } from 'react-native';
+
+import { Bar, Blink, FadeUp } from '@/components/motion';
+import { keep } from '@/components/VoiceNote';
+import { Button, Card, Col, Eyebrow, Icon, Row, Txt } from '@/components/ui';
+import { applyResult, EMPTY_TRANSCRIPT, fullText, speechErrorText, YACHT_VOCABULARY, type Transcript } from '@/lib/dictation';
+import { thump } from '@/lib/haptics';
+import { listen, speechSupport, type Session } from '@/lib/speech';
+import { useTokens } from '@/theme';
+
+const BAR_HEIGHTS = [18, 30, 40, 24, 36, 16, 42, 28, 20, 38, 26, 14, 32, 22];
+
+/**
+ * The big mic. Tap, speak, watch it write, tap Done. The transcript and the
+ * recorded audio go to `onDone`; the caller turns them into the draft.
+ */
+export function Dictate({ onDone, onType }: { onDone: (text: string, audioUri: string | null) => void; onType: () => void }) {
+  const t = useTokens();
+  const support = speechSupport();
+  const [phase, setPhase] = useState<'idle' | 'starting' | 'listening'>('idle');
+  const [tx, setTx] = useState<Transcript>(EMPTY_TRANSCRIPT);
+  const [error, setError] = useState('');
+  const session = useRef<Session | null>(null);
+  const txRef = useRef<Transcript>(EMPTY_TRANSCRIPT);
+  const audio = useRef<string | null>(null);
+  const lastError = useRef('');
+
+  // Leaving the screen mid-sentence throws the session away.
+  useEffect(() => () => session.current?.abort(), []);
+
+  const start = async () => {
+    if (phase !== 'idle') return;
+    thump();
+    setError('');
+    setTx(EMPTY_TRANSCRIPT);
+    txRef.current = EMPTY_TRANSCRIPT;
+    audio.current = null;
+    lastError.current = '';
+    setPhase('starting');
+    const r = await listen(
+      {
+        onResult: (text, isFinal) => {
+          txRef.current = applyResult(txRef.current, text, isFinal);
+          setTx(txRef.current);
+        },
+        onAudio: (uri) => {
+          audio.current = uri;
+        },
+        onError: (code) => {
+          lastError.current = code;
+        },
+        onEnd: () => {
+          session.current = null;
+          // The audio file is reported just before or after "end"; give it a beat.
+          setTimeout(async () => {
+            const text = fullText(txRef.current);
+            const uri = audio.current ? await keep(audio.current) : null;
+            setPhase('idle');
+            if (text) onDone(text, uri);
+            else if (lastError.current && lastError.current !== 'aborted') setError(speechErrorText(lastError.current));
+          }, 350);
+        },
+      },
+      YACHT_VOCABULARY,
+    );
+    if ('error' in r) {
+      setPhase('idle');
+      setError(speechErrorText(r.error));
+      return;
+    }
+    session.current = r;
+    setPhase('listening');
+  };
+
+  const done = () => {
+    thump();
+    session.current?.stop();
+  };
+
+  const cancel = () => {
+    session.current?.abort();
+    txRef.current = EMPTY_TRANSCRIPT;
+    setTx(EMPTY_TRANSCRIPT);
+  };
+
+  const listening = phase !== 'idle';
+
+  return (
+    <FadeUp>
+      <Col align="center" gap={18} style={{ paddingTop: 22, paddingBottom: 4 }}>
+        <View style={{ width: 116, height: 116, alignItems: 'center', justifyContent: 'center' }}>
+          {!listening && <View style={{ position: 'absolute', top: -30, left: -30, right: -30, bottom: -30, borderRadius: 999, backgroundColor: t.colors.accent, opacity: 0.07 }} />}
+          <View style={{ position: 'absolute', top: -14, left: -14, right: -14, bottom: -14, borderRadius: 999, backgroundColor: t.colors.accent, opacity: 0.12 }} />
+          <Pressable
+            onPress={listening ? done : start}
+            accessibilityRole="button"
+            accessibilityLabel={listening ? 'Done speaking' : 'Start speaking'}
+            style={({ pressed }) => [
+              { width: 116, height: 116, borderRadius: 58, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.accent, boxShadow: t.shadows.button },
+              pressed && { transform: [{ scale: 0.97 }] },
+            ]}>
+            <Icon name={listening ? 'stop' : 'mic'} size={listening ? 36 : 46} color="accentFg" strokeWidth={1.9} />
+          </Pressable>
+        </View>
+
+        {listening ? (
+          <>
+            <Row gap={4} style={{ height: 44 }}>
+              {BAR_HEIGHTS.map((h, i) => (
+                <Bar key={i} height={h} color={t.colors.accent} delay={i * 70} />
+              ))}
+            </Row>
+            <Blink>
+              <Eyebrow color="accent">{phase === 'starting' ? 'Starting…' : 'Listening · tap when done'}</Eyebrow>
+            </Blink>
+          </>
+        ) : (
+          <Col align="center" gap={4}>
+            <Txt size={17} weight={700}>
+              Tap and say what you did today
+            </Txt>
+            <Txt size={13} color="muted">
+              {support.onDevice ? 'The app writes it up. You confirm. Works offline.' : 'The app writes it up. You confirm.'}
+            </Txt>
+          </Col>
+        )}
+      </Col>
+
+      {listening && (
+        <Card style={{ minHeight: 120, marginTop: 16 }}>
+          <Txt size={16} lh={24}>
+            {tx.committed}
+            {tx.interim ? <Txt size={16} lh={24} color="muted">{`${tx.committed ? ' ' : ''}${tx.interim}`}</Txt> : null}
+            {!tx.committed && !tx.interim ? <Txt size={16} color="muted">Go ahead…</Txt> : null}
+          </Txt>
+        </Card>
+      )}
+
+      {listening && (
+        <View style={{ gap: 10, marginTop: 16 }}>
+          <Button label="Done" icon="check" iconStrokeWidth={2.4} height={58} onPress={done} />
+          <Pressable onPress={cancel} accessibilityRole="button" style={{ alignSelf: 'center', padding: 8 }}>
+            <Txt size={13} weight={700} color="muted">
+              Cancel
+            </Txt>
+          </Pressable>
+        </View>
+      )}
+
+      {error ? (
+        <Txt size={13} weight={600} color="danger" align="center" style={{ marginTop: 12 }}>
+          {error}
+        </Txt>
+      ) : null}
+
+      {!listening && (
+        <Pressable onPress={onType} accessibilityRole="button" style={{ alignSelf: 'center', padding: 10, marginTop: 4 }}>
+          <Txt size={13} weight={700} color="accent">
+            Type instead
+          </Txt>
+        </Pressable>
+      )}
+    </FadeUp>
+  );
+}

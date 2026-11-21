@@ -9,6 +9,7 @@ import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Eyebrow, Field, Hero, Icon, Input, Sheet, Toggle, Txt } from '@/components/ui';
 import { vesselHistory } from '@/domain/experience';
 import { shareJson, sharePdf } from '@/lib/exportRecord';
+import { downloadOfflineModel, speechSupport } from '@/lib/speech';
 import { useAppStore } from '@/store/AppStore';
 import { LOOKS, useLook, type Look } from '@/theme';
 
@@ -192,6 +193,10 @@ export default function ProfileScreen() {
                 <Info label="Notifications" value={perms.notifications} />
                 {Platform.OS !== 'web' && <Button variant="ghost" label="Open phone settings" height={44} onPress={() => Linking.openSettings()} />}
               </>
+            )}
+            <Info label="Speech to text" value={speechSupport().available ? (speechSupport().onDevice ? 'On this phone, works offline' : 'Needs signal on this phone') : 'Needs the full app build'} />
+            {Platform.OS === 'android' && speechSupport().available && (
+              <Button variant="ghost" label={busy === 'speech' ? 'Downloading…' : 'Download offline speech'} height={44} onPress={() => run('speech', async () => s.flash(await downloadOfflineModel()))} />
             )}
             <Toggle
               label="Simulated GPS"

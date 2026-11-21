@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
+import { Dictate } from '@/components/Dictate';
 import { FadeUp, Rise } from '@/components/motion';
 import { VoiceNote } from '@/components/VoiceNote';
 import { Button, Card, Chip, Col, Eyebrow, Field, Icon, Input, Row, Segmented, Txt } from '@/components/ui';
 import { draftFrom } from '@/domain/draft';
 import { ACTIVITIES, isLocked, type Duty, type LogEntry, type Watch } from '@/domain/types';
 import { tick } from '@/lib/haptics';
+import { speechSupport } from '@/lib/speech';
 import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
@@ -26,7 +28,6 @@ const STATUS = { draft: 'Draft', confirmed: 'Saved', requested: 'Sent for sign-o
  * that only splits and tidies your own words, fix anything, confirm.
  */
 export function EntryEditor({ engagementId, date, position, existing, onSaved }: Props) {
-  const t = useTokens();
   const { saveEntry, lastPlace, flash } = useAppStore();
   const locked = existing ? isLocked(existing.status) : false;
 
@@ -39,11 +40,13 @@ export function EntryEditor({ engagementId, date, position, existing, onSaved }:
   const [location, setLocation] = useState(existing?.location ?? lastPlace);
   const [notes, setNotes] = useState(existing?.notes ?? '');
   const [fromDraft, setFromDraft] = useState(false);
+  const canDictate = speechSupport().available;
+  const [typing, setTyping] = useState(!canDictate);
 
   const toggle = (a: string) => setActivities((xs) => (xs.includes(a) ? xs.filter((x) => x !== a) : [...xs, a]));
 
-  const writeUp = () => {
-    const d = draftFrom(transcript);
+  const writeUp = (text = transcript) => {
+    const d = draftFrom(text);
     setDuties(d.duties);
     setActivities((xs) => [...new Set([...xs, ...d.activities])]);
     setWatches(d.watches);
@@ -131,23 +134,50 @@ export function EntryEditor({ engagementId, date, position, existing, onSaved }:
 
   /* ---------- say it ---------- */
   if (mode === 'speak') {
+    const ticks = (
+      <FadeUp delay={140}>
+        <Col gap={10}>
+          <Eyebrow>Or tick what you did</Eyebrow>
+          <Row gap={8} wrap>
+            {ACTIVITIES.map((a) => (
+              <Chip key={a} label={a} selected={activities.includes(a)} onPress={() => toggle(a)} />
+            ))}
+          </Row>
+          {activities.length > 0 && <Button variant="ghost" label={`Continue with ${activities.length} ticked`} onPress={() => setMode('edit')} />}
+        </Col>
+      </FadeUp>
+    );
+
+    if (!typing) {
+      return (
+        <>
+          <Dictate
+            onDone={(text, uri) => {
+              setTranscript(text);
+              if (uri) setVoiceUri(uri);
+              writeUp(text);
+            }}
+            onType={() => setTyping(true)}
+          />
+          {ticks}
+        </>
+      );
+    }
+
     return (
       <>
         <FadeUp>
           <Card gap={12}>
-            <Row gap={10}>
-              <View style={{ width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: t.colors.accent }}>
-                <Icon name="mic" size={22} color="accentFg" />
-              </View>
-              <Col gap={2} flex={1}>
-                <Txt size={17} weight={700}>
-                  Say what you did today
-                </Txt>
+            <Col gap={2}>
+              <Txt size={17} weight={700}>
+                What did you do today?
+              </Txt>
+              {!canDictate && (
                 <Txt size={12} color="muted">
-                  Tap the mic on your keyboard to dictate. Works offline.
+                  Speech-to-text needs the full app build (not Expo Go). Record a voice note and type the gist.
                 </Txt>
-              </Col>
-            </Row>
+              )}
+            </Col>
             <Input
               value={transcript}
               onChangeText={setTranscript}
@@ -157,22 +187,21 @@ export function EntryEditor({ engagementId, date, position, existing, onSaved }:
               accessibilityLabel="What you did today"
             />
             <Button label="Write it up" icon="check" iconStrokeWidth={2.4} height={56} onPress={() => (transcript.trim() ? writeUp() : setMode('edit'))} />
+            {canDictate && (
+              <Pressable onPress={() => setTyping(false)} accessibilityRole="button" style={{ alignSelf: 'center', padding: 6 }}>
+                <Txt size={13} weight={700} color="accent">
+                  Speak instead
+                </Txt>
+              </Pressable>
+            )}
           </Card>
         </FadeUp>
-        <FadeUp delay={80}>
-          <VoiceNote uri={voiceUri} onChange={setVoiceUri} />
-        </FadeUp>
-        <FadeUp delay={140}>
-          <Col gap={10}>
-            <Eyebrow>Or tick what you did</Eyebrow>
-            <Row gap={8} wrap>
-              {ACTIVITIES.map((a) => (
-                <Chip key={a} label={a} selected={activities.includes(a)} onPress={() => toggle(a)} />
-              ))}
-            </Row>
-            {activities.length > 0 && <Button variant="ghost" label={`Continue with ${activities.length} ticked`} onPress={() => setMode('edit')} />}
-          </Col>
-        </FadeUp>
+        {!canDictate && (
+          <FadeUp delay={80}>
+            <VoiceNote uri={voiceUri} onChange={setVoiceUri} />
+          </FadeUp>
+        )}
+        {ticks}
       </>
     );
   }

@@ -72,7 +72,18 @@
         }
       ],
       "expo-document-picker",
-      "expo-sharing"
+      "expo-sharing",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "YachtPA records your spoken daily log so it can be written up for you.",
+          "speechRecognitionPermission": "YachtPA turns what you say into your daily log, on the phone where it can, so it works at sea.",
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.as"
+          ]
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

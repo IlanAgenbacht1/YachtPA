@@ -9,7 +9,7 @@ import { fmtClock } from '@/lib/format';
 import { useTokens } from '@/theme';
 
 /** Moves a finished recording out of the cache so the OS cannot clear it. */
-async function keep(uri: string): Promise<string> {
+export async function keep(uri: string): Promise<string> {
   if (Platform.OS === 'web') return uri;
   try {
     const dir = new Directory(Paths.document, 'voice');

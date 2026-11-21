@@ -1,0 +1,113 @@
+/**
+ * Speech-to-text for the daily log (SCOPE §4.5: voice must work offshore).
+ *
+ * Uses expo-speech-recognition: Apple's SFSpeechRecognizer on iOS, Android's
+ * SpeechRecognizer, and the Web Speech API in browsers. On-device recognition
+ * is requested whenever the phone supports it, so it works with no signal.
+ * The audio is kept as well, so the entry can be re-transcribed later.
+ *
+ * The native module is not in Expo Go, so it is loaded only when present;
+ * callers check `speechSupport().available` and fall back to typing.
+ */
+import { requireOptionalNativeModule } from 'expo';
+import { Platform } from 'react-native';
+
+import type * as SR from 'expo-speech-recognition';
+
+type Module = typeof SR.ExpoSpeechRecognitionModule;
+
+let mod: Module | null | undefined;
+
+function load(): Module | null {
+  if (mod !== undefined) return mod;
+  mod = null;
+  if (Platform.OS !== 'web' && !requireOptionalNativeModule('ExpoSpeechRecognition')) return mod;
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    mod = (require('expo-speech-recognition') as typeof SR).ExpoSpeechRecognitionModule;
+  } catch {
+    mod = null;
+  }
+  return mod;
+}
+
+export type SpeechSupport = { available: boolean; onDevice: boolean; keepsAudio: boolean };
+
+export function speechSupport(): SpeechSupport {
+  const m = load();
+  if (!m) return { available: false, onDevice: false, keepsAudio: false };
+  try {
+    return { available: m.isRecognitionAvailable(), onDevice: m.supportsOnDeviceRecognition(), keepsAudio: Platform.OS !== 'web' && m.supportsRecording() };
+  } catch {
+    return { available: false, onDevice: false, keepsAudio: false };
+  }
+}
+
+export type ListenHandlers = {
+  onResult: (text: string, isFinal: boolean) => void;
+  onAudio: (uri: string) => void;
+  onError: (code: string) => void;
+  onEnd: () => void;
+};
+
+export type Session = { stop: () => void; abort: () => void };
+
+/** Asks for permission, then listens until stopped. */
+export async function listen(h: ListenHandlers, vocabulary: string[]): Promise<Session | { error: string }> {
+  const m = load();
+  if (!m) return { error: 'unavailable' };
+  const perm = await m.requestPermissionsAsync();
+  if (!perm.granted) return { error: 'not-allowed' };
+
+  const support = speechSupport();
+  const subs = [
+    m.addListener('result', (e) => {
+      const text = e.results[0]?.transcript ?? '';
+      if (text) h.onResult(text, e.isFinal);
+    }),
+    m.addListener('audioend', (e) => {
+      if (e.uri) h.onAudio(e.uri);
+    }),
+    m.addListener('error', (e) => h.onError(e.error)),
+    m.addListener('end', () => {
+      subs.forEach((s) => s.remove());
+      h.onEnd();
+    }),
+  ];
+
+  try {
+    m.start({
+      interimResults: true,
+      continuous: true,
+      addsPunctuation: true,
+      requiresOnDeviceRecognition: support.onDevice,
+      contextualStrings: vocabulary,
+      recordingOptions: support.keepsAudio ? { persist: true } : undefined,
+      iosTaskHint: 'dictation',
+      androidIntentOptions: {
+        EXTRA_PREFER_OFFLINE: true,
+        EXTRA_LANGUAGE_MODEL: 'free_form',
+        // A pause to think should not end the log.
+        EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 8000,
+        EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS: 8000,
+      },
+    });
+  } catch {
+    subs.forEach((s) => s.remove());
+    return { error: 'unknown' };
+  }
+
+  return { stop: () => m.stop(), abort: () => m.abort() };
+}
+
+/** Android: fetch the offline speech model so dictation works at sea. */
+export async function downloadOfflineModel(): Promise<string> {
+  const m = load();
+  if (!m || Platform.OS !== 'android') return 'Not needed on this phone.';
+  try {
+    const r = await m.androidTriggerOfflineModelDownload({ locale: 'en-US' });
+    return r.status === 'download_success' ? 'Offline speech is ready.' : r.status === 'opened_dialog' ? 'Follow the prompt to download.' : 'Download scheduled.';
+  } catch {
+    return 'This phone cannot download an offline speech model.';
+  }
+}
