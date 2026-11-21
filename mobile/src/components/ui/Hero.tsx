@@ -1,34 +1,50 @@
-import { useId, type ReactNode } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import { StyleSheet, View, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Defs, Ellipse, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 
 import { useTokens } from '@/theme';
 
-/** The gradient behind every hero. Linear top-to-bottom, plus Horizon's orange glow at the foot. */
+/**
+ * The gradient behind every hero. Linear top-to-bottom, plus Horizon's orange
+ * glow at the foot. Drawn at the measured pixel size: percentage-sized SVGs
+ * render at the wrong size on Android. A solid fill sits underneath so the
+ * hero is never white, even before the first measurement.
+ */
 export function HeroBackground() {
   const t = useTokens();
   const id = useId();
+  const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const lin = `lin${id}`;
   const rad = `rad${id}`;
   const glow = t.hero.glow;
   return (
-    <Svg style={StyleSheet.absoluteFill} width="100%" height="100%" pointerEvents="none">
-      <Defs>
-        <LinearGradient id={lin} x1="0" y1="0" x2="0" y2="1">
-          <Stop offset="0" stopColor={t.hero.from} />
-          <Stop offset="1" stopColor={t.hero.to} />
-        </LinearGradient>
-        {glow && (
-          <RadialGradient id={rad} cx="50%" cy="50%" rx="50%" ry="50%">
-            <Stop offset="0" stopColor={glow.color} stopOpacity={glow.opacity} />
-            <Stop offset="0.6" stopColor={glow.color} stopOpacity={0} />
-          </RadialGradient>
-        )}
-      </Defs>
-      <Rect x="0" y="0" width="100%" height="100%" fill={`url(#${lin})`} />
-      {glow && <Ellipse cx="50%" cy="100%" rx="45%" ry="55%" fill={`url(#${rad})`} />}
-    </Svg>
+    <View
+      pointerEvents="none"
+      style={[StyleSheet.absoluteFill, { backgroundColor: t.hero.to }]}
+      onLayout={(e) => {
+        const { width, height } = e.nativeEvent.layout;
+        if (!size || size.w !== width || size.h !== height) setSize({ w: width, h: height });
+      }}>
+      {size && (
+        <Svg width={size.w} height={size.h}>
+          <Defs>
+            <LinearGradient id={lin} x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor={t.hero.from} />
+              <Stop offset="1" stopColor={t.hero.to} />
+            </LinearGradient>
+            {glow && (
+              <RadialGradient id={rad} cx="50%" cy="50%" rx="50%" ry="50%">
+                <Stop offset="0" stopColor={glow.color} stopOpacity={glow.opacity} />
+                <Stop offset="0.6" stopColor={glow.color} stopOpacity={0} />
+              </RadialGradient>
+            )}
+          </Defs>
+          <Rect x={0} y={0} width={size.w} height={size.h} fill={`url(#${lin})`} />
+          {glow && <Ellipse cx={size.w / 2} cy={size.h} rx={size.w * 0.45} ry={size.h * 0.55} fill={`url(#${rad})`} />}
+        </Svg>
+      )}
+    </View>
   );
 }
 

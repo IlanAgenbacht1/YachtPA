@@ -157,7 +157,7 @@ function Glow() {
   const t = useTokens();
   const id = useId();
   return (
-    <Svg width="100%" height="100%" viewBox="0 0 240 170">
+    <Svg width={240} height={170} viewBox="0 0 240 170">
       <Defs>
         <RadialGradient id={`glow${id}`} cx="50%" cy="50%" rx="50%" ry="50%">
           <Stop offset="0" stopColor={t.colors.accent} stopOpacity={1} />

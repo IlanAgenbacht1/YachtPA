@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -36,9 +37,12 @@ function project(fixes: Fix[]): { path: string; start: [number, number]; end: [n
 export function TrackMap({ fixes, live }: { fixes: Fix[]; live?: boolean }) {
   const t = useTokens();
   const proj = project(fixes);
+  // Measured width, so the SVG has exact pixel sizes (percentages misrender on Android).
+  const [w, setW] = useState(0);
   return (
-    <View style={{ width: '100%', aspectRatio: W / H }}>
-      <Svg viewBox={`0 0 ${W} ${H}`} width="100%" height="100%" fill="none">
+    <View style={{ width: '100%', aspectRatio: W / H }} onLayout={(e) => setW(e.nativeEvent.layout.width)}>
+      {w > 0 && (
+      <Svg viewBox={`0 0 ${W} ${H}`} width={w} height={(w * H) / W} fill="none">
         <Path d={GRID} stroke={t.colors.chart} strokeWidth="1" />
         {proj && (
           <>
@@ -50,7 +54,8 @@ export function TrackMap({ fixes, live }: { fixes: Fix[]; live?: boolean }) {
           </>
         )}
       </Svg>
-      {proj && live && (
+      )}
+      {proj && live && w > 0 && (
         <Pulse
           style={{
             position: 'absolute',

@@ -6,7 +6,9 @@ import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Chip, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { getLog, listLogs, listVoyages, localDate, saveLog, type LogEntry, type Voyage } from '@/db/repo';
+import { Dictate } from '@/components/Dictate';
 import { draftFromText } from '@/domain/draft';
+import { speechSupport } from '@/lib/speech';
 import { ACTIVITIES } from '@/lib/constants';
 import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
 import { tick } from '@/lib/haptics';
@@ -14,9 +16,11 @@ import { useAppStore, useQuery } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 /**
- * One entry per day per yacht: what you did (one duty per line, dictate with
- * the keyboard mic) and what kind of work it was. Below it, the diary.
- * The AI write-up from a voice note slots in above the text box later.
+ * One entry per day per yacht: what you did and what kind of work it was.
+ * Tap the big mic and speak (in-app speech recognition, offline where the
+ * phone supports it); what you said becomes the draft: one duty per line and
+ * activity ticks. Edit, confirm. Where the mic is not available (Expo Go,
+ * the browser) it is typing plus the keyboard's own mic. Below, the diary.
  */
 export default function LogScreen() {
   const t = useTokens();
@@ -68,6 +72,18 @@ export default function LogScreen() {
   };
 
   // Offer the tidy-up when the text reads like speech: long lines or sentences rather than a list.
+  const micAvailable = speechSupport().available;
+  const [typing, setTyping] = useState(false);
+  // Speech goes straight into the draft: appended as duties, activities ticked.
+  const onSpoken = (spoken: string) => {
+    const d = draftFromText(spoken);
+    const lines = [...text.split('\n').map((l) => l.trim()).filter(Boolean), ...(d.duties.length ? d.duties : [spoken.trim()])];
+    setText(lines.join('\n'));
+    setChosen(new Set([...chosen, ...d.activities]));
+    tick();
+  };
+  const showMic = micAvailable && !typing && text.trim().length === 0;
+
   const canTidy = text.trim().length > 0 && (/[.;,]/.test(text) || text.split('\n').some((l) => l.length > 60));
   const onTidy = () => {
     const d = draftFromText(text);
@@ -123,14 +139,21 @@ export default function LogScreen() {
                 </View>
               )}
             </Row>
-            <Field
-              value={text}
-              onChangeText={setText}
-              multiline
-              placeholder={'Washed down the exterior\nChanged generator fuel filters\nSafety inspection before departure'}
-              hint="One duty per line. Tap the mic on the keyboard to say it, then tidy it into duties."
-            />
-            {canTidy && <Button variant="ghost" icon="check" label="Tidy into duties" onPress={onTidy} />}
+            {showMic ? (
+              <Dictate onDone={onSpoken} onType={() => setTyping(true)} />
+            ) : (
+              <>
+                <Field
+                  value={text}
+                  onChangeText={setText}
+                  multiline
+                  placeholder={'Washed down the exterior\nChanged generator fuel filters\nSafety inspection before departure'}
+                  hint={micAvailable ? 'One duty per line. Edit anything before you confirm.' : 'One duty per line. Tap the mic on the keyboard to say it, then tidy it into duties.'}
+                />
+                {canTidy && <Button variant="ghost" icon="check" label="Tidy into duties" onPress={onTidy} />}
+                {micAvailable && <Dictate compact onDone={onSpoken} />}
+              </>
+            )}
           </Col>
         </FadeUp>
 

@@ -47,7 +47,7 @@ npm run export:web  # proves the bundle builds; output in dist/
 
 - Real: onboarding; yacht and position; voyages from GPS (or typed in by hand) with miles, hours underway, night hours, overnight detection and sanity checks; daily log and diary; documents with expiry status; experience totals and breakdowns; RYA Yachtmaster Coastal and Offshore progress; reminders; PDF sea-service record; JSON export. All on the phone.
 - Tracking with the phone locked works in real builds (APK, TestFlight) once location is set to "Always". In Expo Go it tracks only while the app is open. Not yet run on a real phone.
-- Log draft: dictate with the keyboard mic, then "Tidy into duties" (`src/domain/draft.ts`, on the phone).
+- Log: tap the big mic and speak (`expo-speech-recognition`, on-device where the phone supports it; Android can download the offline model under Profile). What you say becomes duties and activity ticks (`src/domain/draft.ts`). In Expo Go and the browser the mic module is missing, so it falls back to typing and the keyboard's own mic. Ported from the in-app mic built in another session (branch `claude/lucid-noether-jhcjul`).
 - Cloud backup: optional, Supabase (`src/sync/`, schema in `../supabase/migrations/`). Off unless `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are set in `.env`. Not yet run against a live project.
 - Place names come from the phone's geocoder when online, coordinates when not. Editable on the summary.
 - App icon and splash are still the Expo placeholders.

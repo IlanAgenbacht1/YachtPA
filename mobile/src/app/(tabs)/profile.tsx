@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { Alert, Pressable, Switch, View } from 'react-native';
+import { Alert, Platform, Pressable, Switch, View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
@@ -7,6 +7,7 @@ import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from
 import { resetDb } from '@/db/db';
 import { exportAll } from '@/lib/exportData';
 import { exportRecordPdf } from '@/lib/exportPdf';
+import { downloadOfflineSpeech } from '@/lib/speechSetup';
 import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
 import { LOOKS, useLook, type Look } from '@/theme';
@@ -28,6 +29,7 @@ export default function ProfileScreen() {
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
     { label: 'Cloud backup', onPress: () => router.push('/cloud') },
     { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().catch((e: Error) => flash(e.message)) },
+    ...(Platform.OS === 'android' ? [{ label: 'Download offline speech', onPress: () => downloadOfflineSpeech().then(flash) }] : []),
     { label: 'Export all my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
 

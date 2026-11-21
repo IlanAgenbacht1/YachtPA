@@ -42,7 +42,7 @@ export default function HomeScreen() {
             <Row gap={6}>
               <Dot color={simulate ? 'warn' : 'ok'} size={6} />
               <Txt size={11} weight={700} color="heroMuted">
-                {simulate ? 'Simulated GPS' : 'On this iPhone'}
+                {simulate ? 'Simulated GPS' : 'On this phone'}
               </Txt>
             </Row>
           </Row>
