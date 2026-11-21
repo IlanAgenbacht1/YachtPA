@@ -10,3 +10,4 @@ export { Ring } from './Ring';
 export { Sheet } from './Sheet';
 export { Tile } from './Tile';
 export { Display, Eyebrow, Txt, useColor, type ColorProp } from './Txt';
+export { DateInput, Field, Input, num, Segmented, Toggle } from './form';

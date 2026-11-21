@@ -1,251 +1,429 @@
 /**
- * App state for the demo flows: voyage START → live → STOP → summary → confirm,
- * and log entry: idle → recording → AI draft → confirm.
- *
- * The voyage numbers come from a simulated feed (one "minute" every 600 ms)
- * so the flow can be exercised on any phone today. `startVoyage` / `stopVoyage`
- * are the seam where the background-GPS spike plugs in: the feed will become
- * expo-location fixes and the maths moves to the computation rules in
- * docs/SCOPE.md §9.
+ * App state. Everything is loaded from SQLite into memory (a crew member's
+ * records are small; track points stay on disk) and every action writes to
+ * SQLite first, then reloads. Derived numbers come from src/domain.
  */
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 
-import { experience, passage, simStart, transcript } from '@/data/sample';
+import * as repo from '@/db/repo';
+import { newId } from '@/db/db';
+import { dayKey } from '@/domain/dates';
+import { counts as docCounts } from '@/domain/documents';
+import { experience, type Ctx, type Experience } from '@/domain/experience';
+import { placeName } from '@/domain/places';
+import { QUALIFICATIONS } from '@/domain/qualData';
+import { evaluate, mainDiscipline, newlyMet, type QualProgress } from '@/domain/qualifications';
+import { missedDays, voyageFlags } from '@/domain/sanity';
+import { isSkipperPosition, type Doc, type Engagement, type LogEntry, type Profile, type Vessel, type Voyage } from '@/domain/types';
+import { summarizeTrack, type TrackSummary } from '@/domain/voyage';
+import { cancelStillUnderway, notifyNow, scheduleDocReminders, scheduleStillUnderway } from '@/lib/notify';
+import { chooseMode, liveNow, resume, startTracking, stopTracking, trackingState, type TrackingMode } from '@/tracking/tracker';
 
-export type LiveVoyage = {
-  from: string;
-  to: string;
-  startMin: number;
-  headingDeg: number;
-  elapsedMin: number;
-  nm: number;
-  speed: number;
-  maxSpeed: number;
-  speedSum: number;
-  speedN: number;
+export type Live = { voyage: Voyage; mode: TrackingMode; stats: TrackSummary; now: number; fixes: number };
+
+type Data = {
+  profile: Profile;
+  vessels: Vessel[];
+  engagements: Engagement[];
+  voyages: Voyage[];
+  entries: LogEntry[];
+  docs: Doc[];
 };
 
-export type VoyageSummary = {
-  from: string;
-  to: string;
-  startMin: number;
-  endMin: number;
-  nm: number;
-  durationMin: number;
-  avgSpeed: number;
-  maxSpeed: number;
-  nightMin: number;
+const EMPTY: Data = {
+  profile: { name: '', nationality: '', homeCountry: '', email: '', phone: '', onboardedAt: null },
+  vessels: [],
+  engagements: [],
+  voyages: [],
+  entries: [],
+  docs: [],
 };
 
-export type LogPhase = 'idle' | 'rec' | 'draft';
-
-export type Totals = { nm: number; hours: number; nightHours: number };
-
-type State = {
-  voyage: LiveVoyage | null;
-  summary: VoyageSummary | null;
-  totals: Totals;
-  loggedToday: boolean;
-  logPhase: LogPhase;
-  transcriptWords: number;
-  toast: string;
+type Derived = {
+  today: string;
+  active: Engagement | null;
+  activeVessel: Vessel | null;
+  exp: Experience;
+  quals: QualProgress[];
+  docCounts: { ok: number; warn: number; danger: number };
+  missed: number;
+  lastPlace: string;
+  loggedToday: LogEntry | null;
 };
 
 type Actions = {
-  startVoyage: () => void;
-  stopVoyage: () => void;
-  confirmVoyage: () => number;
-  startRecording: () => void;
-  resetLog: () => void;
-  confirmLog: () => void;
+  reload: () => Promise<void>;
+  saveProfile: (p: Profile) => Promise<void>;
+  finishOnboarding: () => Promise<void>;
+  saveVessel: (v: Parameters<typeof repo.upsertVessel>[0]) => Promise<string>;
+  deleteVessel: (id: string) => Promise<boolean>;
+  saveEngagement: (e: Parameters<typeof repo.upsertEngagement>[0]) => Promise<string>;
+  deleteEngagement: (id: string) => Promise<boolean>;
+  startVoyage: () => Promise<{ ok: true } | { ok: false; reason: string }>;
+  stopVoyage: () => Promise<string | null>;
+  saveVoyage: (v: Voyage) => Promise<void>;
+  confirmVoyage: (v: Voyage) => Promise<void>;
+  deleteVoyage: (id: string) => Promise<void>;
+  saveEntry: (e: Parameters<typeof repo.saveEntry>[0]) => Promise<string>;
+  deleteEntry: (id: string) => Promise<void>;
+  saveDoc: (d: Parameters<typeof repo.saveDoc>[0]) => Promise<string>;
+  renewDoc: (oldId: string, d: Parameters<typeof repo.saveDoc>[0]) => Promise<string>;
+  deleteDoc: (id: string) => Promise<void>;
+  wipe: () => Promise<void>;
+  setSimulatedGps: (on: boolean) => void;
   flash: (msg: string) => void;
-  soon: () => void;
 };
 
-export type AppStore = State & Actions;
+export type AppStore = Data &
+  Derived &
+  Actions & { ready: boolean; live: Live | null; toast: string; simulatedGps: boolean };
 
-const Ctx = createContext<AppStore | null>(null);
+const StoreCtx = createContext<AppStore | null>(null);
 
-const WORDS = transcript.split(' ');
-const TICK_MS = 600;
-const WORD_MS = 130;
+function qualsFor(ctx: Ctx, docs: Doc[], today: string): QualProgress[] {
+  const d = mainDiscipline(ctx);
+  return QUALIFICATIONS.map((q) => evaluate(q, d, ctx, docs, today));
+}
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [voyage, setVoyage] = useState<LiveVoyage | null>(null);
-  const [summary, setSummary] = useState<VoyageSummary | null>(null);
-  const [totals, setTotals] = useState<Totals>({
-    nm: experience.totalNm,
-    hours: experience.hoursUnderway,
-    nightHours: experience.nightHours,
-  });
-  const [loggedToday, setLoggedToday] = useState(false);
-  const [logPhase, setLogPhase] = useState<LogPhase>('idle');
-  const [transcriptWords, setTranscriptWords] = useState(0);
+  const [data, setData] = useState<Data>(EMPTY);
+  const [ready, setReady] = useState(false);
+  const [live, setLive] = useState<Live | null>(null);
   const [toast, setToast] = useState('');
-
+  const [simulatedGps, setSim] = useState(() => repo.getKv('simulated_gps') === '1');
+  const [today, setToday] = useState(() => dayKey(Date.now()));
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  // Simulated position feed while a voyage is live.
-  useEffect(() => {
-    if (!voyage) return;
-    const id = setInterval(() => {
-      setVoyage((v) => {
-        if (!v) return v;
-        const tick = v.speedN + 1;
-        const speed = 9.6 + 2.2 * Math.sin(tick / 2.4);
-        return {
-          ...v,
-          elapsedMin: v.elapsedMin + 1,
-          nm: v.nm + speed / 60,
-          speed,
-          maxSpeed: Math.max(v.maxSpeed, speed),
-          speedSum: v.speedSum + speed,
-          speedN: tick,
-        };
-      });
-    }, TICK_MS);
-    return () => clearInterval(id);
-    // Only the presence of a voyage matters here, not its ticking fields.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [voyage !== null]);
-
-  // Word-by-word transcript while "listening", then hand over to the draft.
-  useEffect(() => {
-    if (logPhase !== 'rec') return;
-    const id = setInterval(() => {
-      setTranscriptWords((w) => {
-        if (w + 1 >= WORDS.length) {
-          clearInterval(id);
-          draftTimer.current = setTimeout(() => setLogPhase('draft'), 700);
-          return WORDS.length;
-        }
-        return w + 1;
-      });
-    }, WORD_MS);
-    return () => {
-      clearInterval(id);
-      if (draftTimer.current) clearTimeout(draftTimer.current);
-    };
-  }, [logPhase]);
 
   const flash = useCallback((msg: string) => {
     if (toastTimer.current) clearTimeout(toastTimer.current);
     setToast(msg);
-    toastTimer.current = setTimeout(() => setToast(''), 2600);
+    toastTimer.current = setTimeout(() => setToast(''), 3000);
   }, []);
 
-  const soon = useCallback(() => flash('Not built yet'), [flash]);
-
-  const startVoyage = useCallback(() => {
-    setVoyage({
-      from: passage.from,
-      to: passage.to,
-      startMin: passage.startMin,
-      headingDeg: passage.headingDeg,
-      elapsedMin: simStart.elapsedMin,
-      nm: simStart.nm,
-      speed: simStart.speed,
-      maxSpeed: simStart.maxSpeed,
-      speedSum: 0,
-      speedN: 0,
-    });
+  const load = useCallback(async (): Promise<Data> => {
+    const next: Data = {
+      profile: await repo.getProfile(),
+      vessels: await repo.listVessels(),
+      engagements: await repo.listEngagements(),
+      voyages: await repo.listVoyages(),
+      entries: await repo.listEntries(),
+      docs: await repo.listDocs(),
+    };
+    setData(next);
+    setToday(dayKey(Date.now()));
+    return next;
   }, []);
 
-  const stopVoyage = useCallback(() => {
-    setVoyage((v) => {
-      if (!v) return v;
-      const avg = v.speedN ? v.speedSum / v.speedN : v.speed;
-      setSummary({
-        from: v.from,
-        to: v.to,
-        startMin: v.startMin,
-        endMin: v.startMin + v.elapsedMin,
-        nm: v.nm,
-        durationMin: v.elapsedMin,
-        avgSpeed: avg,
-        maxSpeed: v.maxSpeed,
-        nightMin: 0,
-      });
-      return null;
-    });
+  const reload = useCallback(async () => {
+    await load();
+  }, [load]);
+
+  // Boot: load, resume a live voyage's feed, re-plan reminders.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const d = await load();
+      if (cancelled) return;
+      setReady(true);
+      const s = trackingState();
+      if (s && d.voyages.some((v) => v.id === s.voyageId && v.endedAt === null)) await resume(s).catch(() => {});
+      scheduleDocReminders(d.docs, dayKey(Date.now()));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [load]);
+
+  // Live voyage: recompute from the stored track every couple of seconds.
+  const liveVoyage = data.voyages.find((v) => v.endedAt === null) ?? null;
+  useEffect(() => {
+    if (!liveVoyage) return;
+    let stop = false;
+    const tickLive = async () => {
+      const s = trackingState();
+      const fixes = await repo.getTrack(liveVoyage.id);
+      const now = liveNow(s);
+      if (stop) return;
+      setLive({ voyage: liveVoyage, mode: s?.mode ?? 'foreground', stats: summarizeTrack(fixes, liveVoyage.startedAt, now), now, fixes: fixes.length });
+    };
+    tickLive();
+    const id = setInterval(tickLive, 2000);
+    return () => {
+      stop = true;
+      clearInterval(id);
+    };
+  }, [liveVoyage]);
+
+  /* ---------- derived ---------- */
+
+  const derived = useMemo<Derived>(() => {
+    const ctx: Ctx = { vessels: data.vessels, engagements: data.engagements, voyages: data.voyages, entries: data.entries };
+    const current = data.engagements.filter((e) => e.endDate === null || e.endDate >= today).sort((a, b) => (a.startDate < b.startDate ? 1 : -1));
+    const active = current[0] ?? null;
+    const lastEnded = data.voyages.find((v) => v.endedAt !== null && v.endPlace);
+    return {
+      today,
+      active,
+      activeVessel: active ? (data.vessels.find((v) => v.id === active.vesselId) ?? null) : null,
+      exp: experience(ctx, today),
+      quals: qualsFor(ctx, data.docs, today),
+      docCounts: docCounts(data.docs, today),
+      missed: missedDays(active, data.entries, data.voyages, today),
+      lastPlace: lastEnded?.endPlace ?? data.vessels.find((v) => v.id === active?.vesselId)?.homePort ?? '',
+      loggedToday: active ? (data.entries.find((e) => e.engagementId === active.id && e.date === today) ?? null) : null,
+    };
+  }, [data, today]);
+
+  /* ---------- actions ---------- */
+
+  const saveProfile = async (p: Profile) => {
+    await repo.saveProfile(p);
+    await load();
+  };
+
+  const finishOnboarding = async () => {
+    const p = await repo.getProfile();
+    await repo.saveProfile({ ...p, onboardedAt: Date.now() });
+    await load();
+  };
+
+  const saveVessel = async (v: Parameters<typeof repo.upsertVessel>[0]) => {
+    const id = await repo.upsertVessel(v);
+    await load();
+    return id;
+  };
+
+  const deleteVessel = async (id: string) => {
+    const ok = await repo.deleteVessel(id);
+    await load();
+    return ok;
+  };
+
+  const saveEngagement = async (e: Parameters<typeof repo.upsertEngagement>[0]) => {
+    const id = await repo.upsertEngagement(e);
+    await load();
+    return id;
+  };
+
+  const deleteEngagement = async (id: string) => {
+    const ok = await repo.deleteEngagement(id);
+    await load();
+    return ok;
+  };
+
+  const startVoyage = async (): Promise<{ ok: true } | { ok: false; reason: string }> => {
+    const active = derived.active;
+    if (!active) return { ok: false, reason: 'Add your current yacht first.' };
+    if (data.voyages.some((v) => v.endedAt === null)) return { ok: true };
+    const mode = await chooseMode(simulatedGps);
+    if (!mode.ok) return mode;
+    const startedAt = Date.now();
+    const v: Voyage = {
+      id: newId(),
+      engagementId: active.id,
+      startedAt,
+      endedAt: null,
+      startLat: null,
+      startLon: null,
+      endLat: null,
+      endLon: null,
+      startPlace: '',
+      endPlace: '',
+      distanceNm: 0,
+      directNm: 0,
+      durationMin: 0,
+      underwayMin: 0,
+      nightMin: 0,
+      avgKn: 0,
+      maxKn: 0,
+      passageType: 'day',
+      asSkipper: isSkipperPosition(active.position),
+      source: 'gps',
+      status: 'draft',
+      flags: [],
+      segments: [],
+      notes: '',
+      updatedAt: startedAt,
+    };
+    await repo.saveVoyage(v);
+    try {
+      await startTracking(v.id, mode.mode, startedAt);
+    } catch (e) {
+      await repo.deleteVoyage(v.id);
+      await stopTracking();
+      await load();
+      return { ok: false, reason: e instanceof Error ? e.message : 'Could not start GPS.' };
+    }
+    if (mode.mode !== 'simulated') scheduleStillUnderway(startedAt);
+    await load();
+    return { ok: true };
+  };
+
+  const stopVoyage = async (): Promise<string | null> => {
+    const v = data.voyages.find((x) => x.endedAt === null);
+    if (!v) return null;
+    const simEnd = await stopTracking();
+    cancelStillUnderway();
+    const fixes = await repo.getTrack(v.id);
+    const endedAt = simEnd ?? Date.now();
+    const s = summarizeTrack(fixes, v.startedAt, endedAt);
+    const prev = data.voyages.find((x) => x.endedAt !== null && x.endLat !== null);
+    const done: Voyage = {
+      ...v,
+      endedAt,
+      startLat: s.first?.lat ?? null,
+      startLon: s.first?.lon ?? null,
+      endLat: s.last?.lat ?? null,
+      endLon: s.last?.lon ?? null,
+      startPlace: s.first ? placeName(s.first.lat, s.first.lon) : derived.lastPlace,
+      endPlace: s.last ? placeName(s.last.lat, s.last.lon) : '',
+      distanceNm: s.distanceNm,
+      directNm: s.directNm,
+      durationMin: s.durationMin,
+      underwayMin: s.underwayMin,
+      nightMin: s.nightMin,
+      avgKn: s.avgKn,
+      maxKn: s.maxKn,
+      passageType: s.passageType,
+      segments: s.segments,
+      flags: voyageFlags({
+        source: 'gps',
+        durationMin: s.durationMin,
+        avgKn: s.avgKn,
+        fixes: s.fixes,
+        start: s.first,
+        previousEnd: prev && prev.endLat !== null && prev.endLon !== null ? { lat: prev.endLat, lon: prev.endLon } : null,
+      }),
+    };
+    await repo.saveVoyage(done);
+    await load();
+    return done.id;
+  };
+
+  const saveVoyage = async (v: Voyage) => {
+    await repo.saveVoyage(v);
+    await load();
+  };
+
+  const confirmVoyage = async (v: Voyage) => {
+    const ctxBefore: Ctx = { vessels: data.vessels, engagements: data.engagements, voyages: data.voyages, entries: data.entries };
+    const before = qualsFor(ctxBefore, data.docs, today);
+    await repo.saveVoyage({ ...v, status: 'confirmed' });
+    const next = await load();
+    const after = qualsFor({ vessels: next.vessels, engagements: next.engagements, voyages: next.voyages, entries: next.entries }, next.docs, today);
+    for (let i = 0; i < after.length; i++) {
+      const hit = newlyMet(before[i], after[i]).filter((r) => r.rule.type !== 'certificate');
+      if (hit.length) {
+        const what = hit.map((r) => r.rule.label.toLowerCase()).join(', ');
+        notifyNow('Milestone reached', `You've reached the ${what} requirement for ${after[i].def.name}.`);
+        flash(`Milestone · ${after[i].def.name}: ${hit[0].rule.label}`);
+        return;
+      }
+    }
+    flash(`Voyage saved · ${Math.round(v.distanceNm)} NM added to your record`);
+  };
+
+  const deleteVoyage = async (id: string) => {
+    if (data.voyages.find((v) => v.id === id)?.endedAt === null) {
+      await stopTracking();
+      cancelStillUnderway();
+    }
+    await repo.deleteVoyage(id);
+    await load();
+  };
+
+  const saveEntry = async (e: Parameters<typeof repo.saveEntry>[0]) => {
+    const id = await repo.saveEntry(e);
+    await load();
+    return id;
+  };
+
+  const deleteEntry = async (id: string) => {
+    await repo.deleteEntry(id);
+    await load();
+  };
+
+  const afterDocs = async () => {
+    const d = await load();
+    scheduleDocReminders(d.docs, dayKey(Date.now()));
+  };
+
+  const saveDoc = async (d: Parameters<typeof repo.saveDoc>[0]) => {
+    const id = await repo.saveDoc(d);
+    await afterDocs();
+    return id;
+  };
+
+  const renewDoc = async (oldId: string, d: Parameters<typeof repo.saveDoc>[0]) => {
+    const id = await repo.renewDoc(oldId, d);
+    await afterDocs();
+    return id;
+  };
+
+  const deleteDoc = async (id: string) => {
+    await repo.deleteDoc(id);
+    await afterDocs();
+  };
+
+  const wipe = async () => {
+    await stopTracking();
+    cancelStillUnderway();
+    await repo.wipeAll();
+    await afterDocs();
+  };
+
+  const setSimulatedGps = (on: boolean) => {
+    repo.setKv('simulated_gps', on ? '1' : null);
+    setSim(on);
+  };
+
+  useEffect(() => () => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
   }, []);
 
-  const confirmVoyage = useCallback((): number => {
-    let added = 0;
-    setSummary((s) => {
-      if (!s) return s;
-      added = Math.round(s.nm);
-      setTotals((t) => ({ ...t, nm: t.nm + added, hours: t.hours + Math.round(s.durationMin / 60) }));
-      return null;
-    });
-    return added;
-  }, []);
+  const value: AppStore = {
+    ...data,
+    ...derived,
+    ready,
+    // A stale reading from a voyage that has since stopped is never shown.
+    live: liveVoyage && live?.voyage.id === liveVoyage.id ? live : null,
+    toast,
+    simulatedGps,
+    reload,
+    saveProfile,
+    finishOnboarding,
+    saveVessel,
+    deleteVessel,
+    saveEngagement,
+    deleteEngagement,
+    startVoyage,
+    stopVoyage,
+    saveVoyage,
+    confirmVoyage,
+    deleteVoyage,
+    saveEntry,
+    deleteEntry,
+    saveDoc,
+    renewDoc,
+    deleteDoc,
+    wipe,
+    setSimulatedGps,
+    flash,
+  };
 
-  const startRecording = useCallback(() => {
-    setTranscriptWords(0);
-    setLogPhase('rec');
-  }, []);
-
-  const resetLog = useCallback(() => {
-    setTranscriptWords(0);
-    setLogPhase('idle');
-  }, []);
-
-  const confirmLog = useCallback(() => {
-    setLoggedToday(true);
-    setLogPhase('idle');
-    setTranscriptWords(0);
-  }, []);
-
-  useEffect(
-    () => () => {
-      if (toastTimer.current) clearTimeout(toastTimer.current);
-      if (draftTimer.current) clearTimeout(draftTimer.current);
-    },
-    [],
-  );
-
-  const value = useMemo<AppStore>(
-    () => ({
-      voyage,
-      summary,
-      totals,
-      loggedToday,
-      logPhase,
-      transcriptWords,
-      toast,
-      startVoyage,
-      stopVoyage,
-      confirmVoyage,
-      startRecording,
-      resetLog,
-      confirmLog,
-      flash,
-      soon,
-    }),
-    [voyage, summary, totals, loggedToday, logPhase, transcriptWords, toast, startVoyage, stopVoyage, confirmVoyage, startRecording, resetLog, confirmLog, flash, soon],
-  );
-
-  return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+  return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
 
 export function useAppStore(): AppStore {
-  const ctx = useContext(Ctx);
+  const ctx = useContext(StoreCtx);
   if (!ctx) throw new Error('useAppStore must be used inside <AppStoreProvider>');
   return ctx;
 }
 
-/** The transcript as far as it has been "heard". */
-export function transcriptSoFar(words: number): string {
-  return WORDS.slice(0, words).join(' ');
+/** Vessel and engagement for a record. */
+export function useRecordContext(engagementId: string | undefined) {
+  const { engagements, vessels } = useAppStore();
+  const engagement = engagements.find((e) => e.id === engagementId) ?? null;
+  const vessel = engagement ? (vessels.find((v) => v.id === engagement.vesselId) ?? null) : null;
+  return { engagement, vessel };
 }

@@ -1,21 +1,31 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { Toast } from '@/components/Toast';
+import { initDb } from '@/db/db';
+import { initNotifications } from '@/lib/notify';
 import { AppStoreProvider } from '@/store/AppStore';
 import { LookProvider, useAppFonts, useTokens } from '@/theme';
+// Defines the background location task at module load, as TaskManager requires.
+import '@/tracking/tracker';
 
 SplashScreen.preventAutoHideAsync();
+initNotifications();
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();
+  const [dbReady, setDbReady] = useState(false);
   useEffect(() => {
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
-  if (!fontsLoaded && !fontError) return null;
+    initDb().then(() => setDbReady(true));
+  }, []);
+  const ready = (fontsLoaded || !!fontError) && dbReady;
+  useEffect(() => {
+    if (ready) SplashScreen.hideAsync();
+  }, [ready]);
+  if (!ready) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
@@ -41,7 +51,8 @@ function Shell() {
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: t.colors.bg } }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="live" options={{ animation: 'slide_from_bottom' }} />
-        <Stack.Screen name="summary" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+        <Stack.Screen name="voyage/[id]" options={{ animation: 'slide_from_bottom', gestureEnabled: false }} />
+        <Stack.Screen name="onboarding" options={{ gestureEnabled: false, animation: 'fade' }} />
       </Stack>
       <Toast />
     </ThemeProvider>

@@ -1,3 +1,4 @@
+import { useSegments } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -12,11 +13,13 @@ export function Toast() {
   const { toast } = useAppStore();
   const t = useTokens();
   const insets = useSafeAreaInsets();
+  // Above the tab bar on tab screens; near the top elsewhere, clear of bottom buttons.
+  const onTabs = useSegments()[0] === '(tabs)';
   if (!toast) return null;
   return (
     <FadeUp
       key={toast}
-      style={{ position: 'absolute', left: 24, right: 24, bottom: insets.bottom + 96 }}>
+      style={onTabs ? { position: 'absolute', left: 24, right: 24, bottom: insets.bottom + 96 } : { position: 'absolute', left: 24, right: 24, top: insets.top + 64 }}>
       <View
         pointerEvents="none"
         style={{

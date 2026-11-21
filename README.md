@@ -6,7 +6,7 @@ Work → speak → confirm.
 
 ## Status
 
-The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobile/` carries Deck's design tokens and all six prototype screens, running on sample data. Aspects of the other builds may be folded in once the flows have been tested on real phones.
+The Expo app in `mobile/` covers the offline part of the MVP (SCOPE §3) on real data stored on the phone: GPS voyages, daily log, diary, experience, RYA Yachtmaster progress, document wallet with reminders, and PDF/JSON export. Account, cloud sync and the AI-written draft wait on the backend decision (SCOPE §11.2). [mobile/README.md](mobile/README.md) lists exactly what is real.
 
 | Where | What |
 |---|---|
@@ -17,6 +17,6 @@ The Deck build (Round 2, build 4) is the base for the app. The Expo app in `mobi
 
 ## Next
 
-1. Run the app on both phones with Expo Go, walk the flows, note what to fold in from Still, Chart and Ledger.
-2. Phase 0 spike: background GPS on iOS and Android for 24 h, voice → structured log entry.
-3. Replace the sample data with real stores, starting with vessels and engagements.
+1. Decide the backend (SCOPE §11.2). It unblocks login, sync and backup, and the Claude-written log draft.
+2. Phase 0 spike on real phones: make a development build and run background GPS for 24 h on iOS and Android, measuring battery.
+3. Walk the flows with crew in Expo Go; note what to fold in from Still, Chart and Ledger.

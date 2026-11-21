@@ -1,6 +1,8 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
 
-import { DEFAULT_LOOK, TOKENS, type Look, type Tokens } from './tokens';
+import { getKv, setKv } from '@/db/repo';
+
+import { DEFAULT_LOOK, LOOKS, TOKENS, type Look, type Tokens } from './tokens';
 
 type LookContextValue = {
   look: Look;
@@ -10,13 +12,24 @@ type LookContextValue = {
 
 const LookContext = createContext<LookContextValue | null>(null);
 
-/**
- * Holds the current look and hands out its tokens. Persisting the choice
- * across launches is a follow-up; for now it resets to Horizon on launch.
- */
-export function LookProvider({ children, initial = DEFAULT_LOOK }: { children: ReactNode; initial?: Look }) {
-  const [look, setLookState] = useState<Look>(initial);
-  const setLook = useCallback((next: Look) => setLookState(next), []);
+function savedLook(): Look {
+  try {
+    const v = getKv('look');
+    return v && (LOOKS as readonly string[]).includes(v) ? (v as Look) : DEFAULT_LOOK;
+  } catch {
+    return DEFAULT_LOOK;
+  }
+}
+
+/** Holds the current look (persisted on the phone) and hands out its tokens. */
+export function LookProvider({ children }: { children: ReactNode }) {
+  const [look, setLookState] = useState<Look>(savedLook);
+  const setLook = useCallback((next: Look) => {
+    setLookState(next);
+    try {
+      setKv('look', next);
+    } catch {}
+  }, []);
   const value = useMemo<LookContextValue>(() => ({ look, tokens: TOKENS[look], setLook }), [look, setLook]);
   return <LookContext.Provider value={value}>{children}</LookContext.Provider>;
 }

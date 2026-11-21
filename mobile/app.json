@@ -8,7 +8,11 @@
     "scheme": "yachtpa",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      },
+      "bundleIdentifier": "com.yachtpa.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,10 +21,11 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.yachtpa.app"
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -32,7 +37,42 @@
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
-      ]
+      ],
+      "expo-sqlite",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "YachtPA uses your location between START VOYAGE and STOP VOYAGE to log miles, time underway and night hours.",
+          "locationAlwaysAndWhenInUsePermission": "Allow location all the time so YachtPA can keep logging a voyage you started while the screen is off. Tracking stops when you press STOP VOYAGE.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true,
+          "isAndroidForegroundServiceEnabled": true
+        }
+      ],
+      "expo-task-manager",
+      [
+        "expo-notifications",
+        {
+          "color": "#07192B"
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "YachtPA records your spoken daily log so it can be written up for you.",
+          "enableBackgroundPlayback": false,
+          "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Take a photo of a certificate to keep it in your document wallet.",
+          "photosPermission": "Pick a photo of a certificate to keep it in your document wallet."
+        }
+      ],
+      "expo-document-picker",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

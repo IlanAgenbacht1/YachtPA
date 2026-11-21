@@ -36,3 +36,26 @@ export function fmtDateLong(d: Date): string {
 export function minutesOfDay(d: Date): number {
   return d.getHours() * 60 + d.getMinutes();
 }
+
+/** "Wed 24 Sep 2026" from a YYYY-MM-DD day key. */
+export function fmtDay(key: string, withYear = true): string {
+  const [y, m, d] = key.split('-').map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${fmtDateShort(dt)}${withYear ? ` ${y}` : ''}`;
+}
+
+/** "Mar 2025" from a YYYY-MM-DD day key. */
+export function fmtMonth(key: string): string {
+  const [y, m] = key.split('-').map(Number);
+  return `${MONTHS[m - 1].slice(0, 3)} ${y}`;
+}
+
+/** "09:42" from an epoch ms instant. */
+export function fmtTime(ts: number): string {
+  return fmtClock(minutesOfDay(new Date(ts)));
+}
+
+/** "35.2" below 100, "2,487" above. */
+export function fmtNm(nm: number): string {
+  return nm < 100 ? nm.toFixed(1) : fmtInt(nm);
+}
