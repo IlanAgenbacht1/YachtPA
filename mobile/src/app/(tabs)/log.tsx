@@ -113,7 +113,7 @@ export default function LogScreen() {
       <Sheet gap={16} paddingTop={24}>
         <FadeUp>
           <Col gap={10}>
-            <Row justify="space-between">
+            <Row justify="space-between" style={{ minHeight: 24 }}>
               <Eyebrow>What did you do?</Eyebrow>
               {saved && (
                 <View style={{ paddingVertical: 4, paddingHorizontal: 9, borderRadius: 99, borderWidth: 1, borderColor: dirty ? t.colors.brass : t.colors.ok }}>
@@ -124,12 +124,11 @@ export default function LogScreen() {
               )}
             </Row>
             <Field
-              label="Duties, one per line"
               value={text}
               onChangeText={setText}
               multiline
               placeholder={'Washed down the exterior\nChanged generator fuel filters\nSafety inspection before departure'}
-              hint="Tap the mic on the keyboard and say what you did. Then tidy it into duties."
+              hint="One duty per line. Tap the mic on the keyboard to say it, then tidy it into duties."
             />
             {canTidy && <Button variant="ghost" icon="check" label="Tidy into duties" onPress={onTidy} />}
           </Col>
@@ -155,13 +154,11 @@ export default function LogScreen() {
           </Col>
         )}
 
-        <Button
-          label={saved && !dirty ? 'Saved' : saved ? 'Save changes' : 'Confirm and save'}
-          icon="check"
-          iconStrokeWidth={2.4}
-          height={62}
-          onPress={saved && !dirty ? () => {} : onSave}
-        />
+        {saved && !dirty ? (
+          <Button variant="ghost" label="Saved" icon="check" iconStrokeWidth={2.4} onPress={() => {}} />
+        ) : (
+          <Button label={saved ? 'Save changes' : 'Confirm and save'} icon="check" iconStrokeWidth={2.4} height={62} onPress={onSave} />
+        )}
         {date !== today && <Button variant="ghost" label="Back to today" onPress={() => setDate(today)} />}
 
         <Col gap={10} style={{ paddingTop: 12 }}>

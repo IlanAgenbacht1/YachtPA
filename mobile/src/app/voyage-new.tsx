@@ -74,14 +74,14 @@ export default function NewVoyage() {
             </Col>
           </Row>
           <Field label="Night hours" value={night} onChangeText={setNight} keyboardType="decimal-pad" placeholder="0" />
-          <Card gap={10} paddingV={12}>
-            <Row gap={12}>
+          <Card gap={4} paddingV={6}>
+            <Row gap={12} style={{ minHeight: 48 }}>
               <Txt size={15} weight={600} style={{ flex: 1 }}>
                 Overnight passage
               </Txt>
               <Switch value={overnight} onValueChange={setOvernight} />
             </Row>
-            <Row gap={12}>
+            <Row gap={12} style={{ minHeight: 48 }}>
               <Txt size={15} weight={600} style={{ flex: 1 }}>
                 I was skipper
               </Txt>

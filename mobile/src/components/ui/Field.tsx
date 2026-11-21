@@ -1,4 +1,5 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useState } from 'react';
 import { Platform, Pressable, TextInput, View, type TextInputProps } from 'react-native';
 
 import { fontFor, useTokens } from '@/theme';
@@ -6,25 +7,36 @@ import { fontFor, useTokens } from '@/theme';
 import { Eyebrow, Txt } from './Txt';
 
 type FieldProps = Omit<TextInputProps, 'value' | 'onChangeText'> & {
-  label: string;
+  label?: string;
   value: string;
   onChangeText: (v: string) => void;
   hint?: string;
 };
 
 /** Labelled text input. Large and high-contrast: wet hands, bright sun. */
-export function Field({ label, value, onChangeText, hint, multiline, style, ...rest }: FieldProps) {
+export function Field({ label, value, onChangeText, hint, multiline, style, onFocus, onBlur, ...rest }: FieldProps) {
   const t = useTokens();
+  const [focused, setFocused] = useState(false);
   return (
     <View style={{ gap: 6 }}>
-      <Eyebrow size={10} ls={1.2}>
-        {label}
-      </Eyebrow>
+      {label ? (
+        <Eyebrow size={10} ls={1.2}>
+          {label}
+        </Eyebrow>
+      ) : null}
       <TextInput
         value={value}
         onChangeText={onChangeText}
         placeholderTextColor={t.colors.muted}
         multiline={multiline}
+        onFocus={(e) => {
+          setFocused(true);
+          onFocus?.(e);
+        }}
+        onBlur={(e) => {
+          setFocused(false);
+          onBlur?.(e);
+        }}
         keyboardAppearance={t.look === 'night' ? 'dark' : 'light'}
         style={[
           {
@@ -32,14 +44,15 @@ export function Field({ label, value, onChangeText, hint, multiline, style, ...r
             paddingHorizontal: 14,
             paddingVertical: multiline ? 12 : 0,
             borderRadius: t.radius.md,
-            borderWidth: 1,
-            borderColor: t.colors.cardBorder,
+            borderWidth: focused ? 1.5 : 1,
+            borderColor: focused ? t.colors.accent : t.colors.cardBorder,
             backgroundColor: t.colors.card,
             color: t.colors.fg,
             fontFamily: fontFor(t, 'body', 400),
             fontSize: 16,
             textAlignVertical: multiline ? 'top' : 'center',
           },
+          Platform.OS === 'web' && ({ outlineStyle: 'none' } as object),
           style,
         ]}
         {...rest}

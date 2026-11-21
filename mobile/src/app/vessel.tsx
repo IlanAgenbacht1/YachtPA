@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 import { Screen } from '@/components/Screen';
 import { Button, Col, DateField, Display, Eyebrow, Field, Hero, HeroButton, isoDate, Row, Segmented, Sheet, Spacer, Txt } from '@/components/ui';
-import { changeVessel, updateCurrent, type Propulsion } from '@/db/repo';
+import { changeVessel, updateCurrent, type Current, type Propulsion } from '@/db/repo';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 
@@ -19,23 +19,25 @@ const num = (s: string): number | null => {
  */
 export default function VesselScreen() {
   const { mode } = useLocalSearchParams<{ mode?: string }>();
-  const isNew = mode === 'new';
-  const { current, refresh, flash, voyage } = useAppStore();
-  const c = current;
+  const { current } = useAppStore();
+  // The form seeds its fields from the yacht, so it mounts only once that has loaded.
+  return current ? <VesselForm key={current.engagement.id} c={current} isNew={mode === 'new'} /> : null;
+}
 
-  const [name, setName] = useState(isNew ? '' : (c?.profile.name ?? ''));
-  const [nationality, setNationality] = useState(c?.profile.nationality ?? '');
-  const [vesselName, setVesselName] = useState(isNew ? '' : (c?.vessel.name ?? ''));
-  const [propulsion, setPropulsion] = useState<Propulsion>(isNew ? 'motor' : (c?.vessel.propulsion ?? 'motor'));
-  const [loa, setLoa] = useState(isNew || !c?.vessel.loaM ? '' : String(c.vessel.loaM));
-  const [gt, setGt] = useState(isNew || !c?.vessel.gt ? '' : String(c.vessel.gt));
-  const [flag, setFlag] = useState(isNew ? '' : (c?.vessel.flag ?? ''));
-  const [position, setPosition] = useState(c?.engagement.position ?? '');
-  const [startDate, setStartDate] = useState(isNew ? isoDate(new Date()) : (c?.engagement.startDate ?? isoDate(new Date())));
-  const [captain, setCaptain] = useState(isNew ? '' : (c?.engagement.captain ?? ''));
-  const [company, setCompany] = useState(isNew ? '' : (c?.engagement.company ?? ''));
+function VesselForm({ c, isNew }: { c: Current; isNew: boolean }) {
+  const { refresh, flash, voyage } = useAppStore();
 
-  if (!c) return null;
+  const [name, setName] = useState(isNew ? '' : (c.profile.name ?? ''));
+  const [nationality, setNationality] = useState(c.profile.nationality ?? '');
+  const [vesselName, setVesselName] = useState(isNew ? '' : (c.vessel.name ?? ''));
+  const [propulsion, setPropulsion] = useState<Propulsion>(isNew ? 'motor' : (c.vessel.propulsion ?? 'motor'));
+  const [loa, setLoa] = useState(isNew || !c.vessel.loaM ? '' : String(c.vessel.loaM));
+  const [gt, setGt] = useState(isNew || !c.vessel.gt ? '' : String(c.vessel.gt));
+  const [flag, setFlag] = useState(isNew ? '' : (c.vessel.flag ?? ''));
+  const [position, setPosition] = useState(c.engagement.position ?? '');
+  const [startDate, setStartDate] = useState(isNew ? isoDate(new Date()) : (c.engagement.startDate ?? isoDate(new Date())));
+  const [captain, setCaptain] = useState(isNew ? '' : (c.engagement.captain ?? ''));
+  const [company, setCompany] = useState(isNew ? '' : (c.engagement.company ?? ''));
 
   const onSave = async () => {
     if (!vesselName.trim() || !position.trim() || (!isNew && !name.trim())) {

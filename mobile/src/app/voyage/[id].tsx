@@ -43,7 +43,7 @@ export default function VoyageDetail() {
           </Eyebrow>
           <HeroButton />
         </Row>
-        <Display size={32} color="heroFg" numberOfLines={2}>
+        <Display size={(v.fromName ?? '').length + (v.toName ?? '').length > 30 ? 26 : 32} color="heroFg" numberOfLines={3}>
           {v.fromName} → {v.toName}
         </Display>
         <Txt size={14} color="heroMuted">

@@ -12,6 +12,12 @@ import { fmtClock, fmtDateShort, fmtDur, fmtInt, minutesOfDay } from '@/lib/form
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 
+/** Headline size that keeps a from → to title to two lines on a phone. */
+function titleSize(from: string, to: string): number {
+  const n = from.length + to.length;
+  return n > 30 ? 26 : n > 20 ? 30 : 36;
+}
+
 /** Shown on STOP: the numbers, place names to correct, sanity checks, confirm. */
 export default function SummaryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -73,7 +79,7 @@ export default function SummaryScreen() {
     <Screen>
       <Hero gap={10}>
         <Eyebrow color="heroMuted">Voyage complete{voyage.source === 'sim' ? ' · simulated' : ''}</Eyebrow>
-        <Display size={36} color="heroFg" numberOfLines={2}>
+        <Display size={titleSize(from, to)} color="heroFg" numberOfLines={3}>
           {(from || '…') + ' → ' + (to || '…')}
         </Display>
         <Txt size={14} color="heroMuted">

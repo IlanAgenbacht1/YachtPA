@@ -153,7 +153,7 @@ export default function ProfileScreen() {
 
         <Row gap={8} justify="center" style={{ paddingTop: 8 }}>
           <Txt size={12} weight={600} color="muted">
-            YachtPA 0.1 · data stays on this iPhone
+            YachtPA 0.1
           </Txt>
         </Row>
       </Sheet>

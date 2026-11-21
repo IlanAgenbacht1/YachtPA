@@ -4,7 +4,7 @@ import { Pressable, View } from 'react-native';
 import { FadeUp, Blink } from '@/components/motion';
 import { QualCard } from '@/components/QualCard';
 import { Screen } from '@/components/Screen';
-import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Row, Sheet, Txt } from '@/components/ui';
+import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { getDraftVoyage, getExperience, getLog, listDocs, localDate } from '@/db/repo';
 import { docCounts } from '@/lib/docs';
 import { getQualificationResults } from '@/lib/quals';
@@ -45,7 +45,6 @@ export default function HomeScreen() {
                 {simulate ? 'Simulated GPS' : 'On this iPhone'}
               </Txt>
             </Row>
-            <LookPill />
           </Row>
         </Row>
 
@@ -148,34 +147,23 @@ export default function HomeScreen() {
         <FadeUp delay={120}>
           <Card row gap={10} paddingV={14} onPress={() => router.navigate('/documents')} accessibilityLabel="Documents">
             <Icon name="file" size={20} color="muted" />
-            <Txt size={15} weight={700} style={{ flex: 1 }}>
+            <Txt size={15} weight={700} style={{ flex: 1 }} numberOfLines={1}>
               Documents
             </Txt>
             {(docs?.length ?? 0) === 0 ? (
-              <Txt size={13} weight={600} color="muted">
+              <Txt size={13} weight={600} color="muted" numberOfLines={1}>
                 Add your certificates
               </Txt>
             ) : (
-              <>
-                {counts.ok > 0 && (
-                  <>
-                    <Dot color="ok" />
-                    <Txt size={13} weight={600} color="muted">
-                      {counts.ok} valid
-                    </Txt>
-                  </>
-                )}
-                {counts.warn + counts.danger > 0 && (
-                  <>
-                    <View style={{ marginLeft: 4 }}>
-                      <Dot color={counts.danger ? 'danger' : 'warn'} />
-                    </View>
-                    <Txt size={13} weight={600} color="muted">
-                      {counts.warn + counts.danger} {counts.danger ? 'to renew' : 'expiring'}
-                    </Txt>
-                  </>
-                )}
-              </>
+              // One status only, so the row fits a small phone: what needs attention, else all good.
+              <Row gap={6} style={{ flexShrink: 0 }}>
+                <Dot color={counts.danger ? 'danger' : counts.warn ? 'warn' : 'ok'} />
+                <Txt size={13} weight={600} color="muted" numberOfLines={1}>
+                  {counts.danger + counts.warn > 0
+                    ? `${counts.danger + counts.warn} ${counts.danger ? 'to renew' : 'expiring'}`
+                    : `${counts.ok} valid`}
+                </Txt>
+              </Row>
             )}
             <Icon name="chevronRight" size={18} color="muted" />
           </Card>

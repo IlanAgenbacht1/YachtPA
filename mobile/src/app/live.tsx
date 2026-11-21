@@ -6,7 +6,7 @@ import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-na
 import { Blink, Breathe, Drift, FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { TrackMap } from '@/components/TrackMap';
-import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, LookPill, Row, Sheet, Spacer, Tile, Txt } from '@/components/ui';
+import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, Row, Sheet, Spacer, Tile, Txt } from '@/components/ui';
 import { nextCrossing, isNight } from '@/domain/sun';
 import { fmtClock, fmtDur, minutesOfDay } from '@/lib/format';
 import { thump } from '@/lib/haptics';
@@ -49,7 +49,6 @@ export default function LiveScreen() {
             </Eyebrow>
           </Row>
           <Row gap={8}>
-            <LookPill />
             <Pressable
               onPress={() => router.back()}
               accessibilityRole="button"
