@@ -49,12 +49,14 @@ if (backgroundSupported()) {
 }
 
 /**
- * Starts background updates for `voyageId`. Returns false (and starts nothing)
- * if "Always" was not granted, so the caller can fall back to the foreground.
+ * Starts background updates for `voyageId` if "Always" / "Allow all the time"
+ * is already granted. Never asks here (on Android asking opens Settings, which
+ * is no moment to do it); the Tracking setup screen asks. Returns false when
+ * not granted, so the caller falls back to tracking while the app is open.
  */
 export async function startBackground(voyageId: string): Promise<boolean> {
   if (!backgroundSupported()) return false;
-  const bg = await Location.requestBackgroundPermissionsAsync();
+  const bg = await Location.getBackgroundPermissionsAsync();
   if (bg.status !== 'granted') return false;
   cachedVoyageId = voyageId;
   await Location.startLocationUpdatesAsync(VOYAGE_TASK, {

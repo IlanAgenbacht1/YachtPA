@@ -5,11 +5,12 @@ import { FadeUp, Blink } from '@/components/motion';
 import { QualCard } from '@/components/QualCard';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
-import { getDraftVoyage, getExperience, getLog, listDocs, localDate } from '@/db/repo';
+import { getDraftVoyage, getExperience, getLog, getSetting, listDocs, localDate } from '@/db/repo';
 import { docCounts } from '@/lib/docs';
 import { getQualificationResults } from '@/lib/quals';
 import { fmtDateShort, fmtDur, fmtNum } from '@/lib/format';
 import { thump } from '@/lib/haptics';
+import { pocketReady, trackingStatus } from '@/location/permissions';
 import { useAppStore, useQuery, type LiveVoyage } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
@@ -30,6 +31,14 @@ export default function HomeScreen() {
 
   const onStart = async () => {
     thump();
+    // First voyage on a phone that is not set up for pocket logging: show the checklist first.
+    if (!simulate) {
+      const [status, seen] = await Promise.all([trackingStatus(), getSetting('tracking_setup_seen')]);
+      if (!pocketReady(status) && !seen) {
+        router.push({ pathname: '/tracking-setup', params: { start: '1' } });
+        return;
+      }
+    }
     if (await startVoyage()) router.push('/live');
   };
 

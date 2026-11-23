@@ -31,6 +31,10 @@ export async function startGps(voyageId: string, onFix: (f: Fix) => void): Promi
   if (!(await Location.hasServicesEnabledAsync())) throw settingsError("Your phone's location is switched off. Turn it on, then start the voyage again.");
   const perm = await Location.requestForegroundPermissionsAsync();
   if (perm.status !== 'granted') throw settingsError('YachtPA needs your location to log the voyage. In Settings, allow location for YachtPA, then start again.');
+  // Approximate location is kilometres out: every position would be thrown away and the voyage would log 0 NM.
+  if (perm.android?.accuracy === 'coarse' || perm.ios?.accuracy === 'reduced') {
+    throw settingsError('YachtPA has only approximate location, which is too rough to log miles. In Settings, turn on Precise location for YachtPA, then start again.');
+  }
   if (await startBackground(voyageId).catch(() => false)) {
     return { stop: () => void stopBackground(), mode: 'background' };
   }

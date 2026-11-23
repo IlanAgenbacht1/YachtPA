@@ -119,3 +119,13 @@ export function urlFromResponse(r: Notifications.NotificationResponse | null | u
   const url = r?.notification.request.content.data?.url;
   return typeof url === 'string' ? url : null;
 }
+
+/** Whether notifications are allowed (Android also shows the "Voyage underway" notice with them). */
+export async function notificationsAllowed(): Promise<boolean> {
+  if (!supported) return false;
+  try {
+    return (await Notifications.getPermissionsAsync()).granted;
+  } catch {
+    return false;
+  }
+}

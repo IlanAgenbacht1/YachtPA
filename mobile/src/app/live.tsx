@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useId, useState } from 'react';
-import { Linking, Pressable, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import { Blink, Breathe, Drift, FadeUp } from '@/components/motion';
@@ -115,13 +115,13 @@ export default function LiveScreen() {
             <TrackMap fixes={voyage.fixes} live />
             {voyage.mode === 'foreground' && (
               <Txt size={12} color="warn">
-                Keep YachtPA open with the screen on, or tracking pauses. To track with the phone in your pocket, allow location “All the time” (“Always” on iPhone) in Settings.
+                Keep YachtPA open with the screen on, or logging pauses. To log with the phone in your pocket, finish Tracking setup.
               </Txt>
             )}
             {voyage.mode === 'foreground' && (
-              <Pressable onPress={() => Linking.openSettings().catch(() => {})} accessibilityRole="button" hitSlop={8}>
+              <Pressable onPress={() => router.push('/tracking-setup')} accessibilityRole="button" hitSlop={8}>
                 <Txt size={13} weight={700} color="accent">
-                  Open Settings
+                  Fix this: Tracking setup
                 </Txt>
               </Pressable>
             )}

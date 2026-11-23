@@ -40,6 +40,7 @@ export default function ProfileScreen() {
   const mic = speechSupport();
 
   const rows: { label: string; onPress: () => void }[] = [
+    { label: 'Tracking setup', onPress: () => router.push('/tracking-setup') },
     { label: 'Vessel and position', onPress: () => router.push('/vessel') },
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
     { label: 'Cloud backup', onPress: () => router.push('/cloud') },
