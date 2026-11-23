@@ -61,7 +61,7 @@ async function plan(now: number): Promise<Planned[]> {
 
   if (live) {
     for (const h of [24, 48]) {
-      out.push({ at: live.startedAt + h * 3600000, title: 'Still underway?', body: `Your voyage has been tracking for ${h} hours. Stop it if you have arrived.`, url: '/live' });
+      out.push({ at: live.startedAt + h * 3600000, title: 'Still underway?', body: `YachtPA has been logging a voyage for ${h} hours. Tap Stop if you have arrived.`, url: '/live' });
     }
   }
 

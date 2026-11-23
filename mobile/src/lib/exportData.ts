@@ -20,5 +20,5 @@ export async function exportAll(): Promise<void> {
   if (file.exists) file.delete();
   file.create();
   file.write(JSON.stringify(out));
-  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Export YachtPA data' });
+  await Sharing.shareAsync(file.uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Save a copy of my YachtPA data' });
 }

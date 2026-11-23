@@ -4,7 +4,7 @@
  * with `useQuery`, which re-runs whenever `bump()` signals a write.
  */
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { AppState } from 'react-native';
+import { Alert, AppState, Linking } from 'react-native';
 import {
   createContext,
   useCallback,
@@ -50,6 +50,8 @@ type Actions = {
   /** Stops tracking and returns the id of the draft voyage to confirm. */
   stopVoyage: () => Promise<string | null>;
   setSimulate: (on: boolean) => void;
+  setMicOn: (on: boolean) => void;
+  setDevTools: (on: boolean) => void;
   flash: (msg: string) => void;
   soon: () => void;
 };
@@ -58,7 +60,12 @@ type State = {
   ready: boolean;
   current: Current | null;
   voyage: LiveVoyage | null;
+  /** simulated GPS: only ever on while testing tools are unlocked */
   simulate: boolean;
+  /** the in-app mic on the Log screen; a tester can switch it off and type */
+  micOn: boolean;
+  /** hidden testing tools (Simulate GPS) unlocked from Profile */
+  devTools: boolean;
   rev: number;
   toast: string;
 };
@@ -72,7 +79,11 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [current, setCurrent] = useState<Current | null>(null);
   const [live, setLive] = useState<{ id: string; startedAt: number; source: FeedSource; fromName: string | null; fixes: Fix[] } | null>(null);
-  const [simulate, setSimulateState] = useState(false);
+  const [simulateSetting, setSimulateState] = useState(false);
+  const [micOn, setMicOnState] = useState(true);
+  const [devTools, setDevToolsState] = useState(false);
+  // Testers never see Simulate GPS, so it can never be left on by accident outside testing tools.
+  const simulate = simulateSetting && devTools;
   const [mode, setMode] = useState<'background' | 'foreground' | null>(null);
   const [rev, setRev] = useState(0);
   const [toast, setToast] = useState('');
@@ -144,10 +155,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const [c, sim, lv] = await Promise.all([repo.getCurrent(), repo.getSetting('simulate'), repo.getLiveVoyage()]);
+        const [c, sim, lv, micOff, dev] = await Promise.all([
+          repo.getCurrent(),
+          repo.getSetting('simulate'),
+          repo.getLiveVoyage(),
+          repo.getSetting('mic_off'),
+          repo.getSetting('dev_tools'),
+        ]);
         if (cancelled) return;
         setCurrent(c);
         setSimulateState(sim === '1');
+        setMicOnState(micOff !== '1');
+        setDevToolsState(dev === '1');
         if (lv) {
           const fixes = await repo.getTrack(lv.id);
           const v = { id: lv.id, startedAt: lv.startedAt, source: lv.source === 'sim' ? ('sim' as const) : ('gps' as const), fromName: lv.fromName, fixes };
@@ -230,7 +249,14 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     } catch (e) {
       setLive(null);
       await repo.deleteVoyage(id);
-      flash((e as Error).message);
+      const err = e as Error & { openSettings?: boolean };
+      // Refused permissions are fixed in the phone's Settings; offer the way there.
+      if (err.openSettings) {
+        Alert.alert('Location is needed', err.message, [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Open Settings', onPress: () => Linking.openSettings().catch(() => {}) },
+        ]);
+      } else flash(err.message);
       return false;
     }
   }, [current, live, simulate, startFeed, flash]);
@@ -250,6 +276,16 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return id;
   }, [live, stopFeed, bump]);
 
+  const setMicOn = useCallback((on: boolean) => {
+    setMicOnState(on);
+    repo.setSetting('mic_off', on ? '0' : '1').catch(() => {});
+  }, []);
+
+  const setDevTools = useCallback((on: boolean) => {
+    setDevToolsState(on);
+    repo.setSetting('dev_tools', on ? '1' : '0').catch(() => {});
+  }, []);
+
   const setSimulate = useCallback((on: boolean) => {
     setSimulateState(on);
     repo.setSetting('simulate', on ? '1' : '0').catch(() => {});
@@ -264,8 +300,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, [live, now, mode]);
 
   const value = useMemo<AppStore>(
-    () => ({ ready, current, voyage, simulate, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, flash, soon }),
-    [ready, current, voyage, simulate, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, flash, soon],
+    () => ({ ready, current, voyage, simulate, micOn, devTools, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, setMicOn, setDevTools, flash, soon }),
+    [ready, current, voyage, simulate, micOn, devTools, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, setMicOn, setDevTools, flash, soon],
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

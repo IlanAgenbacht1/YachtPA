@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { ErrorScreen } from '@/components/ErrorScreen';
 import { Toast } from '@/components/Toast';
 // Defines the background location task at start-up, before any fix arrives.
 import '@/location/background';
@@ -71,4 +72,9 @@ function Shell() {
       <Toast />
     </ThemeProvider>
   );
+}
+
+/** A screen that throws shows a plain-language recovery screen instead of crashing the app. */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  return <ErrorScreen error={error} retry={() => void retry()} />;
 }

@@ -1,4 +1,6 @@
 import { router } from 'expo-router';
+import Constants from 'expo-constants';
+import { useRef } from 'react';
 import { Alert, Platform, Pressable, Switch, View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
@@ -7,6 +9,7 @@ import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from
 import { resetDb } from '@/db/db';
 import { exportAll } from '@/lib/exportData';
 import { exportRecordPdf } from '@/lib/exportPdf';
+import { speechSupport } from '@/lib/speech';
 import { downloadOfflineSpeech } from '@/lib/speechSetup';
 import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
@@ -21,16 +24,28 @@ const LOOK_COPY: Record<Look, { name: string; blurb: string }> = {
 
 export default function ProfileScreen() {
   const { look, tokens, setLook } = useLook();
-  const { current, simulate, setSimulate, voyage, refresh, flash } = useAppStore();
+  const { current, simulate, setSimulate, voyage, refresh, flash, micOn, setMicOn, devTools, setDevTools } = useAppStore();
+  // Tapping the version 7 times unlocks the testing tools; testers never stumble on them.
+  const taps = useRef(0);
   if (!current) return null;
+  const onVersionTap = () => {
+    if (devTools) return;
+    taps.current += 1;
+    if (taps.current >= 7) {
+      taps.current = 0;
+      setDevTools(true);
+      flash('Testing tools unlocked');
+    }
+  };
+  const mic = speechSupport();
 
   const rows: { label: string; onPress: () => void }[] = [
     { label: 'Vessel and position', onPress: () => router.push('/vessel') },
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
     { label: 'Cloud backup', onPress: () => router.push('/cloud') },
     { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().catch((e: Error) => flash(e.message)) },
-    ...(Platform.OS === 'android' ? [{ label: 'Download offline speech', onPress: () => downloadOfflineSpeech().then(flash) }] : []),
-    { label: 'Export all my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
+    ...(Platform.OS === 'android' && mic.available ? [{ label: 'Download offline speech', onPress: () => downloadOfflineSpeech().then(flash) }] : []),
+    { label: 'Save a copy of my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
 
   const onDeleteAll = () => {
@@ -38,7 +53,7 @@ export default function ProfileScreen() {
       Alert.alert('Stop the live voyage first.');
       return;
     }
-    Alert.alert('Delete all data on this phone?', 'Every voyage, log entry and document on this phone is erased. A cloud backup, if you have one, is kept and can be restored.', [
+    Alert.alert('Delete all data on this phone?', 'Every voyage, daily log and document on this phone is erased. If you use cloud backup, that copy is kept and can be brought back.', [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete everything',
@@ -139,25 +154,52 @@ export default function ProfileScreen() {
           <Card row gap={12} paddingV={12}>
             <Col gap={2} flex={1}>
               <Txt size={15} weight={600}>
-                Simulate GPS
+                Use the mic for the daily log
               </Txt>
               <Txt size={12} color="muted">
-                For testing ashore: a boat at 9 kn, one minute per second.
+                {mic.available ? 'Turn off to type instead.' : 'Not available on this phone. You can type, or use the mic on your keyboard.'}
               </Txt>
             </Col>
-            <Switch value={simulate} onValueChange={setSimulate} disabled={!!voyage} trackColor={{ true: tokens.colors.accent, false: tokens.colors.track }} />
+            <Switch value={micOn && mic.available} onValueChange={setMicOn} disabled={!mic.available} trackColor={{ true: tokens.colors.accent, false: tokens.colors.track }} />
           </Card>
         </FadeUp>
+
+        {devTools && (
+          <FadeUp delay={210}>
+            <Card gap={10} paddingV={12}>
+              <Eyebrow>Testing tools</Eyebrow>
+              <Row gap={12}>
+                <Col gap={2} flex={1}>
+                  <Txt size={15} weight={600}>
+                    Simulate GPS
+                  </Txt>
+                  <Txt size={12} color="muted">
+                    A pretend boat at 9 kn, one minute per second. Never counts towards qualifications or the PDF.
+                  </Txt>
+                </Col>
+                <Switch value={simulate} onValueChange={setSimulate} disabled={!!voyage} trackColor={{ true: tokens.colors.accent, false: tokens.colors.track }} />
+              </Row>
+              <Button
+                variant="ghost"
+                label="Hide testing tools"
+                onPress={() => {
+                  setSimulate(false);
+                  setDevTools(false);
+                }}
+              />
+            </Card>
+          </FadeUp>
+        )}
 
         <FadeUp delay={240}>
           <Button variant="ghost" label="Delete all data on this phone" onPress={onDeleteAll} />
         </FadeUp>
 
-        <Row gap={8} justify="center" style={{ paddingTop: 8 }}>
+        <Pressable onPress={onVersionTap} style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 4 }} accessibilityRole="text">
           <Txt size={12} weight={600} color="muted">
-            YachtPA 0.1
+            YachtPA {Constants.expoConfig?.version ?? ''}
           </Txt>
-        </Row>
+        </Pressable>
       </Sheet>
     </Screen>
   );

@@ -39,18 +39,18 @@ export function speechErrorText(code: string): string {
   switch (code) {
     case 'not-allowed':
     case 'service-not-allowed':
-      return 'Microphone or speech permission is off. Turn it on in Settings.';
+      return 'YachtPA is not allowed to use the microphone. Allow it in Settings, or type instead.';
     case 'network':
     case 'language-not-supported':
-      return 'No signal and no offline speech model on this phone. Type what you did, or download offline speech under Profile.';
+      return 'No signal, and this phone can’t understand speech offline yet. Type it for now. To fix: Profile → Download offline speech when you have Wi-Fi.';
     case 'no-speech':
     case 'speech-timeout':
       return "Didn't catch anything. Tap the mic and try again.";
     case 'audio-capture':
       return 'The microphone is busy or unavailable.';
     case 'busy':
-      return 'Speech recognition is busy. Try again in a moment.';
+      return 'The mic is busy. Try again in a moment.';
     default:
-      return 'Speech recognition stopped. Try again, or type it.';
+      return 'The mic stopped. Try again, or type it.';
   }
 }

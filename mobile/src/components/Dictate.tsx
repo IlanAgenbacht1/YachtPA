@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 
 import { Bar, Blink, FadeUp } from '@/components/motion';
 import { Button, Card, Col, Eyebrow, Icon, Row, Txt } from '@/components/ui';
@@ -21,6 +21,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
   const [phase, setPhase] = useState<'idle' | 'starting' | 'listening'>('idle');
   const [tx, setTx] = useState<Transcript>(EMPTY_TRANSCRIPT);
   const [error, setError] = useState('');
+  const [needsSettings, setNeedsSettings] = useState(false);
   const session = useRef<Session | null>(null);
   const txRef = useRef<Transcript>(EMPTY_TRANSCRIPT);
   const lastError = useRef('');
@@ -32,6 +33,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
     if (phase !== 'idle') return;
     thump();
     setError('');
+    setNeedsSettings(false);
     setTx(EMPTY_TRANSCRIPT);
     txRef.current = EMPTY_TRANSCRIPT;
     lastError.current = '';
@@ -58,6 +60,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
     if ('error' in r) {
       setPhase('idle');
       setError(speechErrorText(r.error));
+      setNeedsSettings(r.error === 'not-allowed');
       return;
     }
     session.current = r;
@@ -85,6 +88,13 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
           <Txt size={13} weight={600} color="danger" align="center">
             {error}
           </Txt>
+        ) : null}
+        {needsSettings ? (
+          <Pressable onPress={() => Linking.openSettings().catch(() => {})} accessibilityRole="button" style={{ alignSelf: 'center', padding: 8 }}>
+            <Txt size={13} weight={700} color="accent">
+              Open Settings
+            </Txt>
+          </Pressable>
         ) : null}
       </View>
     );
@@ -125,7 +135,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
               Tap and say what you did today
             </Txt>
             <Txt size={13} color="muted">
-              {support.onDevice ? 'The app writes it up. You confirm. Works offline.' : 'The app writes it up. You confirm.'}
+              {support.onDevice ? 'It writes it up, you check it. Works without signal.' : 'It writes it up, you check it.'}
             </Txt>
           </Col>
         )}
@@ -156,6 +166,14 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
         <Txt size={13} weight={600} color="danger" align="center" style={{ marginTop: 12 }}>
           {error}
         </Txt>
+      ) : null}
+
+      {needsSettings ? (
+        <Pressable onPress={() => Linking.openSettings().catch(() => {})} accessibilityRole="button" style={{ alignSelf: 'center', padding: 8 }}>
+          <Txt size={13} weight={700} color="accent">
+            Open Settings
+          </Txt>
+        </Pressable>
       ) : null}
 
       {!listening && onType && (

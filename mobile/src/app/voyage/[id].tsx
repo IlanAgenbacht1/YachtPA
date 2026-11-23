@@ -39,7 +39,7 @@ export default function VoyageDetail() {
         <Row justify="space-between">
           <Eyebrow color="heroMuted">
             {v.vesselName}
-            {v.source === 'sim' ? ' · simulated' : ''}
+            {v.source === 'sim' ? ' · pretend (testing)' : ''}
           </Eyebrow>
           <HeroButton />
         </Row>

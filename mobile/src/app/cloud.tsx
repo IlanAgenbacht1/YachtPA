@@ -147,7 +147,7 @@ export default function CloudScreen() {
       <Sheet gap={14} paddingTop={24}>
         {!cloudConfigured && (
           <Txt size={14} color="muted">
-            This build has no cloud project configured. Everything still works and stays on this phone; use Profile → Export all my data to keep a copy.
+            Cloud backup isn’t switched on in this version of the app. Your records are saved on this phone. To keep a copy somewhere else, use Profile → Save a copy of my data.
           </Txt>
         )}
 

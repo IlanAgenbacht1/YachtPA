@@ -42,7 +42,7 @@ export default function HomeScreen() {
             <Row gap={6}>
               <Dot color={simulate ? 'warn' : 'ok'} size={6} />
               <Txt size={11} weight={700} color="heroMuted">
-                {simulate ? 'Simulated GPS' : 'On this phone'}
+                {simulate ? 'Testing: pretend GPS' : 'On this phone'}
               </Txt>
             </Row>
           </Row>
@@ -220,7 +220,7 @@ function LiveCard({ voyage }: { voyage: LiveVoyage }) {
         <Dot color="accent" size={10} />
       </Blink>
       <Col gap={3} flex={1}>
-        <Eyebrow color="heroMuted">Underway{voyage.source === 'sim' ? ' · simulated' : ''}</Eyebrow>
+        <Eyebrow color="heroMuted">Underway{voyage.source === 'sim' ? ' · pretend' : ''}</Eyebrow>
         <Row gap={8} align="baseline">
           <Display size={30} tabular ls={-0.6} color="heroFg">
             {voyage.nm.toFixed(1)}

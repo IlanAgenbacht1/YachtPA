@@ -1,6 +1,6 @@
 import { Redirect, router } from 'expo-router';
 import { useId, useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Linking, Pressable, View } from 'react-native';
 import Svg, { Circle, Defs, Ellipse, Path, RadialGradient, Stop } from 'react-native-svg';
 
 import { Blink, Breathe, Drift, FadeUp } from '@/components/motion';
@@ -106,17 +106,24 @@ export default function LiveScreen() {
               <Eyebrow>Track</Eyebrow>
               <Txt size={12} weight={600} color="muted">
                 {voyage.source === 'sim'
-                  ? 'Simulated · 1 min per second'
+                  ? 'Pretend voyage (testing)'
                   : last
-                    ? `GPS ±${Math.round(last.accuracy ?? 0)} m · ${voyage.fixes.length} fixes`
-                    : 'Waiting for GPS…'}
+                    ? `Position accurate to ±${Math.round(last.accuracy ?? 0)} m`
+                    : 'Finding your position…'}
               </Txt>
             </Row>
             <TrackMap fixes={voyage.fixes} live />
             {voyage.mode === 'foreground' && (
               <Txt size={12} color="warn">
-                Keep YachtPA open with the screen on. To track with the phone locked, allow location “Always” in Settings.
+                Keep YachtPA open with the screen on, or tracking pauses. To track with the phone in your pocket, allow location “All the time” (“Always” on iPhone) in Settings.
               </Txt>
+            )}
+            {voyage.mode === 'foreground' && (
+              <Pressable onPress={() => Linking.openSettings().catch(() => {})} accessibilityRole="button" hitSlop={8}>
+                <Txt size={13} weight={700} color="accent">
+                  Open Settings
+                </Txt>
+              </Pressable>
             )}
             {voyage.mode === 'background' && (
               <Txt size={12} color="muted">
@@ -130,7 +137,7 @@ export default function LiveScreen() {
           <Card row gap={14} paddingV={10}>
             <Col gap={3} flex={1}>
               <Txt size={15} weight={700}>
-                {nextSun ? `${night ? 'Sunrise' : 'Sunset'} ${fmtClock(minutesOfDay(new Date(nextSun)))}` : 'Sun times need a GPS fix'}
+                {nextSun ? `${night ? 'Sunrise' : 'Sunset'} ${fmtClock(minutesOfDay(new Date(nextSun)))}` : 'Sunset time shows once your position is found'}
               </Txt>
               <Txt size={12} color="muted">
                 {night ? 'Night hours are counting' : 'Night hours start automatically'}

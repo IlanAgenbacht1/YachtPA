@@ -1,6 +1,7 @@
 import { Redirect } from 'expo-router';
 import { Tabs } from 'expo-router/js-tabs';
 
+import { ErrorScreen } from '@/components/ErrorScreen';
 import { TabBar } from '@/components/TabBar';
 import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
@@ -21,4 +22,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
     </Tabs>
   );
+}
+
+/** A screen that throws shows a plain-language recovery screen instead of crashing the app. */
+export function ErrorBoundary({ error, retry }: { error: Error; retry: () => Promise<void> }) {
+  return <ErrorScreen error={error} retry={() => void retry()} />;
 }

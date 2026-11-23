@@ -2,6 +2,6 @@
 import { downloadOfflineModel, speechSupport } from './speech';
 
 export async function downloadOfflineSpeech(): Promise<string> {
-  if (!speechSupport().available) return 'Speech needs the full app build (not Expo Go).';
+  if (!speechSupport().available) return 'The mic isn’t available in this version of the app.';
   return downloadOfflineModel();
 }

@@ -78,7 +78,7 @@ export default function SummaryScreen() {
   return (
     <Screen>
       <Hero gap={10}>
-        <Eyebrow color="heroMuted">Voyage complete{voyage.source === 'sim' ? ' · simulated' : ''}</Eyebrow>
+        <Eyebrow color="heroMuted">Voyage complete{voyage.source === 'sim' ? ' · pretend (testing)' : ''}</Eyebrow>
         <Display size={titleSize(from, to)} color="heroFg" numberOfLines={3}>
           {(from || '…') + ' → ' + (to || '…')}
         </Display>

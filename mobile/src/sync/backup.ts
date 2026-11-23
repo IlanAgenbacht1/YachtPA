@@ -8,7 +8,7 @@ import { supabase } from './supabase';
 const deps: Deps = {
   db: () => getDb() as unknown as Promise<Db>,
   client: () => {
-    if (!supabase) throw new Error('Cloud backup is not set up in this build.');
+    if (!supabase) throw new Error('Cloud backup isn’t switched on in this version of the app.');
     return supabase as unknown as Client;
   },
 };

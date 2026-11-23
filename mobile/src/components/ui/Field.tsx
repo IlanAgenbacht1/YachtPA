@@ -1,4 +1,4 @@
-import DateTimePicker from '@react-native-community/datetimepicker';
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import { useState } from 'react';
 import { Platform, Pressable, TextInput, View, type TextInputProps } from 'react-native';
 
@@ -80,6 +80,42 @@ function toIso(d: Date): string {
 /** Date as "YYYY-MM-DD". The native compact picker on iOS; a plain field in the browser preview. */
 export function DateField({ label, value, onChange, hint }: { label: string; value: string; onChange: (v: string) => void; hint?: string }) {
   const t = useTokens();
+  if (Platform.OS === 'android') {
+    // Android: a field that opens the phone's own calendar.
+    const nice = parseDate(value).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    return (
+      <View style={{ gap: 6 }}>
+        <Eyebrow size={10} ls={1.2}>
+          {label}
+        </Eyebrow>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${label}: ${nice}`}
+          onPress={() =>
+            DateTimePickerAndroid.open({ value: parseDate(value), mode: 'date', onValueChange: (_, d) => onChange(toIso(d)) })
+          }
+          style={({ pressed }) => [
+            {
+              minHeight: 52,
+              paddingHorizontal: 14,
+              justifyContent: 'center',
+              borderRadius: t.radius.md,
+              borderWidth: 1,
+              borderColor: t.colors.cardBorder,
+              backgroundColor: t.colors.card,
+            },
+            pressed && { borderColor: t.colors.accent },
+          ]}>
+          <Txt size={16}>{nice}</Txt>
+        </Pressable>
+        {hint ? (
+          <Txt size={12} color="muted">
+            {hint}
+          </Txt>
+        ) : null}
+      </View>
+    );
+  }
   if (Platform.OS !== 'ios') {
     return <Field label={label} value={value} onChangeText={onChange} placeholder="YYYY-MM-DD" hint={hint} autoCapitalize="none" />;
   }

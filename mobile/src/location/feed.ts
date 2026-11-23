@@ -15,6 +15,11 @@ import { destination, fmtLatLon, type LatLon } from '@/domain/geo';
 import type { Fix } from '@/domain/track';
 
 export type FeedSource = 'gps' | 'sim';
+
+/** An error the user fixes in the phone's Settings; the caller offers an "Open Settings" button. */
+function settingsError(message: string): Error {
+  return Object.assign(new Error(message), { openSettings: true });
+}
 export type Stop = () => void;
 
 /**
@@ -23,9 +28,9 @@ export type Stop = () => void;
  * already saved by the task; in `foreground` mode the caller saves them.
  */
 export async function startGps(voyageId: string, onFix: (f: Fix) => void): Promise<{ stop: Stop; mode: 'background' | 'foreground' }> {
-  if (!(await Location.hasServicesEnabledAsync())) throw new Error('Location Services are off. Turn them on in Settings.');
+  if (!(await Location.hasServicesEnabledAsync())) throw settingsError("Your phone's location is switched off. Turn it on, then start the voyage again.");
   const perm = await Location.requestForegroundPermissionsAsync();
-  if (perm.status !== 'granted') throw new Error('YachtPA needs location access to track a voyage.');
+  if (perm.status !== 'granted') throw settingsError('YachtPA needs your location to log the voyage. In Settings, allow location for YachtPA, then start again.');
   if (await startBackground(voyageId).catch(() => false)) {
     return { stop: () => void stopBackground(), mode: 'background' };
   }

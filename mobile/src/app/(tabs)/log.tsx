@@ -7,8 +7,9 @@ import { Screen } from '@/components/Screen';
 import { Button, Card, Chip, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { getLog, listLogs, listVoyages, localDate, saveLog, type LogEntry, type Voyage } from '@/db/repo';
 import { Dictate } from '@/components/Dictate';
+import { Contain } from '@/components/ErrorScreen';
 import { draftFromText } from '@/domain/draft';
-import { speechSupport } from '@/lib/speech';
+import { markSpeechBroken, speechSupport } from '@/lib/speech';
 import { ACTIVITIES } from '@/lib/constants';
 import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
 import { tick } from '@/lib/haptics';
@@ -24,7 +25,7 @@ import { useTokens } from '@/theme';
  */
 export default function LogScreen() {
   const t = useTokens();
-  const { current, bump, flash } = useAppStore();
+  const { current, bump, flash, micOn } = useAppStore();
   const today = localDate();
   const [date, setDate] = useState(today);
   const [text, setText] = useState('');
@@ -72,8 +73,15 @@ export default function LogScreen() {
   };
 
   // Offer the tidy-up when the text reads like speech: long lines or sentences rather than a list.
-  const micAvailable = speechSupport().available;
+  // The mic shows only when the tester has it on, the phone supports it, and it has not failed this session.
+  const [micFailed, setMicFailed] = useState(false);
+  const micAvailable = micOn && !micFailed && speechSupport().available;
   const [typing, setTyping] = useState(false);
+  const onMicCrash = () => {
+    markSpeechBroken();
+    setMicFailed(true);
+    flash('The mic is not working on this phone. Type instead.');
+  };
   // Speech goes straight into the draft: appended as duties, activities ticked.
   const onSpoken = (spoken: string) => {
     const d = draftFromText(spoken);
@@ -140,7 +148,9 @@ export default function LogScreen() {
               )}
             </Row>
             {showMic ? (
-              <Dictate onDone={onSpoken} onType={() => setTyping(true)} />
+              <Contain fallback={null} onError={onMicCrash}>
+                <Dictate onDone={onSpoken} onType={() => setTyping(true)} />
+              </Contain>
             ) : (
               <>
                 <Field
@@ -148,10 +158,14 @@ export default function LogScreen() {
                   onChangeText={setText}
                   multiline
                   placeholder={'Washed down the exterior\nChanged generator fuel filters\nSafety inspection before departure'}
-                  hint={micAvailable ? 'One duty per line. Edit anything before you confirm.' : 'One duty per line. Tap the mic on the keyboard to say it, then tidy it into duties.'}
+                  hint={micAvailable ? 'One job per line. Change anything before you save.' : 'One job per line. You can also tap the mic on your keyboard and speak, then tap Tidy into duties.'}
                 />
                 {canTidy && <Button variant="ghost" icon="check" label="Tidy into duties" onPress={onTidy} />}
-                {micAvailable && <Dictate compact onDone={onSpoken} />}
+                {micAvailable && (
+                  <Contain fallback={null} onError={onMicCrash}>
+                    <Dictate compact onDone={onSpoken} />
+                  </Contain>
+                )}
               </>
             )}
           </Col>

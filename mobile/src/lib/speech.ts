@@ -24,8 +24,8 @@ let mod: Module | null | undefined;
 function load(): Module | null {
   if (mod !== undefined) return mod;
   mod = null;
-  if (Platform.OS !== 'web' && !requireOptionalNativeModule('ExpoSpeechRecognition')) return mod;
   try {
+    if (Platform.OS !== 'web' && !requireOptionalNativeModule('ExpoSpeechRecognition')) return mod;
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     mod = (require('expo-speech-recognition') as typeof SR).ExpoSpeechRecognitionModule;
   } catch {
@@ -34,16 +34,37 @@ function load(): Module | null {
   return mod;
 }
 
+let cached: SpeechSupport | null = null;
+let broken = false;
+
+/** The mic failed on this phone this session (e.g. it threw while starting); stop offering it. */
+export function markSpeechBroken() {
+  broken = true;
+  cached = { available: false, onDevice: false };
+}
+
 export type SpeechSupport = { available: boolean; onDevice: boolean };
 
+/** Asked once per app session and remembered: native checks are not repeated on every render. */
 export function speechSupport(): SpeechSupport {
-  const m = load();
-  if (!m) return { available: false, onDevice: false };
-  try {
-    return { available: m.isRecognitionAvailable(), onDevice: m.supportsOnDeviceRecognition() };
-  } catch {
-    return { available: false, onDevice: false };
+  if (cached) return cached;
+  const m = broken ? null : load();
+  let available = false;
+  let onDevice = false;
+  if (m) {
+    try {
+      available = !!m.isRecognitionAvailable();
+    } catch {
+      available = false;
+    }
+    try {
+      onDevice = available && !!m.supportsOnDeviceRecognition();
+    } catch {
+      onDevice = false;
+    }
   }
+  cached = { available, onDevice };
+  return cached;
 }
 
 export type ListenHandlers = {
@@ -58,7 +79,12 @@ export type Session = { stop: () => void; abort: () => void };
 export async function listen(h: ListenHandlers, vocabulary: string[]): Promise<Session | { error: string }> {
   const m = load();
   if (!m) return { error: 'unavailable' };
-  const perm = await m.requestPermissionsAsync();
+  let perm: { granted: boolean };
+  try {
+    perm = await m.requestPermissionsAsync();
+  } catch {
+    return { error: 'unknown' };
+  }
   if (!perm.granted) return { error: 'not-allowed' };
 
   const support = speechSupport();

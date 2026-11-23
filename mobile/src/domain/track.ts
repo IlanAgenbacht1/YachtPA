@@ -213,7 +213,7 @@ export function sanityCheck(s: TrackSummary, prevEnd: LatLon | null): SanityFlag
   if (s.first && prevEnd && distanceNm(prevEnd, s.first) > 200) {
     flags.push({ level: 'warn', text: 'Starts over 200 NM from where your last voyage ended.' });
   }
-  if (s.kept < 2) flags.push({ level: 'warn', text: 'No usable GPS fixes were recorded.' });
+  if (s.kept < 2) flags.push({ level: 'warn', text: 'No position was recorded. Was location switched off?' });
   else if (s.distanceNm === 0) flags.push({ level: 'warn', text: 'No movement detected. Stationary the whole time?' });
   if (flags.length === 0) flags.push({ level: 'ok', text: prevEnd ? 'Consistent with your last known position' : 'Track looks consistent' });
   return flags;
