@@ -10,6 +10,7 @@ import { Dictate } from '@/components/Dictate';
 import { Contain } from '@/components/ErrorScreen';
 import { draftFromText } from '@/domain/draft';
 import { log } from '@/lib/diag';
+import { track } from '@/telemetry';
 import { markSpeechBroken, speechSupport } from '@/lib/speech';
 import { ACTIVITIES } from '@/lib/constants';
 import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
@@ -67,6 +68,7 @@ export default function LogScreen() {
       return;
     }
     await saveLog({ engagementId, date, duties, activities: [...chosen], notes: '', status: 'confirmed' });
+    track('log_saved', { duties: duties.length, activities: chosen.size, via, edit: !!saved, daysAgo: Math.round((Date.parse(today) - Date.parse(date)) / 86400000) });
     tick();
     bump();
     setSaved(await getLog(engagementId, date));
@@ -78,6 +80,8 @@ export default function LogScreen() {
   const [micFailed, setMicFailed] = useState(false);
   const micAvailable = micOn && !micFailed && speechSupport().available;
   const [typing, setTyping] = useState(false);
+  // How today's entry was written, for usage metrics: spoken, tidied, or typed.
+  const [via, setVia] = useState<'mic' | 'tidy' | 'typing'>('typing');
   const onMicCrash = (e?: Error) => {
     log('error', 'mic', 'The mic crashed; switched to typing', e);
     markSpeechBroken();
@@ -90,6 +94,7 @@ export default function LogScreen() {
     const lines = [...text.split('\n').map((l) => l.trim()).filter(Boolean), ...(d.duties.length ? d.duties : [spoken.trim()])];
     setText(lines.join('\n'));
     setChosen(new Set([...chosen, ...d.activities]));
+    setVia('mic');
     tick();
   };
   const showMic = micAvailable && !typing && text.trim().length === 0;
@@ -100,6 +105,7 @@ export default function LogScreen() {
     if (d.duties.length === 0 && d.activities.length === 0) return;
     setText(d.duties.join('\n'));
     setChosen(new Set([...chosen, ...d.activities]));
+    if (via !== 'mic') setVia('tidy');
     tick();
   };
 

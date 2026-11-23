@@ -19,7 +19,9 @@ export const cloudConfigured = !!(url && key);
 export const supabase: SupabaseClient | null = cloudConfigured
   ? createClient(url!, key!, {
       auth: {
-        storage: Storage,
+        // Phones keep the session in SQLite's key-value store. The browser preview uses its own
+        // storage: a second SQLite database there trips the experimental web SQLite.
+        storage: Platform.OS === 'web' ? undefined : Storage,
         autoRefreshToken: true,
         persistSession: true,
         detectSessionInUrl: false,

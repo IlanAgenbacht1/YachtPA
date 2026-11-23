@@ -7,6 +7,7 @@ import { Button, Card, Col, DateField, Display, Eyebrow, Field, Hero, HeroButton
 import { addManualVoyage } from '@/db/repo';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
+import { track } from '@/telemetry';
 
 const num = (s: string) => Number(s.replace(',', '.'));
 
@@ -34,6 +35,7 @@ export default function NewVoyage() {
     if (d / h > 40) return flash('That is over 40 kn on average. Check miles and hours.');
     if (date > isoDate(new Date())) return flash('That date is in the future');
     await addManualVoyage({ engagementId: current.engagement.id, date, from: from.trim(), to: to.trim(), distanceNm: d, underwayHours: h, nightHours: n, overnight, skipper });
+    track('manual_voyage_added', { nm: d, hours: h, nightHours: n, overnight, skipper });
     tick();
     bump();
     router.back();

@@ -40,6 +40,9 @@ npm run export:web  # proves the bundle builds; output in dist/
 | `src/db/migrations.ts` | SQLite schema, append-only, plus the outbox triggers that record changes for backup. |
 | `src/sync/engine.ts` | Backup and restore logic (pure; tested with node:sqlite and a fake cloud). `backup.ts` wires it to the app, `supabase.ts` makes the client. |
 | `src/domain/draft.ts` | Dictated text → duties and activity ticks. |
+| `src/telemetry/` | Anonymous usage metrics: queued on the phone, uploaded when there is signal (`engine.ts` is pure and tested). See `../docs/METRICS.md`. |
+| `src/lib/diag.ts` | On-phone diagnostic log behind Profile → Send a problem report. |
+| `src/lib/battery.ts` | Battery level at voyage start and stop (optional native module, guarded). |
 | `src/lib/reminders.ts` | Local notifications, rebuilt from the database after every change. |
 | `src/location/background.ts` | The background location task. Writes fixes straight to SQLite. Imported at start-up. |
 

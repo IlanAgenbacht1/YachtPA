@@ -33,6 +33,8 @@ EXPO_PUBLIC_SUPABASE_URL=https://xxxx.supabase.co
 EXPO_PUBLIC_SUPABASE_KEY=sb_publishable_xxxx
 ```
 
+6. For usage metrics, also run [`supabase/migrations/20261123000000_telemetry.sql`](../supabase/migrations/20261123000000_telemetry.sql). What it collects and how to read it: [METRICS.md](METRICS.md).
+
 Free tier limits worth knowing:
 
 - **Email:** Supabase's built-in email sends at most 2 emails an hour for the whole project. Fine for a few testers signing in once. For more, connect a free SMTP sender (Resend's free tier is plenty) under Authentication → SMTP.

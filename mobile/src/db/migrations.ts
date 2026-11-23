@@ -139,4 +139,16 @@ export const MIGRATIONS: string[] = [
   );
   CREATE INDEX diag_log_ts ON diag_log(ts);
   `,
+  // 6: anonymous usage and diagnostics waiting to upload (only while sharing is on).
+  `
+  CREATE TABLE telemetry_queue (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts INTEGER NOT NULL,
+    kind TEXT NOT NULL CHECK (kind IN ('event', 'log')),
+    name TEXT NOT NULL,
+    level TEXT,
+    message TEXT,
+    props TEXT NOT NULL DEFAULT '{}'
+  );
+  `,
 ];

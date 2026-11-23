@@ -10,6 +10,7 @@ import { Platform, Share } from 'react-native';
 
 import { getDb } from '@/db/db';
 import { buildReport, type LogLine } from '@/domain/report';
+import { trackLog } from '@/telemetry';
 
 const KEEP_DAYS = 14;
 let writes = 0;
@@ -17,6 +18,7 @@ let writes = 0;
 export function log(level: LogLine['level'], area: string, message: string, detail?: unknown): void {
   const text = detail == null ? null : detail instanceof Error ? `${detail.message}\n${detail.stack ?? ''}` : typeof detail === 'string' ? detail : safeJson(detail);
   if (__DEV__) console.log(`[${level}] ${area}: ${message}`, text ?? '');
+  if (level !== 'info') trackLog(level, area, text ? `${message} | ${text.slice(0, 1500)}` : message);
   (async () => {
     const db = await getDb();
     await db.runAsync('INSERT INTO diag_log (ts, level, area, message, detail) VALUES (?, ?, ?, ?, ?)', Date.now(), level, area, message, text);
@@ -35,7 +37,7 @@ function safeJson(v: unknown): string {
 
 /** "samsung SM-S911B, Android 14" or "iPhone, iOS 18.2". */
 export function phoneDescription(): string {
-  const c = Platform.constants as Record<string, unknown>;
+  const c = (Platform.constants ?? {}) as Record<string, unknown>;
   if (Platform.OS === 'android') return `${c.Brand ?? ''} ${c.Model ?? ''}, Android ${c.Release ?? Platform.Version}`.trim();
   if (Platform.OS === 'ios') return `${c.interfaceIdiom === 'pad' ? 'iPad' : 'iPhone'}, iOS ${c.osVersion ?? Platform.Version}`;
   return Platform.OS;

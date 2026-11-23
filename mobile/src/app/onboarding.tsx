@@ -75,6 +75,11 @@ export default function Onboarding() {
         <Spacer />
         <Button label={busy ? 'Saving…' : 'Get started'} icon="check" iconStrokeWidth={2.4} onPress={busy ? () => {} : onDone} />
         {cloudConfigured && <Button variant="ghost" label="Restore from a backup" onPress={() => router.push('/cloud')} />}
+        {cloudConfigured && (
+          <Txt size={12} color="muted" align="center">
+            This beta shares anonymous usage data to help fix problems: never your name, positions or logs. Turn it off in Profile.
+          </Txt>
+        )}
       </Sheet>
     </Screen>
   );

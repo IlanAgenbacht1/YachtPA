@@ -18,6 +18,7 @@ import {
   type TrackingStatus,
 } from '@/location/permissions';
 import { useAppStore } from '@/store/AppStore';
+import { track } from '@/telemetry';
 import { useTokens } from '@/theme';
 
 const android = Platform.OS === 'android';
@@ -35,8 +36,11 @@ export default function TrackingSetup() {
   const [notes, setNotes] = useState(false);
 
   const refresh = useCallback(() => {
-    trackingStatus().then(setS);
-    notificationsAllowed().then(setNotes);
+    Promise.all([trackingStatus(), notificationsAllowed()]).then(([t, n]) => {
+      setS(t);
+      setNotes(n);
+      track('setup_status', { services: t.services, allowed: t.allowed, precise: t.precise, always: t.always, canAlways: t.canAlways, notifications: n, screen: true });
+    });
   }, []);
 
   useFocusEffect(refresh);

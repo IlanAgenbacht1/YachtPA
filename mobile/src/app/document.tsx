@@ -8,6 +8,7 @@ import { deleteDoc, getDoc, saveDoc } from '@/db/repo';
 import { tick } from '@/lib/haptics';
 import { ensureNotificationPermission } from '@/lib/reminders';
 import { useAppStore } from '@/store/AppStore';
+import { track } from '@/telemetry';
 
 const COMMON = ['STCW Basic Safety', 'ENG1 Medical', 'Passport', 'VHF SRC', 'Powerboat Level 2', 'Yachtmaster Offshore', 'Seaman’s book', 'Schengen visa'];
 
@@ -47,6 +48,7 @@ export default function DocumentEditor() {
       return;
     }
     await saveDoc({ id, name: name.trim(), issuer: issuer.trim() || null, number: number.trim() || null, expires: hasExpiry === 'yes' ? expires : null });
+    track('document_saved', { edit: !!id, expires: hasExpiry === 'yes' });
     tick();
     if (hasExpiry === 'yes') await ensureNotificationPermission().catch(() => false);
     bump();

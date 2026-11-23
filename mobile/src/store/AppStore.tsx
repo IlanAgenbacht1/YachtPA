@@ -23,8 +23,12 @@ import { trackingGaps } from '@/domain/report';
 import { summarise, type Fix, type TrackSummary } from '@/domain/track';
 import { setBackgroundListener } from '@/location/background';
 import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/location/feed';
-import { ensureNotificationPermission, rescheduleReminders } from '@/lib/reminders';
+import { ensureNotificationPermission, notificationsAllowed, rescheduleReminders } from '@/lib/reminders';
+import { readBattery, type BatteryReading } from '@/lib/battery';
 import { log } from '@/lib/diag';
+import { trackingStatus } from '@/location/permissions';
+import { batteryPerHour } from '@/telemetry/engine';
+import { flushTelemetry, track as trackEvent } from '@/telemetry';
 import { pushChanges } from '@/sync/backup';
 import { cloudConfigured } from '@/sync/supabase';
 
@@ -129,11 +133,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   }, [showFix]);
 
   const startFeed = useCallback(
-    async (v: { id: string; startedAt: number; source: FeedSource; fixes: Fix[] }) => {
+    async (v: { id: string; startedAt: number; source: FeedSource; fixes: Fix[] }): Promise<'sim' | 'background' | 'foreground'> => {
       feedStop.current?.();
       if (v.source === 'sim') {
         const from = await repo.lastKnownPosition();
         feedStop.current = startSim((f) => onFix(v.id, f), from, v.startedAt, v.fixes[v.fixes.length - 1]);
+        return 'sim';
       } else {
         const gps = await startGps(v.id, (f) => onFix(v.id, f));
         feedStop.current = gps.stop;
@@ -141,6 +146,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         log(gps.mode === 'background' ? 'info' : 'warn', 'tracking', gps.mode === 'background' ? 'Logging with the phone locked' : 'Logging only while the app is open (no "all the time" location)');
         // Foreground tracking stops when the screen locks, so keep it on.
         if (gps.mode === 'foreground') activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
+        return gps.mode;
       }
     },
     [onFix],
@@ -173,6 +179,9 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         if (lv) {
           const fixes = await repo.getTrack(lv.id);
           const v = { id: lv.id, startedAt: lv.startedAt, source: lv.source === 'sim' ? ('sim' as const) : ('gps' as const), fromName: lv.fromName, fixes };
+          // The app was closed mid-voyage (swiped away, or the phone stopped it).
+          const lastTs = fixes[fixes.length - 1]?.ts ?? lv.startedAt;
+          trackEvent('voyage_resumed', { source: v.source, minutesSinceLastPosition: Math.round((Date.now() - lastTs) / 60000) });
           setLive(v);
           startFeed(v).catch((e: Error) => flash(e.message));
         }
@@ -196,6 +205,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, [liveId]);
 
+  // Once per app open: how this phone is set up, then upload whatever waited for signal.
+  useEffect(() => {
+    if (!ready) return;
+    (async () => {
+      const [t, notifications] = await Promise.all([trackingStatus(), notificationsAllowed()]);
+      trackEvent('app_open', {});
+      trackEvent('setup_status', { services: t.services, allowed: t.allowed, precise: t.precise, always: t.always, canAlways: t.canAlways, notifications });
+    })().catch(() => {});
+    const id = setTimeout(() => flushTelemetry(), 3000);
+    return () => clearTimeout(id);
+  }, [ready]);
+
   // Reminders follow the data: rebuild after every write and when a voyage starts or stops.
   useEffect(() => {
     if (ready) rescheduleReminders().catch((e) => log('warn', 'reminders', 'Could not schedule reminders', e));
@@ -204,13 +225,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   // Cloud backup: push queued changes a few seconds after writes settle, and when the app comes back.
   useEffect(() => {
     if (!ready || !cloudConfigured) return;
-    const id = setTimeout(() => pushChanges().catch((e) => log('warn', 'backup', 'Upload failed, will retry', e)), 4000);
+    const id = setTimeout(() => {
+      pushChanges().catch((e) => log('warn', 'backup', 'Upload failed, will retry', e));
+      flushTelemetry();
+    }, 4000);
     return () => clearTimeout(id);
   }, [ready, rev]);
   useEffect(() => {
     if (!cloudConfigured) return;
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') pushChanges().catch((e) => log('warn', 'backup', 'Upload failed, will retry', e));
+      if (st === 'active') {
+        pushChanges().catch((e) => log('warn', 'backup', 'Upload failed, will retry', e));
+        flushTelemetry();
+      }
     });
     return () => sub.remove();
   }, []);
@@ -248,7 +275,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     const v = { id, startedAt, source, fromName: null, fixes: [] as Fix[] };
     setLive(v);
     try {
-      await startFeed(v);
+      const feedMode = await startFeed(v);
+      const battery = await readBattery();
+      repo.setSetting('battery_start', JSON.stringify({ id, battery })).catch(() => {});
+      trackEvent('voyage_start', { source, mode: feedMode, battery: battery?.level ?? null, charging: battery?.charging ?? null, lowPower: battery?.lowPower ?? null });
       return true;
     } catch (e) {
       setLive(null);
@@ -280,13 +310,43 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       `Stopped: ${s.distanceNm.toFixed(1)} NM, ${Math.round(s.durationMin)} min, ${fixes.length} positions (${s.kept} usable)${gaps.length ? `, ${gaps.length} gap(s), longest ${Math.max(...gaps.map((g) => g.minutes))} min` : ''}`,
       gaps.length ? gaps.map((g) => `${new Date(g.from).toISOString().slice(11, 16)}–${new Date(g.to).toISOString().slice(11, 16)} UTC ${g.minutes} min`).join(', ') : undefined,
     );
+    // Usage metrics: how well tracking held up, and what it cost in battery. No positions or place names.
+    const endBattery = await readBattery();
+    let startBattery: BatteryReading | null = null;
+    try {
+      const saved = JSON.parse((await repo.getSetting('battery_start')) ?? 'null') as { id: string; battery: BatteryReading | null } | null;
+      if (saved?.id === live.id) startBattery = saved.battery;
+    } catch {
+      startBattery = null;
+    }
+    const hours = s.durationMin / 60;
+    trackEvent('voyage_stop', {
+      source: live.source,
+      mode: live.source === 'sim' ? 'sim' : mode,
+      nm: Math.round(s.distanceNm * 10) / 10,
+      durationMin: Math.round(s.durationMin),
+      underwayMin: Math.round(s.underwayMin),
+      nightMin: Math.round(s.nightMin),
+      overnight: s.overnight,
+      positions: fixes.length,
+      usable: s.kept,
+      positionsPerHour: hours > 0 ? Math.round(fixes.length / hours) : null,
+      gaps: gaps.length,
+      longestGapMin: gaps.length ? Math.max(...gaps.map((g) => g.minutes)) : 0,
+      gapMinutes: gaps.reduce((t, g) => t + g.minutes, 0),
+      batteryStart: startBattery?.level ?? null,
+      batteryEnd: endBattery?.level ?? null,
+      batteryPerHour: batteryPerHour(startBattery, endBattery, s.durationMin),
+      lowPower: endBattery?.lowPower ?? null,
+    });
+    flushTelemetry();
     const [from, to] = await Promise.all([s.first ? placeName(s.first) : null, s.last ? placeName(s.last) : null]);
     await repo.stopVoyage(live.id, endedAt, s, { from, to });
     const id = live.id;
     setLive(null);
     bump();
     return id;
-  }, [live, stopFeed, bump]);
+  }, [live, stopFeed, bump, mode]);
 
   const setMicOn = useCallback((on: boolean) => {
     setMicOnState(on);

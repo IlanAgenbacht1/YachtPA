@@ -5,6 +5,7 @@ import { Bar, Blink, FadeUp } from '@/components/motion';
 import { Button, Card, Col, Eyebrow, Icon, Row, Txt } from '@/components/ui';
 import { applyResult, EMPTY_TRANSCRIPT, fullText, speechErrorText, YACHT_VOCABULARY, type Transcript } from '@/lib/dictation';
 import { log } from '@/lib/diag';
+import { track } from '@/telemetry';
 import { thump } from '@/lib/haptics';
 import { listen, speechSupport, type Session } from '@/lib/speech';
 import { useTokens } from '@/theme';
@@ -52,6 +53,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
         onEnd: () => {
           session.current = null;
           const text = fullText(txRef.current);
+          track('mic_result', { ok: !!text, error: text ? null : lastError.current || null, words: text ? text.split(/\s+/).length : 0, onDevice: support.onDevice });
           setPhase('idle');
           if (text) onDone(text);
           else if (lastError.current && lastError.current !== 'aborted') setError(speechErrorText(lastError.current));
@@ -60,6 +62,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
       YACHT_VOCABULARY,
     );
     if ('error' in r) {
+      track('mic_result', { ok: false, error: r.error, words: 0, onDevice: support.onDevice });
       setPhase('idle');
       setError(speechErrorText(r.error));
       setNeedsSettings(r.error === 'not-allowed');

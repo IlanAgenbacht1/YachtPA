@@ -11,6 +11,7 @@ import { sanityCheck, summarise, type Fix, type SanityFlag } from '@/domain/trac
 import { fmtClock, fmtDateShort, fmtDur, fmtInt, minutesOfDay } from '@/lib/format';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
+import { track } from '@/telemetry';
 
 /** Headline size that keeps a from → to title to two lines on a phone. */
 function titleSize(from: string, to: string): number {
@@ -52,6 +53,7 @@ export default function SummaryScreen() {
   const onConfirm = async () => {
     tick();
     await confirmVoyage(voyage.id, { from: from.trim() || 'Unknown', to: to.trim() || 'Unknown' }, skipper);
+    track('voyage_confirmed', { source: voyage.source, nm: Math.round(voyage.distanceNm * 10) / 10, skipper, namesEdited: from !== (voyage.fromName ?? '') || to !== (voyage.toName ?? '') });
     bump();
     router.dismissTo('/');
     flash(`Voyage saved · ${fmtInt(voyage.distanceNm)} NM added to your record`);
@@ -65,6 +67,7 @@ export default function SummaryScreen() {
         style: 'destructive',
         onPress: async () => {
           await deleteVoyage(voyage.id);
+          track('voyage_discarded', { source: voyage.source, nm: Math.round(voyage.distanceNm * 10) / 10 });
           bump();
           router.dismissTo('/');
         },

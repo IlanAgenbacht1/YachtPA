@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import Constants from 'expo-constants';
-import { useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, Switch, View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
@@ -17,6 +17,8 @@ import { isBackupOn } from '@/sync/backup';
 import { downloadOfflineSpeech } from '@/lib/speechSetup';
 import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
+import { setUsageSharing, track, usageSharingOn } from '@/telemetry';
+import { cloudConfigured } from '@/sync/supabase';
 import { LOOKS, useLook, type Look } from '@/theme';
 
 const LOOK_COPY: Record<Look, { name: string; blurb: string }> = {
@@ -31,6 +33,10 @@ export default function ProfileScreen() {
   const { current, simulate, setSimulate, voyage, refresh, flash, micOn, setMicOn, devTools, setDevTools } = useAppStore();
   // Tapping the version 7 times unlocks the testing tools; testers never stumble on them.
   const taps = useRef(0);
+  const [sharing, setSharing] = useState(true);
+  useEffect(() => {
+    usageSharingOn().then(setSharing);
+  }, []);
   if (!current) return null;
   const onVersionTap = () => {
     if (devTools) return;
@@ -61,9 +67,9 @@ export default function ProfileScreen() {
     { label: 'Vessel and position', onPress: () => router.push('/vessel') },
     { label: 'Moved to a new yacht', onPress: () => router.push({ pathname: '/vessel', params: { mode: 'new' } }) },
     { label: 'Cloud backup', onPress: () => router.push('/cloud') },
-    { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().catch((e: Error) => flash(e.message)) },
+    { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().then(() => track('pdf_exported')).catch((e: Error) => flash(e.message)) },
     ...(Platform.OS === 'android' && mic.available ? [{ label: 'Download offline speech', onPress: () => downloadOfflineSpeech().then(flash) }] : []),
-    { label: 'Send a problem report', onPress: () => sendReport().catch((e: Error) => flash(e.message)) },
+    { label: 'Send a problem report', onPress: () => sendReport().then(() => track('report_sent')).catch((e: Error) => flash(e.message)) },
     { label: 'Save a copy of my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
 
@@ -182,6 +188,29 @@ export default function ProfileScreen() {
             <Switch value={micOn && mic.available} onValueChange={setMicOn} disabled={!mic.available} trackColor={{ true: tokens.colors.accent, false: tokens.colors.track }} />
           </Card>
         </FadeUp>
+
+        {cloudConfigured && (
+          <FadeUp delay={200}>
+            <Card row gap={12} paddingV={12}>
+              <Col gap={2} flex={1}>
+                <Txt size={15} weight={600}>
+                  Share anonymous usage data
+                </Txt>
+                <Txt size={12} color="muted">
+                  Helps fix problems: how well tracking worked, battery use, errors. Never your name, positions, yachts or logs.
+                </Txt>
+              </Col>
+              <Switch
+                value={sharing}
+                onValueChange={(on) => {
+                  setSharing(on);
+                  setUsageSharing(on).catch(() => {});
+                }}
+                trackColor={{ true: tokens.colors.accent, false: tokens.colors.track }}
+              />
+            </Card>
+          </FadeUp>
+        )}
 
         {devTools && (
           <FadeUp delay={210}>
