@@ -127,4 +127,16 @@ export const MIGRATIONS: string[] = [
   );
   ${outboxTriggers()}
   `,
+  // 5: diagnostic log for problem reports (on the phone only, never synced).
+  `
+  CREATE TABLE diag_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    ts INTEGER NOT NULL,
+    level TEXT NOT NULL CHECK (level IN ('error', 'warn', 'info')),
+    area TEXT NOT NULL,
+    message TEXT NOT NULL,
+    detail TEXT
+  );
+  CREATE INDEX diag_log_ts ON diag_log(ts);
+  `,
 ];

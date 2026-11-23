@@ -9,6 +9,7 @@ import { getLog, listLogs, listVoyages, localDate, saveLog, type LogEntry, type 
 import { Dictate } from '@/components/Dictate';
 import { Contain } from '@/components/ErrorScreen';
 import { draftFromText } from '@/domain/draft';
+import { log } from '@/lib/diag';
 import { markSpeechBroken, speechSupport } from '@/lib/speech';
 import { ACTIVITIES } from '@/lib/constants';
 import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
@@ -77,7 +78,8 @@ export default function LogScreen() {
   const [micFailed, setMicFailed] = useState(false);
   const micAvailable = micOn && !micFailed && speechSupport().available;
   const [typing, setTyping] = useState(false);
-  const onMicCrash = () => {
+  const onMicCrash = (e?: Error) => {
+    log('error', 'mic', 'The mic crashed; switched to typing', e);
     markSpeechBroken();
     setMicFailed(true);
     flash('The mic is not working on this phone. Type instead.');

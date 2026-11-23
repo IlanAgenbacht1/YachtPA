@@ -7,9 +7,13 @@ import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { resetDb } from '@/db/db';
+import { shareProblemReport } from '@/lib/diag';
 import { exportAll } from '@/lib/exportData';
 import { exportRecordPdf } from '@/lib/exportPdf';
+import { notificationsAllowed } from '@/lib/reminders';
 import { speechSupport } from '@/lib/speech';
+import { trackingStatus } from '@/location/permissions';
+import { isBackupOn } from '@/sync/backup';
 import { downloadOfflineSpeech } from '@/lib/speechSetup';
 import { fmtIsoMonth } from '@/lib/format';
 import { useAppStore } from '@/store/AppStore';
@@ -38,6 +42,19 @@ export default function ProfileScreen() {
     }
   };
   const mic = speechSupport();
+  // What a developer needs to know about this phone's setup, alongside the log.
+  const sendReport = async () => {
+    const [t, notes, backup] = await Promise.all([trackingStatus(), notificationsAllowed(), isBackupOn().catch(() => false)]);
+    await shareProblemReport({
+      location: t.allowed ? (t.always ? 'all the time' : 'while open') : 'off',
+      precise: t.precise,
+      phoneLocation: t.services,
+      notifications: notes,
+      mic: micOn && mic.available ? 'on' : mic.available ? 'off' : 'n/a',
+      backup,
+      pretendGps: simulate,
+    });
+  };
 
   const rows: { label: string; onPress: () => void }[] = [
     { label: 'Tracking setup', onPress: () => router.push('/tracking-setup') },
@@ -46,6 +63,7 @@ export default function ProfileScreen() {
     { label: 'Cloud backup', onPress: () => router.push('/cloud') },
     { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().catch((e: Error) => flash(e.message)) },
     ...(Platform.OS === 'android' && mic.available ? [{ label: 'Download offline speech', onPress: () => downloadOfflineSpeech().then(flash) }] : []),
+    { label: 'Send a problem report', onPress: () => sendReport().catch((e: Error) => flash(e.message)) },
     { label: 'Save a copy of my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
 

@@ -19,10 +19,12 @@ import {
 
 import * as repo from '@/db/repo';
 import { onboard as saveOnboarding, type Current } from '@/db/repo';
+import { trackingGaps } from '@/domain/report';
 import { summarise, type Fix, type TrackSummary } from '@/domain/track';
 import { setBackgroundListener } from '@/location/background';
 import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/location/feed';
 import { ensureNotificationPermission, rescheduleReminders } from '@/lib/reminders';
+import { log } from '@/lib/diag';
 import { pushChanges } from '@/sync/backup';
 import { cloudConfigured } from '@/sync/supabase';
 
@@ -136,6 +138,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         const gps = await startGps(v.id, (f) => onFix(v.id, f));
         feedStop.current = gps.stop;
         setMode(gps.mode);
+        log(gps.mode === 'background' ? 'info' : 'warn', 'tracking', gps.mode === 'background' ? 'Logging with the phone locked' : 'Logging only while the app is open (no "all the time" location)');
         // Foreground tracking stops when the screen locks, so keep it on.
         if (gps.mode === 'foreground') activateKeepAwakeAsync(KEEP_AWAKE_TAG).catch(() => {});
       }
@@ -195,19 +198,19 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   // Reminders follow the data: rebuild after every write and when a voyage starts or stops.
   useEffect(() => {
-    if (ready) rescheduleReminders();
+    if (ready) rescheduleReminders().catch((e) => log('warn', 'reminders', 'Could not schedule reminders', e));
   }, [ready, rev, liveId]);
 
   // Cloud backup: push queued changes a few seconds after writes settle, and when the app comes back.
   useEffect(() => {
     if (!ready || !cloudConfigured) return;
-    const id = setTimeout(() => pushChanges().catch(() => {}), 4000);
+    const id = setTimeout(() => pushChanges().catch((e) => log('warn', 'backup', 'Upload failed, will retry', e)), 4000);
     return () => clearTimeout(id);
   }, [ready, rev]);
   useEffect(() => {
     if (!cloudConfigured) return;
     const sub = AppState.addEventListener('change', (st) => {
-      if (st === 'active') pushChanges().catch(() => {});
+      if (st === 'active') pushChanges().catch((e) => log('warn', 'backup', 'Upload failed, will retry', e));
     });
     return () => sub.remove();
   }, []);
@@ -241,6 +244,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     const source: FeedSource = simulate ? 'sim' : 'gps';
     const startedAt = Date.now();
     const id = await repo.startVoyage(current.engagement.id, startedAt, source);
+    log('info', 'voyage', `Started (${source === 'sim' ? 'pretend GPS' : 'GPS'})`);
     const v = { id, startedAt, source, fromName: null, fixes: [] as Fix[] };
     setLive(v);
     try {
@@ -250,6 +254,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       setLive(null);
       await repo.deleteVoyage(id);
       const err = e as Error & { openSettings?: boolean };
+      log('warn', 'voyage', `Could not start: ${err.message}`);
       // Refused permissions are fixed in the phone's Settings; offer the way there.
       if (err.openSettings) {
         Alert.alert('Location is needed', err.message, [
@@ -268,6 +273,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     const last = fixes[fixes.length - 1];
     const endedAt = live.source === 'sim' && last ? last.ts : Date.now();
     const s = summarise(fixes, { startedAt: live.startedAt, endedAt });
+    const gaps = live.source === 'gps' ? trackingGaps(fixes) : [];
+    log(
+      gaps.length ? 'warn' : 'info',
+      'voyage',
+      `Stopped: ${s.distanceNm.toFixed(1)} NM, ${Math.round(s.durationMin)} min, ${fixes.length} positions (${s.kept} usable)${gaps.length ? `, ${gaps.length} gap(s), longest ${Math.max(...gaps.map((g) => g.minutes))} min` : ''}`,
+      gaps.length ? gaps.map((g) => `${new Date(g.from).toISOString().slice(11, 16)}–${new Date(g.to).toISOString().slice(11, 16)} UTC ${g.minutes} min`).join(', ') : undefined,
+    );
     const [from, to] = await Promise.all([s.first ? placeName(s.first) : null, s.last ? placeName(s.last) : null]);
     await repo.stopVoyage(live.id, endedAt, s, { from, to });
     const id = live.id;

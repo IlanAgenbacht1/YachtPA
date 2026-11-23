@@ -10,11 +10,14 @@ import { ErrorScreen } from '@/components/ErrorScreen';
 import { Toast } from '@/components/Toast';
 // Defines the background location task at start-up, before any fix arrives.
 import '@/location/background';
+import { appDescription, installErrorLogging, log, phoneDescription } from '@/lib/diag';
 import { urlFromResponse } from '@/lib/reminders';
 import { AppStoreProvider, useAppStore } from '@/store/AppStore';
 import { LookProvider, useAppFonts, useTokens } from '@/theme';
 
 SplashScreen.preventAutoHideAsync();
+installErrorLogging();
+log('info', 'app', `Started ${appDescription()} on ${phoneDescription()}`);
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useAppFonts();

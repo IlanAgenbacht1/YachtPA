@@ -1,7 +1,9 @@
 import Constants from 'expo-constants';
 import { router } from 'expo-router';
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { Platform, Pressable, ScrollView, Share, Text, View } from 'react-native';
+
+import { log, problemReport } from '@/lib/diag';
 
 /** What gets sent when a tester taps "Send details": enough for a developer to find the bug, nothing personal. */
 export function errorReport(error: Error): string {
@@ -18,6 +20,19 @@ export function errorReport(error: Error): string {
  * top level it renders outside those providers, and it must never fail itself.
  */
 export function ErrorScreen({ error, retry }: { error: Error; retry: () => void }) {
+  useEffect(() => {
+    log('error', 'screen', `Screen failed: ${error.message}`, error);
+  }, [error]);
+  // The report carries the recent log too; if even that fails, the error alone still goes.
+  const send = async () => {
+    let message = errorReport(error);
+    try {
+      message = await problemReport({}, message);
+    } catch {
+      // keep the short version
+    }
+    Share.share({ message }).catch(() => {});
+  };
   return (
     <ScrollView style={{ flex: 1, backgroundColor: '#F2F4F7' }} contentContainerStyle={{ padding: 24, paddingTop: 72, gap: 16 }}>
       <Text style={{ fontSize: 12, fontWeight: '800', letterSpacing: 1.5, color: '#5A6A7A' }}>SOMETHING WENT WRONG</Text>
@@ -28,7 +43,7 @@ export function ErrorScreen({ error, retry }: { error: Error; retry: () => void 
       <View style={{ gap: 10, marginTop: 8 }}>
         <PlainButton primary label="Try again" onPress={retry} />
         <PlainButton label="Go to Home" onPress={() => router.replace('/')} />
-        <PlainButton label="Send details" onPress={() => Share.share({ message: errorReport(error) }).catch(() => {})} />
+        <PlainButton label="Send details" onPress={send} />
       </View>
       <Text selectable style={{ fontSize: 11, color: '#5A6A7A', marginTop: 12 }}>
         {error.message}

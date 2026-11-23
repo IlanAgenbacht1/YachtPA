@@ -76,6 +76,13 @@ Notes for the boat:
 - TestFlight builds expire after 90 days. Ship a new build before then.
 - Ask them to export their data (Profile → Export all my data) every so often. It is a beta.
 
+## When something goes wrong
+
+Testers do not need signal at the time. The app keeps a log on the phone for 14 days: errors, voyages started and stopped, whether tracking ran with the phone locked, gaps with no position (the phone paused the app), mic and backup problems.
+
+- **Profile → Send a problem report** shares it, with the phone model and the settings that matter (location "all the time", precise, notifications, mic), by WhatsApp or email. Ask testers to send one after any voyage that looks wrong, once they have signal.
+- If a screen fails, they see "This screen didn't open properly, your records are safe" with **Send details**, which shares the same report.
+
 ## What to ask testers
 
 - Did a voyage log the right miles with the phone in a pocket?

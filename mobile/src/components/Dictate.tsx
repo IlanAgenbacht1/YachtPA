@@ -4,6 +4,7 @@ import { Linking, Pressable, View } from 'react-native';
 import { Bar, Blink, FadeUp } from '@/components/motion';
 import { Button, Card, Col, Eyebrow, Icon, Row, Txt } from '@/components/ui';
 import { applyResult, EMPTY_TRANSCRIPT, fullText, speechErrorText, YACHT_VOCABULARY, type Transcript } from '@/lib/dictation';
+import { log } from '@/lib/diag';
 import { thump } from '@/lib/haptics';
 import { listen, speechSupport, type Session } from '@/lib/speech';
 import { useTokens } from '@/theme';
@@ -46,6 +47,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
         },
         onError: (code) => {
           lastError.current = code;
+          if (code !== 'aborted' && code !== 'no-speech') log('warn', 'mic', `Speech error: ${code}`);
         },
         onEnd: () => {
           session.current = null;
