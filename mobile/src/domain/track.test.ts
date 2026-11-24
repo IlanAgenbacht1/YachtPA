@@ -132,3 +132,43 @@ describe('sanityCheck', () => {
     assert.deepEqual(sanityCheck(s, PORT_LOUIS).map((f) => f.level), ['ok']);
   });
 });
+
+describe('real-phone track problems', () => {
+  const near = (got: number, want: number, tol = 0.06) => assert.ok(Math.abs(got - want) / want < tol, `${got.toFixed(2)} vs ${want}`);
+
+  it('counts a fast leg (testing in a car at 130 km/h)', () => {
+    near(summarise(run(PORT_LOUIS, 90, 70, 20, MORNING, 15), { startedAt: MORNING }).distanceNm, 70 / 3);
+  });
+
+  it('ignores a stale cached position from before START', () => {
+    const stale: Fix = { ...destination(PORT_LOUIS, 0, 9), ts: MORNING - 60 * MIN, accuracy: 30 };
+    const s = summarise([stale, ...run(PORT_LOUIS, 90, 8, 60, MORNING, 15)], { startedAt: MORNING });
+    near(s.distanceNm, 8);
+    assert.ok(s.underwayMin < 61);
+  });
+
+  it('drops a one-off reflection, even a near one', () => {
+    const fixes = run(PORT_LOUIS, 90, 8, 60, MORNING, 15);
+    fixes[20] = { ...destination(fixes[20], 0, 0.4), ts: fixes[20].ts, accuracy: 12 };
+    near(summarise(fixes, { startedAt: MORNING }).distanceNm, 8);
+  });
+
+  it('recovers when the first fix was wrong', () => {
+    const fixes = run(PORT_LOUIS, 90, 8, 60, MORNING + 15000, 15);
+    const bad: Fix = { ...destination(PORT_LOUIS, 180, 3), ts: MORNING, accuracy: 20 };
+    const s = summarise([bad, ...fixes], { startedAt: MORNING });
+    near(s.distanceNm, 8);
+  });
+
+  it('keeps a U-turn', () => {
+    const out = run(PORT_LOUIS, 90, 8, 10, MORNING, 15);
+    const back = run(out[out.length - 1], 270, 8, 10, MORNING + 10 * MIN + 15000, 15);
+    near(summarise([...out, ...back], { startedAt: MORNING }).distanceNm, 8 * 20 / 60, 0.12);
+  });
+
+  it('bridges a gap when the phone paused the app mid-passage', () => {
+    const a = run(PORT_LOUIS, 90, 8, 30, MORNING, 15);
+    const b = run(destination(PORT_LOUIS, 90, 8 * 1.25), 90, 8, 30, MORNING + 75 * MIN, 15);
+    near(summarise([...a, ...b], { startedAt: MORNING }).distanceNm, 8 * 105 / 60);
+  });
+});

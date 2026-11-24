@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useRef } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { FadeUp, Blink } from '@/components/motion';
@@ -17,6 +18,7 @@ import { useTokens } from '@/theme';
 export default function HomeScreen() {
   const t = useTokens();
   const { voyage, startVoyage, current, simulate } = useAppStore();
+  const starting = useRef(false);
   const exp = useQuery(getExperience);
   const docs = useQuery(listDocs);
   const draft = useQuery(getDraftVoyage);
@@ -30,6 +32,15 @@ export default function HomeScreen() {
   const maxMonth = Math.max(1, ...(exp?.months.map((m) => m.nm) ?? [0]));
 
   const onStart = async () => {
+    if (starting.current) return;
+    starting.current = true;
+    try {
+      await begin();
+    } finally {
+      starting.current = false;
+    }
+  };
+  const begin = async () => {
     thump();
     // First voyage on a phone that is not set up for pocket logging: show the checklist first.
     if (!simulate) {

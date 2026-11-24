@@ -35,7 +35,9 @@ export async function startGps(voyageId: string, onFix: (f: Fix) => void): Promi
   if (perm.android?.accuracy === 'coarse' || perm.ios?.accuracy === 'reduced') {
     throw settingsError('YachtPA has only approximate location, which is too rough to log miles. In Settings, turn on Precise location for YachtPA, then start again.');
   }
-  if (await startBackground(voyageId).catch(() => false)) {
+  // If the OS takes too long to start the background service, log in the foreground rather than leave START hanging.
+  const background = await Promise.race([startBackground(voyageId).catch(() => false), new Promise<boolean>((r) => setTimeout(() => r(false), 10000))]);
+  if (background) {
     return { stop: () => void stopBackground(), mode: 'background' };
   }
   const sub = await Location.watchPositionAsync(

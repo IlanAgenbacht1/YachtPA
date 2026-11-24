@@ -19,6 +19,7 @@ import {
 
 import * as repo from '@/db/repo';
 import { onboard as saveOnboarding, type Current } from '@/db/repo';
+import { fmtLatLon } from '@/domain/geo';
 import { trackingGaps } from '@/domain/report';
 import { summarise, type Fix, type TrackSummary } from '@/domain/track';
 import { setBackgroundListener } from '@/location/background';
@@ -78,6 +79,11 @@ type State = {
 };
 
 export type AppStore = State & Actions;
+
+/** Resolves to `fallback` if `p` takes longer than `ms`: offline place lookups can hang on Android. */
+function within<T>(p: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([p.catch(() => fallback), new Promise<T>((r) => setTimeout(() => r(fallback), ms))]);
+}
 
 const Ctx = createContext<AppStore | null>(null);
 const KEEP_AWAKE_TAG = 'voyage';
@@ -278,7 +284,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setLive(v);
     try {
       const feedMode = await startFeed(v);
-      const battery = await readBattery();
+      const battery = await within(readBattery(), 2000, null);
       repo.setSetting('battery_start', JSON.stringify({ id, battery })).catch(() => {});
       trackEvent('voyage_start', { source, mode: feedMode, battery: battery?.level ?? null, charging: battery?.charging ?? null, lowPower: battery?.lowPower ?? null });
       return true;
@@ -313,7 +319,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       gaps.length ? gaps.map((g) => `${new Date(g.from).toISOString().slice(11, 16)}–${new Date(g.to).toISOString().slice(11, 16)} UTC ${g.minutes} min`).join(', ') : undefined,
     );
     // Usage metrics: how well tracking held up, and what it cost in battery. No positions or place names.
-    const endBattery = await readBattery();
+    const endBattery = await within(readBattery(), 2000, null);
     let startBattery: BatteryReading | null = null;
     try {
       const saved = JSON.parse((await repo.getSetting('battery_start')) ?? 'null') as { id: string; battery: BatteryReading | null } | null;
@@ -332,6 +338,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       overnight: s.overnight,
       positions: fixes.length,
       usable: s.kept,
+      // How long the GPS took to give a first position after START.
+      firstFixSec: fixes.length ? Math.max(0, Math.round((fixes[0].ts - live.startedAt) / 1000)) : null,
       positionsPerHour: hours > 0 ? Math.round(fixes.length / hours) : null,
       gaps: gaps.length,
       longestGapMin: gaps.length ? Math.max(...gaps.map((g) => g.minutes)) : 0,
@@ -342,7 +350,12 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       lowPower: endBattery?.lowPower ?? null,
     });
     flushTelemetry();
-    const [from, to] = await Promise.all([s.first ? placeName(s.first) : null, s.last ? placeName(s.last) : null]);
+    // Place names need the internet; offline they fall back to coordinates, and never hold up STOP.
+    const coords = (p: Fix | null) => (p ? fmtLatLon(p) : null);
+    const [from, to] = await Promise.all([
+      s.first ? within(placeName(s.first), 5000, coords(s.first)) : null,
+      s.last ? within(placeName(s.last), 5000, coords(s.last)) : null,
+    ]);
     await repo.stopVoyage(live.id, endedAt, s, { from, to });
     const id = live.id;
     setLive(null);

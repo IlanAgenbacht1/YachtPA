@@ -1,8 +1,13 @@
 /**
  * Turns raw GPS fixes into voyage numbers (SCOPE §9).
  *
- * - Fixes worse than `maxAccuracyM`, or implying more than `maxJumpKn` from the
- *   last kept fix, are dropped.
+ * - Fixes worse than `maxAccuracyM` are dropped, and so are fixes from before
+ *   the voyage started (Android hands over a cached position, sometimes
+ *   hours old and miles away, as the first fix).
+ * - A fix implying more than `maxJumpKn` from the last kept fix is held back:
+ *   dropped if it was a one-off glitch, kept (with the next one) if the
+ *   following fix agrees with it, so a real fast leg or a bad kept fix never
+ *   locks the track out.
  * - Speed at each fix is measured over a window of at least `windowSec`, so
  *   GPS jitter at anchor does not read as movement.
  * - Underway starts when speed stays ≥ `underwayKn` for `startMin`, and ends
@@ -32,7 +37,8 @@ export type TrackRules = {
 
 export const DEFAULT_RULES: TrackRules = {
   maxAccuracyM: 50,
-  maxJumpKn: 60,
+  // Well above any yacht or tender, and above motorway speed for testing in a car.
+  maxJumpKn: 100,
   windowSec: 60,
   underwayKn: 1,
   startMin: 2,
@@ -72,21 +78,61 @@ export function dayKey(ts: number): string {
   return `${d.getFullYear()}-${m < 10 ? '0' : ''}${m}-${day < 10 ? '0' : ''}${day}`;
 }
 
-export function filterFixes(fixes: Fix[], rules: TrackRules = DEFAULT_RULES): Fix[] {
+/** Cached positions up to this long before START are still accepted (the GPS warming up). */
+const EARLY_GRACE_MS = 30000;
+
+function plausible(a: Fix, b: Fix, maxKn: number): boolean {
+  const dt = (b.ts - a.ts) / HOUR;
+  return dt > 0 && distanceNm(a, b) / dt <= maxKn;
+}
+
+export function filterFixes(fixes: Fix[], rules: TrackRules = DEFAULT_RULES, startedAt?: number): Fix[] {
   const out: Fix[] = [];
   const sorted = [...fixes].sort((a, b) => a.ts - b.ts);
+  let held: Fix | null = null;
   for (const f of sorted) {
     if (f.accuracy != null && f.accuracy > rules.maxAccuracyM) continue;
+    if (startedAt != null && f.ts < startedAt - EARLY_GRACE_MS) continue;
     const prev = out[out.length - 1];
-    if (prev) {
-      const dt = (f.ts - prev.ts) / HOUR;
-      if (dt <= 0) continue;
-      if (distanceNm(prev, f) / dt > rules.maxJumpKn) continue;
+    if (!prev || plausible(prev, f, rules.maxJumpKn)) {
+      out.push(f);
+      held = null;
+      continue;
     }
+    if (f.ts <= prev.ts) continue;
+    if (held && plausible(held, f, rules.maxJumpKn)) {
+      // Two fixes agree with each other and not with the track: the track was wrong, or it really moved.
+      // A lone early fix (the GPS still settling) is replaced; otherwise both are kept.
+      if (out.length === 1) out.pop();
+      out.push(held, f);
+      held = null;
+    } else held = f;
+  }
+  return dropSpikes(out);
+}
+
+/**
+ * Removes a fix that sits well off a straight line between its neighbours, out and back
+ * (a reflection off a building or a mast), which the speed check misses at short intervals.
+ */
+function dropSpikes(fixes: Fix[]): Fix[] {
+  if (fixes.length < 3) return fixes;
+  const out = [fixes[0]];
+  for (let i = 1; i < fixes.length - 1; i++) {
+    const a = out[out.length - 1];
+    const f = fixes[i];
+    const b = fixes[i + 1];
+    const via = distanceNm(a, f) + distanceNm(f, b);
+    const direct = distanceNm(a, b);
+    if (via - direct > SPIKE_NM && via > 3 * direct) continue;
     out.push(f);
   }
+  out.push(fixes[fixes.length - 1]);
   return out;
 }
+
+/** Out-and-back detour that counts as a glitch: ~280 m, more than any boat turns round in between two fixes. */
+const SPIKE_NM = 0.15;
 
 /** Speed in knots at each fix, over the shortest look-back of at least `windowSec`. 0 until the window fills. */
 export function windowSpeeds(fixes: Fix[], windowSec: number): number[] {
@@ -135,7 +181,7 @@ export function summarise(
   opts: { startedAt?: number; endedAt?: number; rules?: TrackRules } = {},
 ): TrackSummary {
   const rules = opts.rules ?? DEFAULT_RULES;
-  const fixes = filterFixes(raw, rules);
+  const fixes = filterFixes(raw, rules, opts.startedAt);
   const speeds = windowSpeeds(fixes, rules.windowSec);
   const ranges = detectSegments(fixes, speeds, rules);
 

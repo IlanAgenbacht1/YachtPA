@@ -9,6 +9,7 @@ import { TrackMap } from '@/components/TrackMap';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, Row, Sheet, Spacer, Tile, Txt } from '@/components/ui';
 import { nextCrossing, isNight } from '@/domain/sun';
 import { fmtClock, fmtDur, minutesOfDay } from '@/lib/format';
+import { log } from '@/lib/diag';
 import { thump } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
@@ -17,12 +18,14 @@ const WAVE_A = 'M0 22q48.75 -18 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0
 const WAVE_B = 'M0 22q48.75 -14 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
 export default function LiveScreen() {
   const t = useTokens();
-  const { voyage, stopVoyage, current } = useAppStore();
+  const { voyage, stopVoyage, current, flash } = useAppStore();
   const [stopping, setStopping] = useState(false);
 
   if (!voyage) return stopping ? null : <Redirect href="/" />;
 
   const last = voyage.fixes[voyage.fixes.length - 1];
+  // The store's one-second clock (elapsed time is measured to it), so this screen stays pure.
+  const nowTs = voyage.startedAt + voyage.elapsedMin * 60000;
   const startMin = minutesOfDay(new Date(voyage.startedAt));
   const clock = last?.ts ?? voyage.startedAt;
   const night = last ? isNight(clock, last.lat, last.lon) : false;
@@ -31,9 +34,15 @@ export default function LiveScreen() {
   const onStop = async () => {
     thump();
     setStopping(true);
-    const id = await stopVoyage();
-    if (id) router.replace({ pathname: '/summary', params: { id } });
-    else setStopping(false);
+    try {
+      const id = await stopVoyage();
+      if (id) router.replace({ pathname: '/summary', params: { id } });
+      else setStopping(false);
+    } catch (e) {
+      log('error', 'voyage', 'Stop failed', e);
+      flash("Couldn't save the voyage. Try Stop again.");
+      setStopping(false);
+    }
   };
 
   return (
@@ -105,14 +114,20 @@ export default function LiveScreen() {
             <Row justify="space-between">
               <Eyebrow>Track</Eyebrow>
               <Txt size={12} weight={600} color="muted">
-                {voyage.source === 'sim'
-                  ? 'Pretend voyage (testing)'
-                  : last
-                    ? `Position accurate to ±${Math.round(last.accuracy ?? 0)} m`
-                    : 'Finding your position…'}
+                {voyage.source === 'sim' ? 'Pretend voyage (testing)' : last ? `±${Math.round(last.accuracy ?? 0)} m · ${ago(last.ts, nowTs)}` : 'Finding your position…'}
               </Txt>
             </Row>
             <TrackMap fixes={voyage.fixes} live />
+            {voyage.source === 'gps' && !last && nowTs - voyage.startedAt > 2 * 60000 && (
+              <Txt size={12} color="warn">
+                No position yet. GPS needs a view of the sky: try on deck, away from the bridge roof.
+              </Txt>
+            )}
+            {voyage.source === 'gps' && last && nowTs - last.ts > 5 * 60000 && (
+              <Txt size={12} color="muted">
+                No new position while you are stationary. It updates as soon as you move.
+              </Txt>
+            )}
             {voyage.mode === 'foreground' && (
               <Txt size={12} color="warn">
                 Keep YachtPA open with the screen on, or logging pauses. To log with the phone in your pocket, finish Tracking setup.
@@ -157,6 +172,14 @@ export default function LiveScreen() {
       </Sheet>
     </Screen>
   );
+}
+
+/** "now", "40 s ago", "6 min ago" */
+function ago(ts: number, now: number): string {
+  const s = Math.max(0, Math.round((now - ts) / 1000));
+  if (s < 10) return 'now';
+  if (s < 90) return `${s} s ago`;
+  return `${Math.round(s / 60)} min ago`;
 }
 
 /** Soft accent haze behind the distance, done as a radial gradient so it renders on every platform. */

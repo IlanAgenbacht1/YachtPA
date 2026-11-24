@@ -17,6 +17,7 @@ import * as TaskManager from 'expo-task-manager';
 import { Platform } from 'react-native';
 
 import { addFix, getLiveVoyage } from '@/db/repo';
+import { log } from '@/lib/diag';
 import type { Fix } from '@/domain/track';
 
 export const VOYAGE_TASK = 'yachtpa-voyage-track';
@@ -36,7 +37,11 @@ export function backgroundSupported(): boolean {
 
 if (backgroundSupported()) {
   TaskManager.defineTask<{ locations: Location.LocationObject[] }>(VOYAGE_TASK, async ({ data, error }) => {
-    if (error || !data?.locations?.length) return;
+    if (error) {
+      log('warn', 'tracking', `Background location error: ${error.message}`);
+      return;
+    }
+    if (!data?.locations?.length) return;
     if (!cachedVoyageId) cachedVoyageId = (await getLiveVoyage())?.id ?? null;
     const id = cachedVoyageId;
     if (!id) return;
