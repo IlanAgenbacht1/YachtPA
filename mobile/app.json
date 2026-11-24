@@ -12,6 +12,10 @@
       "bundleIdentifier": "com.yachtpa.app",
       "config": {
         "usesNonExemptEncryption": false
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "YachtPA does not use your photos. A built-in component mentions photo access, but YachtPA never asks for it.",
+        "NSPhotoLibraryAddUsageDescription": "YachtPA does not save to your photos. A built-in component mentions photo access, but YachtPA never asks for it."
       }
     },
     "android": {
