@@ -26,6 +26,7 @@ import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/loc
 import { ensureNotificationPermission, notificationsAllowed, rescheduleReminders } from '@/lib/reminders';
 import { readBattery, type BatteryReading } from '@/lib/battery';
 import { log } from '@/lib/diag';
+import { versionInfo } from '@/lib/updates';
 import { trackingStatus } from '@/location/permissions';
 import { batteryPerHour } from '@/telemetry/engine';
 import { flushTelemetry, track as trackEvent } from '@/telemetry';
@@ -210,7 +211,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     if (!ready) return;
     (async () => {
       const [t, notifications] = await Promise.all([trackingStatus(), notificationsAllowed()]);
-      trackEvent('app_open', {});
+      const v = versionInfo();
+      trackEvent('app_open', { update: v.updateId ? v.updateId.slice(0, 8) : null, builtIn: v.embedded, channel: v.channel });
       trackEvent('setup_status', { services: t.services, allowed: t.allowed, precise: t.precise, always: t.always, canAlways: t.canAlways, notifications });
     })().catch(() => {});
     const id = setTimeout(() => flushTelemetry(), 3000);

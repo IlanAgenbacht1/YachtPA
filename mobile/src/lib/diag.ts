@@ -12,6 +12,8 @@ import { getDb } from '@/db/db';
 import { buildReport, type LogLine } from '@/domain/report';
 import { trackLog } from '@/telemetry';
 
+import { versionInfo } from './updates';
+
 const KEEP_DAYS = 14;
 let writes = 0;
 
@@ -44,7 +46,8 @@ export function phoneDescription(): string {
 }
 
 export function appDescription(): string {
-  return `${Constants.expoConfig?.version ?? '?'}${__DEV__ ? ' (dev)' : ''}`;
+  const v = versionInfo();
+  return `${Constants.expoConfig?.version ?? '?'}${__DEV__ ? ' (dev)' : ''} · ${v.label}${v.updateId ? ` (${v.updateId.slice(0, 8)})` : ''}`;
 }
 
 /** Catches errors nothing else caught (they would otherwise close the app silently) and writes them down first. */

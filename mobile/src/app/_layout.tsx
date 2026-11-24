@@ -8,6 +8,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import { ErrorScreen } from '@/components/ErrorScreen';
 import { Toast } from '@/components/Toast';
+import { UpdateBanner } from '@/components/UpdateBanner';
 // Defines the background location task at start-up, before any fix arrives.
 import '@/location/background';
 import { appDescription, installErrorLogging, log, phoneDescription } from '@/lib/diag';
@@ -75,6 +76,7 @@ function Shell() {
         <Stack.Screen name="tracking-setup" options={{ animation: 'slide_from_bottom' }} />
       </Stack>
       <Toast />
+      <UpdateBanner />
     </ThemeProvider>
   );
 }

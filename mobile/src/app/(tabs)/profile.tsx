@@ -8,6 +8,7 @@ import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
 import { resetDb } from '@/db/db';
 import { shareProblemReport } from '@/lib/diag';
+import { checkAndDownload, restartIntoUpdate, versionInfo } from '@/lib/updates';
 import { exportAll } from '@/lib/exportData';
 import { exportRecordPdf } from '@/lib/exportPdf';
 import { notificationsAllowed } from '@/lib/reminders';
@@ -69,6 +70,21 @@ export default function ProfileScreen() {
     { label: 'Cloud backup', onPress: () => router.push('/cloud') },
     { label: 'Sea service record (PDF)', onPress: () => exportRecordPdf().then(() => track('pdf_exported')).catch((e: Error) => flash(e.message)) },
     ...(Platform.OS === 'android' && mic.available ? [{ label: 'Download offline speech', onPress: () => downloadOfflineSpeech().then(flash) }] : []),
+    {
+      label: 'Check for updates',
+      onPress: () =>
+        checkAndDownload()
+          .then((r) => {
+            if (r === 'latest') flash('You have the latest version');
+            else if (r === 'off') flash('Updates are off in this version');
+            else
+              Alert.alert('New version ready', 'Restart YachtPA now to use it?', [
+                { text: 'Later', style: 'cancel' },
+                { text: 'Restart', onPress: () => restartIntoUpdate().catch(() => {}) },
+              ]);
+          })
+          .catch(() => flash('Couldn’t check for updates. Try again with signal.')),
+    },
     { label: 'Send a problem report', onPress: () => sendReport().then(() => track('report_sent')).catch((e: Error) => flash(e.message)) },
     { label: 'Save a copy of my data', onPress: () => exportAll().catch((e: Error) => flash(e.message)) },
   ];
@@ -245,7 +261,7 @@ export default function ProfileScreen() {
 
         <Pressable onPress={onVersionTap} style={{ alignItems: 'center', paddingTop: 8, paddingBottom: 4 }} accessibilityRole="text">
           <Txt size={12} weight={600} color="muted">
-            YachtPA {Constants.expoConfig?.version ?? ''}
+            YachtPA {Constants.expoConfig?.version ?? ''} · {versionInfo().label}
           </Txt>
         </Pressable>
       </Sheet>
