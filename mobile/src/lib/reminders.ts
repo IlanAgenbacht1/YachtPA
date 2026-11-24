@@ -114,6 +114,17 @@ export function rescheduleReminders(): Promise<void> {
   return running;
 }
 
+/** Shows a notification straight away (milestones). Silent no-op when notifications are off. */
+export async function notifyNow(title: string, body: string, url: string): Promise<void> {
+  if (!supported) return;
+  try {
+    if (!(await Notifications.getPermissionsAsync()).granted) return;
+    await Notifications.scheduleNotificationAsync({ content: { title, body, data: { url } }, trigger: null });
+  } catch {
+    // Best-effort.
+  }
+}
+
 /** Where a tapped notification should take the user. */
 export function urlFromResponse(r: Notifications.NotificationResponse | null | undefined): string | null {
   const url = r?.notification.request.content.data?.url;

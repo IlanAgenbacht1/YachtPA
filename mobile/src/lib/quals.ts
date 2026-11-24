@@ -62,3 +62,12 @@ export function qualHeadline(r: QResult): string {
   const left = r.rules.find((x) => (x.rule.kind === 'days' || x.rule.kind === 'nightHours' || x.rule.kind === 'passages') && !x.met);
   return left ? `${left.rule.label}: ${Math.floor(left.value)} of ${left.target}` : '';
 }
+
+/** Miles (real voyages only) and the qualifications whose sea time appears met, for milestones. */
+export async function getStanding(): Promise<{ nm: number; met: string[]; names: Record<string, string> }> {
+  const [results, voyages] = await Promise.all([getQualificationResults(), listVoyages(100000)]);
+  const nm = voyages.filter((v) => v.source !== 'sim').reduce((t, v) => t + v.distanceNm, 0);
+  const names: Record<string, string> = {};
+  for (const r of results) names[r.qualification.id] = qualTitle(r);
+  return { nm, met: results.filter((r) => r.seaTimeMet).map((r) => r.qualification.id), names };
+}

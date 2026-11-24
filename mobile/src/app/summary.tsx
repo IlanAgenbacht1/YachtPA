@@ -10,6 +10,7 @@ import { confirmVoyage, deleteVoyage, getTrack, getVoyage, lastKnownPosition, ty
 import { sanityCheck, summarise, type Fix, type SanityFlag } from '@/domain/track';
 import { fmtDur, fmtInt, fmtSpan } from '@/lib/format';
 import { tick } from '@/lib/haptics';
+import { celebrate, standingBefore } from '@/lib/milestones';
 import { useAppStore } from '@/store/AppStore';
 import { track } from '@/telemetry';
 
@@ -52,11 +53,13 @@ export default function SummaryScreen() {
 
   const onConfirm = async () => {
     tick();
+    const before = await standingBefore();
     await confirmVoyage(voyage.id, { from: from.trim() || 'Unknown', to: to.trim() || 'Unknown' }, skipper);
     track('voyage_confirmed', { source: voyage.source, nm: Math.round(voyage.distanceNm * 10) / 10, skipper, namesEdited: from !== (voyage.fromName ?? '') || to !== (voyage.toName ?? '') });
     bump();
     router.dismissTo('/');
-    flash(`Voyage saved · ${fmtInt(voyage.distanceNm)} NM added to your record`);
+    const milestone = await celebrate(before);
+    flash(milestone ? `🎉 ${milestone}` : `Voyage saved · ${fmtInt(voyage.distanceNm)} NM added to your record`);
   };
 
   const onDiscard = () => {

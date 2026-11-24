@@ -8,6 +8,7 @@ import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 import { track } from '@/telemetry';
 import { goBack } from '@/lib/nav';
+import { celebrate, standingBefore } from '@/lib/milestones';
 
 const num = (s: string) => Number(s.replace(',', '.'));
 
@@ -34,12 +35,14 @@ export default function NewVoyage() {
     if (!(n >= 0) || n > h) return flash('Night hours cannot be more than hours underway');
     if (d / h > 40) return flash('That is over 40 kn on average. Check miles and hours.');
     if (date > isoDate(new Date())) return flash('That date is in the future');
+    const before = await standingBefore();
     await addManualVoyage({ engagementId: current.engagement.id, date, from: from.trim(), to: to.trim(), distanceNm: d, underwayHours: h, nightHours: n, overnight, skipper });
     track('manual_voyage_added', { nm: d, hours: h, nightHours: n, overnight, skipper });
     tick();
     bump();
     goBack();
-    flash(`Voyage added · ${d} NM`);
+    const milestone = await celebrate(before);
+    flash(milestone ? `🎉 ${milestone}` : `Voyage added · ${d} NM`);
   };
 
   return (
