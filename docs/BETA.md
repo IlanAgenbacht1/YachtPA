@@ -18,6 +18,14 @@ You have an Android phone and no Mac; your testers have iPhones. Nothing below n
 | Log draft | Dictate with the keyboard mic, then "Tidy into duties". On the phone, offline. |
 | Data on the phone | Saved on the phone; survives restarts. |
 
+## Publishing an update (no reinstall)
+
+```bash
+npx eas-cli@latest update --channel preview --environment preview --platform android --message "what changed"
+```
+
+With `--environment`, EAS ignores `mobile/.env` and uses the variables stored on Expo for that environment. `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are stored there for `preview` and `production` (public values). If they were missing, the update would ship with cloud backup and metrics switched off. Phones show "New version ready · Restart" once an update has downloaded; Profile shows which version is running.
+
 ## Step 0: cloud backup and metrics (done)
 
 Set up on 2026-11-24: Supabase project `YachtPA` (Frankfurt), both SQL files applied, sign-in by email link (free projects can only send Supabase's default email, which contains a link, not a code: testers tap "Sign in" in the email on their phone and YachtPA opens signed in), 6-digit code kept as a fallback for when a custom email sender is added. `mobile/.env` is committed. The steps below are kept for reference.
