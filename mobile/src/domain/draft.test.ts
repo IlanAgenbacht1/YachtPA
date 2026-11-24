@@ -22,7 +22,7 @@ describe('draftFromText', () => {
   it('splits sentences and lines, keeps "and" inside a phrase, drops fillers', () => {
     assert.deepEqual(splitDuties('Um so we sanded and varnished the cap rail. Then I did the bridge watch from 2 to 6\nprovisioning run'), [
       'Sanded and varnished the cap rail',
-      'Did the bridge watch from 2 to 6',
+      'Bridge watch 02:00–06:00',
       'Provisioning run',
     ]);
   });

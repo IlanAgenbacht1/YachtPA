@@ -15,7 +15,7 @@ You have an Android phone and no Mac; your testers have iPhones. Nothing below n
 | Past sea time | Log → + Add a past voyage. |
 | Data export | Profile → Export all my data (JSON via the share sheet). |
 | Cloud backup | Profile → Cloud backup. Optional; needs Step 0. Sign in with an emailed code; backs up automatically; restore from the welcome screen on a new phone. |
-| Log draft | Dictate with the keyboard mic, then "Tidy into duties". On the phone, offline. |
+| Log draft | Tap the mic and talk through the day; it is split into duties and the activity boxes are ticked. Rules on the phone, no AI service, works offline. Wrong results: add the sentence to `mobile/src/domain/draft.corpus.test.ts`. |
 | Data on the phone | Saved on the phone; survives restarts. |
 
 ## Publishing an update (no reinstall)
