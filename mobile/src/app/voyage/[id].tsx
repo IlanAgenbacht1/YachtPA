@@ -1,20 +1,36 @@
 import { useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { Alert, Switch, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { TrackMap } from '@/components/TrackMap';
-import { Button, Card, Col, Display, Eyebrow, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
-import { deleteVoyage, getTrack, getVoyage, setVoyageSkipper } from '@/db/repo';
+import { Button, Card, Col, Display, Eyebrow, Field, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
+import { deleteVoyage, getTrack, getVoyage, renameVoyage, setVoyageSkipper } from '@/db/repo';
 import { fmtDur, fmtSpan } from '@/lib/format';
 import { useAppStore, useQuery } from '@/store/AppStore';
 import { goBack } from '@/lib/nav';
 
 export default function VoyageDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { bump } = useAppStore();
+  const { bump, flash } = useAppStore();
   const v = useQuery(() => getVoyage(id), [id]);
   const fixes = useQuery(() => getTrack(id), [id]);
+  const [editing, setEditing] = useState(false);
+  const [from, setFrom] = useState('');
+  const [to, setTo] = useState('');
   if (!v) return null;
+
+  const startEdit = () => {
+    setFrom(v.fromName ?? '');
+    setTo(v.toName ?? '');
+    setEditing(true);
+  };
+  const saveNames = async () => {
+    await renameVoyage(v.id, from.trim() || 'Unknown', to.trim() || 'Unknown');
+    setEditing(false);
+    bump();
+    flash('Place names saved');
+  };
 
   const started = new Date(v.startedAt);
   const ended = new Date(v.endedAt ?? v.startedAt);
@@ -85,6 +101,15 @@ export default function VoyageDetail() {
           <Tag accent label={v.overnight ? 'Overnight passage' : v.nightMin > 0 ? 'Night passage' : 'Day passage'} />
           <Tag label={v.status === 'confirmed' ? 'Confirmed' : v.status} />
         </Row>
+        {editing ? (
+          <Card gap={12}>
+            <Field label="From" value={from} onChangeText={setFrom} autoCapitalize="words" />
+            <Field label="To" value={to} onChangeText={setTo} autoCapitalize="words" />
+            <Button label="Save names" icon="check" onPress={saveNames} />
+          </Card>
+        ) : (
+          <Button variant="ghost" label="Edit place names" onPress={startEdit} />
+        )}
         <Card row gap={12} paddingV={12}>
           <Col gap={2} flex={1}>
             <Txt size={15} weight={600}>

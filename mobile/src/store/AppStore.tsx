@@ -157,9 +157,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     [onFix],
   );
 
-  const stopFeed = useCallback(() => {
-    feedStop.current?.();
+  const stopFeed = useCallback(async () => {
+    const stop = feedStop.current;
     feedStop.current = null;
+    await stop?.();
     setMode(null);
     deactivateKeepAwake(KEEP_AWAKE_TAG).catch(() => {});
   }, []);
@@ -298,7 +299,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   const stopVoyage = useCallback(async (): Promise<string | null> => {
     if (!live) return null;
-    stopFeed();
+    // Wait for the OS to stop sending positions, so none land after the totals are worked out.
+    await within(Promise.resolve(stopFeed()), 5000, undefined);
     const fixes = await repo.getTrack(live.id);
     const last = fixes[fixes.length - 1];
     const endedAt = live.source === 'sim' && last ? last.ts : Date.now();

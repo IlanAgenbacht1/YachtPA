@@ -6,7 +6,7 @@ import { FadeUp, Blink } from '@/components/motion';
 import { QualCard } from '@/components/QualCard';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Dot, Eyebrow, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
-import { getDraftVoyage, getExperience, getLog, getSetting, listDocs, localDate } from '@/db/repo';
+import { getExperience, getLog, getSetting, listDocs, listDraftVoyages, localDate } from '@/db/repo';
 import { docCounts } from '@/lib/docs';
 import { getQualificationResults } from '@/lib/quals';
 import { fmtDateShort, fmtDur, fmtNum } from '@/lib/format';
@@ -21,7 +21,7 @@ export default function HomeScreen() {
   const starting = useRef(false);
   const exp = useQuery(getExperience);
   const docs = useQuery(listDocs);
-  const draft = useQuery(getDraftVoyage);
+  const drafts = useQuery(listDraftVoyages);
   const quals = useQuery(getQualificationResults);
   const todayLog = useQuery(() => (current ? getLog(current.engagement.id, localDate()) : Promise.resolve(null)), [current?.engagement.id]);
   if (!current) return null;
@@ -103,8 +103,10 @@ export default function HomeScreen() {
       </Hero>
 
       <Sheet gap={12}>
-        {draft && !voyage && (
+        {!voyage &&
+          (drafts ?? []).map((draft) => (
           <Card
+            key={draft.id}
             row
             gap={12}
             paddingV={14}
@@ -122,7 +124,7 @@ export default function HomeScreen() {
             </Col>
             <Icon name="chevronRight" size={18} color="muted" />
           </Card>
-        )}
+          ))}
         <FadeUp delay={50}>
           <Card onPress={() => router.navigate('/experience')} accessibilityLabel="My experience">
             <Row justify="space-between">

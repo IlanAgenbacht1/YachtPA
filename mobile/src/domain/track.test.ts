@@ -172,3 +172,24 @@ describe('real-phone track problems', () => {
     near(summarise([...a, ...b], { startedAt: MORNING }).distanceNm, 8 * 105 / 60);
   });
 });
+
+describe('pauses in tracking', () => {
+  it('does not count a long pause as hours underway (paused at sea, woke up in port)', () => {
+    const sea = run(PORT_LOUIS, 90, 8, 60, MORNING, 15);
+    const port = destination(sea[sea.length - 1], 90, 20); // 20 NM further on: about 2.5 h at 8 kn
+    const afterPause = MORNING + 13 * 60 * MIN;
+    const s = summarise([...sea, ...jitter(port, 30, afterPause)], { startedAt: MORNING });
+    assert.ok(Math.abs(s.distanceNm - 28) < 1, `${s.distanceNm}`);
+    assert.ok(s.underwayMin > 200 && s.underwayMin < 230, `underway ${s.underwayMin}`);
+    assert.equal(s.gaps.length, 1);
+    assert.ok(sanityCheck(s, null).some((f) => /paused/.test(f.text)));
+  });
+
+  it('a quiet spell at anchor (no positions while still) is not a pause', () => {
+    const a = jitter(PORT_LOUIS, 5, MORNING);
+    const b = run(PORT_LOUIS, 90, 8, 60, MORNING + 3 * 60 * MIN, 15);
+    const s = summarise([...a, ...b], { startedAt: MORNING });
+    assert.equal(s.gaps.length, 0);
+    assert.ok(Math.abs(s.underwayMin - 60) < 3, `underway ${s.underwayMin}`);
+  });
+});

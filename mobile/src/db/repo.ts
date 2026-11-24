@@ -187,6 +187,11 @@ export async function getDraftVoyage(): Promise<Voyage | null> {
   return firstVoyage("WHERE vg.status = 'draft' ORDER BY vg.started_at DESC");
 }
 
+/** Every stopped-but-unconfirmed voyage, newest first: none may go missing from the record. */
+export async function listDraftVoyages(): Promise<Voyage[]> {
+  return allVoyages("WHERE vg.status = 'draft' ORDER BY vg.started_at DESC");
+}
+
 export async function getVoyage(id: string): Promise<Voyage | null> {
   return firstVoyage('WHERE vg.id = ?', id);
 }
@@ -221,6 +226,12 @@ export async function stopVoyage(id: string, endedAt: number, s: TrackSummary, n
 export async function confirmVoyage(id: string, names: { from: string; to: string }, skipper: boolean): Promise<void> {
   const db = await getDb();
   await db.runAsync("UPDATE voyages SET from_name = ?, to_name = ?, skipper = ?, status = 'confirmed' WHERE id = ?", names.from, names.to, skipper ? 1 : 0, id);
+}
+
+/** Corrects place names later, e.g. coordinates saved at sea without signal. */
+export async function renameVoyage(id: string, from: string, to: string): Promise<void> {
+  const db = await getDb();
+  await db.runAsync('UPDATE voyages SET from_name = ?, to_name = ? WHERE id = ?', from, to, id);
 }
 
 export async function setVoyageSkipper(id: string, skipper: boolean): Promise<void> {

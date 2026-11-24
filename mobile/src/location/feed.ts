@@ -20,7 +20,8 @@ export type FeedSource = 'gps' | 'sim';
 function settingsError(message: string): Error {
   return Object.assign(new Error(message), { openSettings: true });
 }
-export type Stop = () => void;
+/** Stops the feed; resolves once no more positions will be written. */
+export type Stop = () => void | Promise<void>;
 
 /**
  * Requests permission and starts the GPS for `voyageId`. Throws a user-facing
@@ -38,7 +39,7 @@ export async function startGps(voyageId: string, onFix: (f: Fix) => void): Promi
   // If the OS takes too long to start the background service, log in the foreground rather than leave START hanging.
   const background = await Promise.race([startBackground(voyageId).catch(() => false), new Promise<boolean>((r) => setTimeout(() => r(false), 10000))]);
   if (background) {
-    return { stop: () => void stopBackground(), mode: 'background' };
+    return { stop: () => stopBackground().catch(() => {}), mode: 'background' };
   }
   const sub = await Location.watchPositionAsync(
     { accuracy: Location.Accuracy.High, distanceInterval: 10, timeInterval: 15000 },

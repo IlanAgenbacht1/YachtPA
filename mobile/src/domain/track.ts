@@ -47,6 +47,14 @@ export const DEFAULT_RULES: TrackRules = {
 
 export type Segment = { start: number; end: number; distanceNm: number };
 
+/** Tracking stopped while the boat was moving (the phone paused the app): the miles are a straight line, the hours an estimate. */
+export type Gap = { from: number; to: number; minutes: number; distanceNm: number };
+
+/** Longer than this between two positions while moving is a pause, not a fix interval. */
+const GAP_MS = 20 * 60000;
+/** Speed assumed across a pause when the voyage has no clean moving stretch to go by. */
+const DEFAULT_GAP_KN = 6;
+
 export type TrackSummary = {
   distanceNm: number;
   durationMin: number;
@@ -59,6 +67,8 @@ export type TrackSummary = {
   /** course over ground from the last window, null when stationary */
   headingDeg: number | null;
   segments: Segment[];
+  /** pauses in tracking while moving; underway time across them is estimated from the voyage's own speed */
+  gaps: Gap[];
   /** underway through a whole night: a segment that starts and ends in daylight with night inside (SCOPE §9) */
   overnight: boolean;
   /** underway minutes per local calendar day ("2026-11-02"), for sea-day rules */
@@ -185,6 +195,14 @@ export function summarise(
   const speeds = windowSpeeds(fixes, rules.windowSec);
   const ranges = detectSegments(fixes, speeds, rules);
 
+  // Typical speed while tracking ran normally, to estimate time across pauses: the median of
+  // window speeds at fixes inside segments that are not straight after a pause.
+  const clean: number[] = [];
+  for (const [a, b] of ranges) for (let i = a + 1; i <= b; i++) if (fixes[i].ts - fixes[i - 1].ts <= GAP_MS && speeds[i] >= rules.underwayKn) clean.push(speeds[i]);
+  clean.sort((x, y) => x - y);
+  const refKn = clean.length >= 5 ? clean[Math.floor(clean.length / 2)] : DEFAULT_GAP_KN;
+  const gaps: Gap[] = [];
+
   let distance = 0;
   let underwayMs = 0;
   let nightMs = 0;
@@ -198,8 +216,14 @@ export function summarise(
     for (let i = a + 1; i <= b; i++) {
       const p = fixes[i - 1];
       const q = fixes[i];
-      const dt = q.ts - p.ts;
-      segNm += distanceNm(p, q);
+      const legNm = distanceNm(p, q);
+      let dt = q.ts - p.ts;
+      if (dt > GAP_MS) {
+        // A pause: credit the time the boat would have taken at its usual speed, never the whole pause.
+        gaps.push({ from: p.ts, to: q.ts, minutes: Math.round(dt / 60000), distanceNm: legNm });
+        dt = Math.min(dt, (legNm / Math.max(refKn, rules.underwayKn)) * HOUR);
+      }
+      segNm += legNm;
       underwayMs += dt;
       const mid = (p.ts + q.ts) / 2;
       const day = dayKey(mid);
@@ -241,6 +265,7 @@ export function summarise(
     currentKn,
     headingDeg,
     segments,
+    gaps,
     overnight,
     underwayByDay,
     first,
@@ -258,6 +283,12 @@ export function sanityCheck(s: TrackSummary, prevEnd: LatLon | null): SanityFlag
   if (s.avgKn > 40) flags.push({ level: 'warn', text: 'Average speed over 40 kn. Check the track.' });
   if (s.first && prevEnd && distanceNm(prevEnd, s.first) > 200) {
     flags.push({ level: 'warn', text: 'Starts over 200 NM from where your last voyage ended.' });
+  }
+  if (s.gaps.length) {
+    const longest = Math.max(...s.gaps.map((g) => g.minutes));
+    const h = Math.floor(longest / 60);
+    const dur = h ? `${h} h ${longest % 60} min` : `${longest} min`;
+    flags.push({ level: 'warn', text: `Tracking paused for ${dur}${s.gaps.length > 1 ? ` (${s.gaps.length} pauses)` : ''}. Miles across it are a straight line; hours are estimated.` });
   }
   if (s.kept < 2) flags.push({ level: 'warn', text: 'No position was recorded. Was location switched off?' });
   else if (s.distanceNm === 0) flags.push({ level: 'warn', text: 'No movement detected. Stationary the whole time?' });
