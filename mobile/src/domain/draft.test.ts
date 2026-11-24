@@ -27,6 +27,20 @@ describe('draftFromText', () => {
     ]);
   });
 
+  it('splits unpunctuated speech, as Android returns it', () => {
+    assert.deepEqual(splitDuties('today we washed down the exterior polished the stainless checked the tender and did a fire drill'), [
+      'Washed down the exterior',
+      'Polished the stainless',
+      'Checked the tender',
+      'Did a fire drill',
+    ]);
+  });
+
+  it('does not split on describing words in unpunctuated speech', () => {
+    assert.deepEqual(splitDuties('cleaned the varnished rail and sanded the newly painted hatch'), ['Cleaned the varnished rail', 'Sanded the newly painted hatch']);
+    assert.deepEqual(splitDuties('the tender was cleaned'), ['The tender was cleaned']);
+  });
+
   it('keeps a list of things inside one job together', () => {
     assert.deepEqual(splitDuties('Changed the oil, filters and impellers'), ['Changed the oil, filters and impellers']);
   });

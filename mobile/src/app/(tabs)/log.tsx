@@ -75,7 +75,6 @@ export default function LogScreen() {
     flash(`Logged · ${fmtIsoShort(date)}`);
   };
 
-  // Offer the tidy-up when the text reads like speech: long lines or sentences rather than a list.
   // The mic shows only when the tester has it on, the phone supports it, and it has not failed this session.
   const [micFailed, setMicFailed] = useState(false);
   const micAvailable = micOn && !micFailed && speechSupport().available;
@@ -99,7 +98,12 @@ export default function LogScreen() {
   };
   const showMic = micAvailable && !typing && text.trim().length === 0;
 
-  const canTidy = text.trim().length > 0 && (/[.;,]/.test(text) || text.split('\n').some((l) => l.length > 60));
+  // Offer the tidy-up only when it would change something: new lines to split, or new ticks.
+  const preview = text.trim() ? draftFromText(text) : null;
+  const canTidy =
+    !!preview &&
+    (preview.duties.join('\n') !== text.split('\n').map((l) => l.trim()).filter(Boolean).join('\n') ||
+      preview.activities.some((a) => !chosen.has(a)));
   const onTidy = () => {
     const d = draftFromText(text);
     if (d.duties.length === 0 && d.activities.length === 0) return;

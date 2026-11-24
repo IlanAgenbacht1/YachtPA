@@ -40,11 +40,40 @@ function tidy(phrase: string): string {
 /** Past-tense verbs that start a new job after a comma: "…, polished the stainless". */
 const NEXT_JOB = /,\s*(?=(?:[a-z]+ed|did|made|took|ran|set|put|got|went|gave|swept|hung|brought|built|drove|led|caught|stood|kept|met|ate|threw|wrote|sat|swam|dove|dived|spun|began|stripped)\b)/i;
 
+/** Words after which a past-tense word is describing a thing ("the varnished rail"), not starting a new job. */
+const NOT_A_NEW_JOB = /^(the|a|an|my|our|his|her|their|its|this|that|these|those|of|on|in|into|to|with|for|from|at|by|all|some|any|very|had|has|have|was|were|is|are|be|been|got|get|newly|freshly|well)$/i;
+const PAST_VERB = /^([a-z]+ed|did|made|took|ran|set|put|got|went|gave|swept|hung|brought|built|drove|led|caught|stood|kept|met|wrote|swam|dove|dived|began|stripped)$/i;
+
+/**
+ * Speech recognisers on Android return text with no punctuation at all:
+ * "washed down the exterior polished the stainless checked the tender and did a fire drill".
+ * Split it before each past-tense verb that starts a new job.
+ */
+function splitUnpunctuated(line: string): string[] {
+  const words = line.split(/\s+/).filter(Boolean);
+  const parts: string[][] = [[]];
+  words.forEach((w, i) => {
+    const prev = words[i - 1] ?? '';
+    const cur = parts[parts.length - 1];
+    // Words of the job so far, not counting a trailing "and"/"then": "sanded and varnished" is one job.
+    const contentWords = cur.length - (/^(and|then)$/i.test(cur[cur.length - 1] ?? '') ? 1 : 0);
+    const startsJob = i > 0 && PAST_VERB.test(w) && !NOT_A_NEW_JOB.test(prev) && contentWords >= 2;
+    if (startsJob) {
+      // "... the tender and did a fire drill": the "and" belongs to neither job.
+      if (/^(and|then)$/i.test(cur[cur.length - 1] ?? '')) cur.pop();
+      parts.push([]);
+    }
+    parts[parts.length - 1].push(w);
+  });
+  return parts.map((p) => p.join(' '));
+}
+
 /** Splits on new lines, full stops, semicolons, "then", ", and", and a comma before a new verb. Keeps "washed and polished" together. */
 export function splitDuties(text: string): string[] {
   const parts = text
     .split(/\n|[.;!?](?=\s|$)|,\s*(?:and\s+)?then\b|\s+and\s+then\b|,\s+and\b|,\s+also\b|\s+after that\b|\s+afterwards\b/i)
     .flatMap((p) => p.split(NEXT_JOB))
+    .flatMap((p) => (/[,.;]/.test(p) ? [p] : splitUnpunctuated(p)))
     .map(tidy)
     .filter((p) => p.length > 2);
   return [...new Set(parts)];
