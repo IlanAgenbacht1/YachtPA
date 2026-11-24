@@ -20,6 +20,7 @@ import {
 import { useAppStore } from '@/store/AppStore';
 import { track } from '@/telemetry';
 import { useTokens } from '@/theme';
+import { goBack } from '@/lib/nav';
 
 const android = Platform.OS === 'android';
 
@@ -160,7 +161,7 @@ export default function TrackingSetup() {
             )}
           </>
         ) : (
-          <Button variant={ready ? 'primary' : 'ghost'} label="Done" icon="check" onPress={() => router.back()} />
+          <Button variant={ready ? 'primary' : 'ghost'} label="Done" icon="check" onPress={goBack} />
         )}
       </Sheet>
     </Screen>

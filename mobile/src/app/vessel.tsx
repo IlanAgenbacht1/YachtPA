@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 
 import { Screen } from '@/components/Screen';
@@ -6,6 +6,7 @@ import { Button, Col, DateField, Display, Eyebrow, Field, Hero, HeroButton, isoD
 import { changeVessel, updateCurrent, type Current, type Propulsion } from '@/db/repo';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
+import { goBack } from '@/lib/nav';
 
 const num = (s: string): number | null => {
   const n = Number(s.replace(',', '.'));
@@ -59,7 +60,7 @@ function VesselForm({ c, isNew }: { c: Current; isNew: boolean }) {
     }
     tick();
     await refresh();
-    router.back();
+    goBack();
     flash(isNew ? `Welcome aboard ${vesselName.trim()}` : 'Saved');
   };
 

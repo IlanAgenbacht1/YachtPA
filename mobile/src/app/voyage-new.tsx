@@ -1,4 +1,3 @@
-import { router } from 'expo-router';
 import { useState } from 'react';
 import { Switch } from 'react-native';
 
@@ -8,6 +7,7 @@ import { addManualVoyage } from '@/db/repo';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 import { track } from '@/telemetry';
+import { goBack } from '@/lib/nav';
 
 const num = (s: string) => Number(s.replace(',', '.'));
 
@@ -38,7 +38,7 @@ export default function NewVoyage() {
     track('manual_voyage_added', { nm: d, hours: h, nightHours: n, overnight, skipper });
     tick();
     bump();
-    router.back();
+    goBack();
     flash(`Voyage added · ${d} NM`);
   };
 

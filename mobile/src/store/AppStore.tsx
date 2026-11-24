@@ -143,7 +143,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     async (v: { id: string; startedAt: number; source: FeedSource; fixes: Fix[] }): Promise<'sim' | 'background' | 'foreground'> => {
       feedStop.current?.();
       if (v.source === 'sim') {
-        const from = await repo.lastKnownPosition();
+        const from = await repo.lastKnownPosition({ includeSim: true });
         feedStop.current = startSim((f) => onFix(v.id, f), from, v.startedAt, v.fixes[v.fixes.length - 1]);
         return 'sim';
       } else {

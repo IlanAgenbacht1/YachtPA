@@ -8,7 +8,7 @@ import { TrackMap } from '@/components/TrackMap';
 import { Button, Card, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
 import { confirmVoyage, deleteVoyage, getTrack, getVoyage, lastKnownPosition, type Voyage } from '@/db/repo';
 import { sanityCheck, summarise, type Fix, type SanityFlag } from '@/domain/track';
-import { fmtClock, fmtDateShort, fmtDur, fmtInt, minutesOfDay } from '@/lib/format';
+import { fmtDur, fmtInt, fmtSpan } from '@/lib/format';
 import { tick } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 import { track } from '@/telemetry';
@@ -86,7 +86,7 @@ export default function SummaryScreen() {
           {(from || '…') + ' → ' + (to || '…')}
         </Display>
         <Txt size={14} color="heroMuted">
-          {fmtDateShort(started)} · {fmtClock(minutesOfDay(started))} – {fmtClock(minutesOfDay(ended))}
+          {fmtSpan(started, ended, voyage.source === 'manual')}
         </Txt>
       </Hero>
 

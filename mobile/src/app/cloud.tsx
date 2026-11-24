@@ -21,6 +21,7 @@ import {
 } from '@/sync/backup';
 import { cloudConfigured, supabase } from '@/sync/supabase';
 import { useAppStore } from '@/store/AppStore';
+import { goBack } from '@/lib/nav';
 
 type Status = { email: string | null; on: boolean; last: number | null; pending: number };
 
@@ -88,7 +89,7 @@ export default function CloudScreen() {
     if (!cloud && !phone) {
       await startBackup();
       flash('Signed in. Your records will back up as you go.');
-      router.back();
+      goBack();
       return;
     }
     Alert.alert('You already have a backup', 'Keep the records on this phone, or replace them with the backup?', [

@@ -1,14 +1,16 @@
 /** "1h 04m" from minutes. */
 export function fmtDur(min: number): string {
-  const h = Math.floor(min / 60);
-  const m = Math.round(min % 60);
+  const total = Math.round(min);
+  const h = Math.floor(total / 60);
+  const m = total % 60;
   return `${h}h ${m < 10 ? '0' : ''}${m}m`;
 }
 
 /** "09:42" from minutes past midnight. */
 export function fmtClock(min: number): string {
-  const h = Math.floor(min / 60) % 24;
-  const m = Math.round(min % 60);
+  const total = Math.round(min);
+  const h = Math.floor(total / 60) % 24;
+  const m = total % 60;
   return `${h < 10 ? '0' : ''}${h}:${m < 10 ? '0' : ''}${m}`;
 }
 
@@ -30,6 +32,17 @@ export function fmtDateShort(d: Date): string {
 /** "Wednesday 24 September" */
 export function fmtDateLong(d: Date): string {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]}`;
+}
+
+/**
+ * When a voyage ran: "Tue 24 Nov · 13:49 – 14:01", "Tue 24 Nov 22:10 – Wed 25 Nov 06:30" across midnight,
+ * and only the date(s) for one typed in by hand (its clock times are not real).
+ */
+export function fmtSpan(start: Date, end: Date, manual = false): string {
+  const sameDay = start.toDateString() === end.toDateString();
+  if (manual) return sameDay ? fmtDateShort(start) : `${fmtDateShort(start)} – ${fmtDateShort(end)}`;
+  const t = (d: Date) => fmtClock(minutesOfDay(d));
+  return sameDay ? `${fmtDateShort(start)} · ${t(start)} – ${t(end)}` : `${fmtDateShort(start)} ${t(start)} – ${fmtDateShort(end)} ${t(end)}`;
 }
 
 /** Minutes past midnight for a Date. */

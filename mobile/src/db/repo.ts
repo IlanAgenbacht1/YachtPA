@@ -289,10 +289,12 @@ export async function listVoyages(limit = 200): Promise<Voyage[]> {
 }
 
 /** Where the last confirmed voyage ended, for the "jump" sanity check and the simulator. */
-export async function lastKnownPosition(): Promise<{ lat: number; lon: number } | null> {
+export async function lastKnownPosition(opts: { includeSim?: boolean } = {}): Promise<{ lat: number; lon: number } | null> {
   const db = await getDb();
+  // A pretend voyage ends somewhere the boat never was: it must not trip "starts 200 NM from your last voyage".
+  const sim = opts.includeSim ? '' : " AND source != 'sim'";
   return db.getFirstAsync<{ lat: number; lon: number }>(
-    "SELECT end_lat AS lat, end_lon AS lon FROM voyages WHERE status NOT IN ('live', 'draft') AND end_lat IS NOT NULL ORDER BY ended_at DESC LIMIT 1",
+    `SELECT end_lat AS lat, end_lon AS lon FROM voyages WHERE status NOT IN ('live', 'draft') AND end_lat IS NOT NULL${sim} ORDER BY ended_at DESC LIMIT 1`,
   );
 }
 

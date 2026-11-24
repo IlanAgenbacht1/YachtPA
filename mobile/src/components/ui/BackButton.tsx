@@ -1,12 +1,12 @@
-import { router } from 'expo-router';
 import { Pressable } from 'react-native';
 
 import { useTokens } from '@/theme';
 
 import { Icon, type IconName } from './Icon';
+import { goBack } from '@/lib/nav';
 
 /** Square button on the hero band: back, close, minimise. */
-export function HeroButton({ icon = 'chevronLeft', label = 'Back', onPress = () => router.back() }: { icon?: IconName; label?: string; onPress?: () => void }) {
+export function HeroButton({ icon = 'chevronLeft', label = 'Back', onPress = goBack }: { icon?: IconName; label?: string; onPress?: () => void }) {
   const t = useTokens();
   return (
     <Pressable

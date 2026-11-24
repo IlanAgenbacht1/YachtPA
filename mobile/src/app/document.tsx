@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 
@@ -9,6 +9,7 @@ import { tick } from '@/lib/haptics';
 import { ensureNotificationPermission } from '@/lib/reminders';
 import { useAppStore } from '@/store/AppStore';
 import { track } from '@/telemetry';
+import { goBack } from '@/lib/nav';
 
 const COMMON = ['STCW Basic Safety', 'ENG1 Medical', 'Passport', 'VHF SRC', 'Powerboat Level 2', 'Yachtmaster Offshore', 'Seaman’s book', 'Schengen visa'];
 
@@ -52,7 +53,7 @@ export default function DocumentEditor() {
     tick();
     if (hasExpiry === 'yes') await ensureNotificationPermission().catch(() => false);
     bump();
-    router.back();
+    goBack();
   };
 
   const onDelete = () => {
@@ -65,7 +66,7 @@ export default function DocumentEditor() {
         onPress: async () => {
           await deleteDoc(id);
           bump();
-          router.back();
+          goBack();
         },
       },
     ]);

@@ -13,6 +13,7 @@ import { log } from '@/lib/diag';
 import { thump } from '@/lib/haptics';
 import { useAppStore } from '@/store/AppStore';
 import { useTokens } from '@/theme';
+import { goBack } from '@/lib/nav';
 
 const WAVE_A = 'M0 22q48.75 -18 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
 const WAVE_B = 'M0 22q48.75 -14 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0';
@@ -59,7 +60,7 @@ export default function LiveScreen() {
           </Row>
           <Row gap={8}>
             <Pressable
-              onPress={() => router.back()}
+              onPress={goBack}
               accessibilityRole="button"
               accessibilityLabel="Minimise"
               style={{

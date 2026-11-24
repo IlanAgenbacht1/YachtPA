@@ -27,6 +27,7 @@ export function Field({ label, value, onChangeText, hint, multiline, style, onFo
       <TextInput
         value={value}
         onChangeText={onChangeText}
+        accessibilityLabel={label}
         placeholderTextColor={t.colors.muted}
         multiline={multiline}
         onFocus={(e) => {

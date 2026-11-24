@@ -47,6 +47,8 @@ function Shell() {
     if (!ready || Platform.OS === 'web') return;
     const go = (r: Notifications.NotificationResponse | null) => {
       const url = urlFromResponse(r);
+      // Forget it once handled, or every later cold start would reopen the same screen.
+      if (r) Notifications.clearLastNotificationResponse();
       if (url) router.push(url as never);
     };
     Notifications.getLastNotificationResponseAsync().then(go).catch(() => {});

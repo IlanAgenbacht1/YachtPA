@@ -1,12 +1,13 @@
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { Alert, Switch, View } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { TrackMap } from '@/components/TrackMap';
 import { Button, Card, Col, Display, Eyebrow, Hero, HeroButton, Row, Sheet, Spacer, Tag, Tile, Txt } from '@/components/ui';
 import { deleteVoyage, getTrack, getVoyage, setVoyageSkipper } from '@/db/repo';
-import { fmtClock, fmtDateShort, fmtDur, minutesOfDay } from '@/lib/format';
+import { fmtDur, fmtSpan } from '@/lib/format';
 import { useAppStore, useQuery } from '@/store/AppStore';
+import { goBack } from '@/lib/nav';
 
 export default function VoyageDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -27,7 +28,7 @@ export default function VoyageDetail() {
         onPress: async () => {
           await deleteVoyage(v.id);
           bump();
-          router.back();
+          goBack();
         },
       },
     ]);
@@ -47,7 +48,7 @@ export default function VoyageDetail() {
           {v.fromName} → {v.toName}
         </Display>
         <Txt size={14} color="heroMuted">
-          {fmtDateShort(started)} · {fmtClock(minutesOfDay(started))} – {fmtClock(minutesOfDay(ended))}
+          {fmtSpan(started, ended, v.source === 'manual')}
         </Txt>
       </Hero>
       <Sheet gap={12} paddingTop={24}>

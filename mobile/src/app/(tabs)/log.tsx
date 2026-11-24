@@ -1,11 +1,11 @@
 import { router } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { FadeUp } from '@/components/motion';
 import { Screen } from '@/components/Screen';
 import { Button, Card, Chip, Col, Display, Eyebrow, Field, Hero, Icon, Row, Sheet, Txt } from '@/components/ui';
-import { getLog, listLogs, listVoyages, localDate, saveLog, type LogEntry, type Voyage } from '@/db/repo';
+import { getLog, getSetting, listLogs, listVoyages, localDate, saveLog, setSetting, type LogEntry, type Voyage } from '@/db/repo';
 import { Dictate } from '@/components/Dictate';
 import { Contain } from '@/components/ErrorScreen';
 import { draftFromText } from '@/domain/draft';
@@ -17,6 +17,18 @@ import { fmtDur, fmtInt, fmtIsoShort } from '@/lib/format';
 import { tick } from '@/lib/haptics';
 import { useAppStore, useQuery } from '@/store/AppStore';
 import { useTokens } from '@/theme';
+
+const DRAFT_KEY = 'log_draft';
+type Draft = { engagementId: string; date: string; text: string; activities: string[] };
+function parseDraft(raw: string | null): Draft | null {
+  if (!raw) return null;
+  try {
+    const d = JSON.parse(raw) as Draft;
+    return typeof d?.text === 'string' && Array.isArray(d.activities) ? d : null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * One entry per day per yacht: what you did and what kind of work it was.
@@ -42,11 +54,15 @@ export default function LogScreen() {
   useEffect(() => {
     if (!engagementId) return;
     let live = true;
-    getLog(engagementId, date).then((e) => {
+    Promise.all([getLog(engagementId, date), getSetting(DRAFT_KEY).catch(() => null)]).then(([e, raw]) => {
       if (!live) return;
       setSaved(e);
-      setText(e ? e.duties.join('\n') : '');
-      setChosen(new Set(e?.activities ?? []));
+      // An unsaved draft for this day (the phone closed the app before Save) wins over the saved entry.
+      const d = parseDraft(raw);
+      const mine = d && d.engagementId === engagementId && d.date === date ? d : null;
+      setText(mine ? mine.text : e ? e.duties.join('\n') : '');
+      setChosen(new Set(mine ? mine.activities : (e?.activities ?? [])));
+      loadedFor.current = `${engagementId}|${date}`;
     });
     return () => {
       live = false;
@@ -61,6 +77,19 @@ export default function LogScreen() {
   const dirty =
     !saved || saved.duties.join('\n') !== duties.join('\n') || [...chosen].sort().join() !== [...saved.activities].sort().join();
 
+  // Keep what has been said or typed but not saved, so it survives the phone closing the app.
+  const loadedFor = useRef('');
+  const hasContent = text.trim().length > 0 || chosen.size > 0;
+  const chosenKey = [...chosen].sort().join('|');
+  useEffect(() => {
+    if (!engagementId || loadedFor.current !== `${engagementId}|${date}`) return;
+    const id = setTimeout(() => {
+      const value = dirty && hasContent ? JSON.stringify({ engagementId, date, text, activities: chosenKey ? chosenKey.split('|') : [] }) : '';
+      setSetting(DRAFT_KEY, value).catch(() => {});
+    }, 600);
+    return () => clearTimeout(id);
+  }, [engagementId, date, text, chosenKey, dirty, hasContent]);
+
   const onSave = async () => {
     if (!engagementId) return;
     if (duties.length === 0 && chosen.size === 0) {
@@ -68,6 +97,7 @@ export default function LogScreen() {
       return;
     }
     await saveLog({ engagementId, date, duties, activities: [...chosen], notes: '', status: 'confirmed' });
+    await setSetting(DRAFT_KEY, '').catch(() => {});
     track('log_saved', { duties: duties.length, activities: chosen.size, via, edit: !!saved, daysAgo: Math.round((Date.parse(today) - Date.parse(date)) / 86400000) });
     tick();
     bump();
