@@ -20,9 +20,19 @@ You have an Android phone and no Mac; your testers have iPhones. Nothing below n
 
 ## Publishing an update (no reinstall)
 
+Android test APK (channel `preview`):
+
 ```bash
 npx eas-cli@latest update --channel preview --environment preview --platform android --message "what changed"
 ```
+
+iPhones on TestFlight (channel `production`):
+
+```bash
+npx eas-cli@latest update --channel production --environment production --platform ios --message "what changed"
+```
+
+An update only reaches builds with the same native code (`runtimeVersion` is a fingerprint). After adding or upgrading a native package, make new builds first; updates published before that go only to the old builds.
 
 With `--environment`, EAS ignores `mobile/.env` and uses the variables stored on Expo for that environment. `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are stored there for `preview` and `production` (public values). If they were missing, the update would ship with cloud backup and metrics switched off. Phones show "New version ready · Restart" once an update has downloaded; Profile shows which version is running.
 

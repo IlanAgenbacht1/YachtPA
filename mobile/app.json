@@ -57,7 +57,9 @@
             "com.google.android.as"
           ]
         }
-      ]
+      ],
+      "expo-sharing",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true,
