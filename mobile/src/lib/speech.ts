@@ -67,6 +67,30 @@ export function speechSupport(): SpeechSupport {
   return cached;
 }
 
+export type ListenOptions = { onDevice: boolean; lang?: string };
+
+/**
+ * Ways to start recognition, best first. iPhones have on-device recognition
+ * built in, so it is required there (works without signal). On Android it is
+ * only preferred: requiring it fails instantly with "language-not-supported"
+ * when the offline model is not installed (seen on a Samsung S25, Android 17).
+ * Last resort: plain US English, which every recogniser has.
+ */
+export function recognitionAttempts(): ListenOptions[] {
+  const s = speechSupport();
+  const list: ListenOptions[] = [];
+  if (Platform.OS === 'ios' && s.onDevice) list.push({ onDevice: true });
+  list.push({ onDevice: false }, { onDevice: false, lang: 'en-US' });
+  return list;
+}
+
+/** The attempt that worked last on this phone, so later taps start there. */
+let working = 0;
+export const firstAttempt = () => working;
+export function rememberWorking(i: number) {
+  working = i;
+}
+
 export type ListenHandlers = {
   onResult: (text: string, isFinal: boolean) => void;
   onError: (code: string) => void;
@@ -76,7 +100,7 @@ export type ListenHandlers = {
 export type Session = { stop: () => void; abort: () => void };
 
 /** Asks for permission, then listens until stopped. */
-export async function listen(h: ListenHandlers, vocabulary: string[]): Promise<Session | { error: string }> {
+export async function listen(h: ListenHandlers, vocabulary: string[], opts: ListenOptions): Promise<Session | { error: string }> {
   const m = load();
   if (!m) return { error: 'unavailable' };
   let perm: { granted: boolean };
@@ -87,7 +111,6 @@ export async function listen(h: ListenHandlers, vocabulary: string[]): Promise<S
   }
   if (!perm.granted) return { error: 'not-allowed' };
 
-  const support = speechSupport();
   const subs = [
     m.addListener('result', (e) => {
       const text = e.results[0]?.transcript ?? '';
@@ -105,7 +128,8 @@ export async function listen(h: ListenHandlers, vocabulary: string[]): Promise<S
       interimResults: true,
       continuous: true,
       addsPunctuation: true,
-      requiresOnDeviceRecognition: support.onDevice,
+      requiresOnDeviceRecognition: opts.onDevice,
+      ...(opts.lang ? { lang: opts.lang } : {}),
       contextualStrings: vocabulary,
       iosTaskHint: 'dictation',
       androidIntentOptions: {

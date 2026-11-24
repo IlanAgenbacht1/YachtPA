@@ -7,7 +7,7 @@ import { applyResult, EMPTY_TRANSCRIPT, fullText, speechErrorText, YACHT_VOCABUL
 import { log } from '@/lib/diag';
 import { track } from '@/telemetry';
 import { thump } from '@/lib/haptics';
-import { listen, speechSupport, type Session } from '@/lib/speech';
+import { firstAttempt, listen, recognitionAttempts, rememberWorking, speechSupport, type Session } from '@/lib/speech';
 import { useTokens } from '@/theme';
 
 const BAR_HEIGHTS = [18, 30, 40, 24, 36, 16, 42, 28, 20, 38, 26, 14, 32, 22];
@@ -31,6 +31,8 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
   // Leaving the screen mid-sentence throws the session away.
   useEffect(() => () => session.current?.abort(), []);
 
+  const attempts = useRef(recognitionAttempts());
+
   const start = async () => {
     if (phase !== 'idle') return;
     thump();
@@ -38,8 +40,14 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
     setNeedsSettings(false);
     setTx(EMPTY_TRANSCRIPT);
     txRef.current = EMPTY_TRANSCRIPT;
-    lastError.current = '';
     setPhase('starting');
+    begin(Math.min(firstAttempt(), attempts.current.length - 1));
+  };
+
+  /** Starts attempt `i`; if the phone says the language is not supported, quietly tries the next way. */
+  const begin = async (i: number) => {
+    const opts = attempts.current[i];
+    lastError.current = '';
     const r = await listen(
       {
         onResult: (text, isFinal) => {
@@ -53,16 +61,22 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
         onEnd: () => {
           session.current = null;
           const text = fullText(txRef.current);
-          track('mic_result', { ok: !!text, error: text ? null : lastError.current || null, words: text ? text.split(/\s+/).length : 0, onDevice: support.onDevice });
+          track('mic_result', { ok: !!text, error: text ? null : lastError.current || null, words: text ? text.split(/\s+/).length : 0, onDevice: opts.onDevice, lang: opts.lang ?? 'phone', attempt: i });
+          if (!text && lastError.current === 'language-not-supported' && i + 1 < attempts.current.length) {
+            begin(i + 1);
+            return;
+          }
+          if (text) rememberWorking(i);
           setPhase('idle');
           if (text) onDone(text);
           else if (lastError.current && lastError.current !== 'aborted') setError(speechErrorText(lastError.current));
         },
       },
       YACHT_VOCABULARY,
+      opts,
     );
     if ('error' in r) {
-      track('mic_result', { ok: false, error: r.error, words: 0, onDevice: support.onDevice });
+      track('mic_result', { ok: false, error: r.error, words: 0, onDevice: opts.onDevice, attempt: i });
       setPhase('idle');
       setError(speechErrorText(r.error));
       setNeedsSettings(r.error === 'not-allowed');

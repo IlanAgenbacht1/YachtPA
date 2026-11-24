@@ -41,8 +41,9 @@ export function speechErrorText(code: string): string {
     case 'service-not-allowed':
       return 'YachtPA is not allowed to use the microphone. Allow it in Settings, or type instead.';
     case 'network':
-    case 'language-not-supported':
       return 'No signal, and this phone can’t understand speech offline yet. Type it for now. To fix: Profile → Download offline speech when you have Wi-Fi.';
+    case 'language-not-supported':
+      return 'This phone’s speech recognition isn’t set up for English. Type it for now, or install English in your phone’s speech or Google voice settings.';
     case 'no-speech':
     case 'speech-timeout':
       return "Didn't catch anything. Tap the mic and try again.";
