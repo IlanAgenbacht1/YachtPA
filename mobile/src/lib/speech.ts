@@ -67,22 +67,89 @@ export function speechSupport(): SpeechSupport {
   return cached;
 }
 
-export type ListenOptions = { onDevice: boolean; lang?: string };
+export type ListenOptions = {
+  onDevice: boolean;
+  lang?: string;
+  /** Android: which recognition service to use (default when omitted) */
+  service?: string;
+  /** Android: ask the service to work offline if it can */
+  preferOffline?: boolean;
+};
+
+const GOOGLE_APP = 'com.google.android.googlequicksearchbox';
+const GOOGLE_ON_DEVICE = 'com.google.android.as';
+
+let attemptsCache: ListenOptions[] | null = null;
+let diagCache: Record<string, unknown> | null = null;
+
+/** What this phone offers for speech: services, default service, languages. Goes into the mic metrics. */
+export async function speechDiagnostics(): Promise<Record<string, unknown>> {
+  if (diagCache) return diagCache;
+  const m = load();
+  const d: Record<string, unknown> = {};
+  if (!m || Platform.OS !== 'android') return (diagCache = d);
+  try {
+    d.services = m.getSpeechRecognitionServices().slice(0, 8);
+  } catch {
+    d.services = 'error';
+  }
+  try {
+    d.defaultService = m.getDefaultRecognitionService().packageName;
+  } catch {
+    d.defaultService = 'error';
+  }
+  for (const pkg of [GOOGLE_ON_DEVICE, GOOGLE_APP]) {
+    try {
+      const r = await m.getSupportedLocales({ androidRecognitionServicePackage: pkg });
+      const en = (l: string[]) => l.filter((x) => /^en/i.test(x)).slice(0, 6);
+      d[pkg === GOOGLE_APP ? 'googleApp' : 'onDevice'] = { english: en(r.locales), installedEnglish: en(r.installedLocales), total: r.locales.length };
+    } catch (e) {
+      d[pkg === GOOGLE_APP ? 'googleApp' : 'onDevice'] = `error: ${(e as Error).message?.slice(0, 80)}`;
+    }
+  }
+  return (diagCache = d);
+}
 
 /**
- * Ways to start recognition, best first. iPhones have on-device recognition
- * built in, so it is required there (works without signal). On Android it is
- * only preferred: requiring it fails instantly with "language-not-supported"
- * when the offline model is not installed (seen on a Samsung S25, Android 17).
- * Last resort: plain US English, which every recogniser has.
+ * Ways to start recognition, best first.
+ *
+ * iPhone: on-device recognition is built in, so it is required where
+ * supported (works without signal), then server recognition.
+ *
+ * Android: requiring on-device, or even preferring offline, fails at once
+ * with "language-not-supported" when the offline English model is missing
+ * (seen on a Samsung S25, Android 17). So: Google's on-device service only
+ * when English is installed for offline use; otherwise Google's normal
+ * online recognition (the Google app), then the phone's default service,
+ * then US English. A Samsung/Bixby service is tried last.
  */
-export function recognitionAttempts(): ListenOptions[] {
+export async function recognitionAttempts(): Promise<ListenOptions[]> {
+  if (attemptsCache) return attemptsCache;
   const s = speechSupport();
   const list: ListenOptions[] = [];
-  if (Platform.OS === 'ios' && s.onDevice) list.push({ onDevice: true });
+  if (Platform.OS === 'ios') {
+    if (s.onDevice) list.push({ onDevice: true });
+    list.push({ onDevice: false }, { onDevice: false, lang: 'en-US' });
+    return (attemptsCache = list);
+  }
+  const d = await speechDiagnostics();
+  const services = Array.isArray(d.services) ? (d.services as string[]) : [];
+  const onDeviceInfo = d.onDevice as { installedEnglish?: string[] } | undefined;
+  const offlineEnglish = onDeviceInfo?.installedEnglish?.[0];
+  if (offlineEnglish && services.includes(GOOGLE_ON_DEVICE)) list.push({ onDevice: true, service: GOOGLE_ON_DEVICE, lang: offlineEnglish, preferOffline: true });
+  const order = [GOOGLE_APP, typeof d.defaultService === 'string' ? d.defaultService : '', ...services]
+    .filter((p, i, all) => p && all.indexOf(p) === i && p !== GOOGLE_ON_DEVICE)
+    .sort((a, b) => Number(/bixby|samsung/i.test(a)) - Number(/bixby|samsung/i.test(b)));
+  for (const service of order.filter((p) => services.length === 0 || services.includes(p) || p === GOOGLE_APP)) {
+    list.push({ onDevice: false, service }, { onDevice: false, service, lang: 'en-US' });
+  }
+  // Whatever the phone picks, as a last resort.
   list.push({ onDevice: false }, { onDevice: false, lang: 'en-US' });
-  return list;
+  return (attemptsCache = list);
 }
+
+/** Errors worth trying the next way for (the service or language is the problem, not the user). */
+export const RETRYABLE = ['language-not-supported', 'service-not-allowed', 'client', 'busy'];
 
 /** The attempt that worked last on this phone, so later taps start there. */
 let working = 0;
@@ -130,10 +197,11 @@ export async function listen(h: ListenHandlers, vocabulary: string[], opts: List
       addsPunctuation: true,
       requiresOnDeviceRecognition: opts.onDevice,
       ...(opts.lang ? { lang: opts.lang } : {}),
+      ...(opts.service ? { androidRecognitionServicePackage: opts.service } : {}),
       contextualStrings: vocabulary,
       iosTaskHint: 'dictation',
       androidIntentOptions: {
-        EXTRA_PREFER_OFFLINE: true,
+        EXTRA_PREFER_OFFLINE: !!opts.preferOffline,
         EXTRA_LANGUAGE_MODEL: 'free_form',
         // A pause to think should not end the log.
         EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS: 8000,

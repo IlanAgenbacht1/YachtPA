@@ -7,7 +7,7 @@ import { applyResult, EMPTY_TRANSCRIPT, fullText, speechErrorText, YACHT_VOCABUL
 import { log } from '@/lib/diag';
 import { track } from '@/telemetry';
 import { thump } from '@/lib/haptics';
-import { firstAttempt, listen, recognitionAttempts, rememberWorking, speechSupport, type Session } from '@/lib/speech';
+import { firstAttempt, listen, recognitionAttempts, rememberWorking, RETRYABLE, speechDiagnostics, speechSupport, type ListenOptions, type Session } from '@/lib/speech';
 import { useTokens } from '@/theme';
 
 const BAR_HEIGHTS = [18, 30, 40, 24, 36, 16, 42, 28, 20, 38, 26, 14, 32, 22];
@@ -31,7 +31,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
   // Leaving the screen mid-sentence throws the session away.
   useEffect(() => () => session.current?.abort(), []);
 
-  const attempts = useRef(recognitionAttempts());
+  const attempts = useRef<ListenOptions[]>([]);
 
   const start = async () => {
     if (phase !== 'idle') return;
@@ -41,6 +41,7 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
     setTx(EMPTY_TRANSCRIPT);
     txRef.current = EMPTY_TRANSCRIPT;
     setPhase('starting');
+    attempts.current = await recognitionAttempts().catch(() => [{ onDevice: false }]);
     begin(Math.min(firstAttempt(), attempts.current.length - 1));
   };
 
@@ -61,8 +62,23 @@ export function Dictate({ onDone, onType, compact }: { onDone: (text: string) =>
         onEnd: () => {
           session.current = null;
           const text = fullText(txRef.current);
-          track('mic_result', { ok: !!text, error: text ? null : lastError.current || null, words: text ? text.split(/\s+/).length : 0, onDevice: opts.onDevice, lang: opts.lang ?? 'phone', attempt: i });
-          if (!text && lastError.current === 'language-not-supported' && i + 1 < attempts.current.length) {
+          const failed = !text;
+          const last = failed && !(RETRYABLE.includes(lastError.current) && i + 1 < attempts.current.length);
+          // Full picture of the phone's speech setup on the final failure, so it can be fixed without guessing.
+          (last ? speechDiagnostics() : Promise.resolve(null)).then((diag) =>
+            track('mic_result', {
+              ok: !failed,
+              error: failed ? lastError.current || null : null,
+              words: failed ? 0 : text.split(/\s+/).length,
+              onDevice: opts.onDevice,
+              lang: opts.lang ?? 'phone',
+              service: opts.service ?? 'default',
+              attempt: i,
+              of: attempts.current.length,
+              ...(diag ? { diag } : {}),
+            }),
+          );
+          if (failed && RETRYABLE.includes(lastError.current) && i + 1 < attempts.current.length) {
             begin(i + 1);
             return;
           }
