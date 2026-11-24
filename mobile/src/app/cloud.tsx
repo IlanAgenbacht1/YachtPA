@@ -1,6 +1,7 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Alert } from 'react-native';
+import * as Linking from 'expo-linking';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useEffect, useRef, useState } from 'react';
+import { Alert, Pressable } from 'react-native';
 
 import { Screen } from '@/components/Screen';
 import { Button, Card, Col, Display, Eyebrow, Field, Hero, HeroButton, Row, Sheet, Txt } from '@/components/ui';
@@ -36,6 +37,8 @@ async function getStatus(): Promise<Status | null> {
  */
 export default function CloudScreen() {
   const { refresh, flash, voyage } = useAppStore();
+  const { justSignedIn } = useLocalSearchParams<{ justSignedIn?: string }>();
+  const [showCode, setShowCode] = useState(false);
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
   const [sent, setSent] = useState(false);
@@ -96,7 +99,11 @@ export default function CloudScreen() {
 
   const sendCode = () =>
     run('Sending…', async () => {
-      const { error } = await supabase!.auth.signInWithOtp({ email: email.trim(), options: { shouldCreateUser: true } });
+      // The email's "Sign in" link opens the app at /auth, which finishes signing in.
+      const { error } = await supabase!.auth.signInWithOtp({
+        email: email.trim(),
+        options: { shouldCreateUser: true, emailRedirectTo: Linking.createURL('auth') },
+      });
       if (error) throw new Error(error.message);
       setSent(true);
     });
@@ -107,6 +114,15 @@ export default function CloudScreen() {
       if (error) throw new Error(error.message);
       await afterSignIn();
     });
+
+  // Arrived from the email link: finish exactly as after typing a code.
+  const finished = useRef(false);
+  useEffect(() => {
+    if (justSignedIn !== '1' || finished.current) return;
+    finished.current = true;
+    run('Finishing sign-in…', afterSignIn);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [justSignedIn]);
 
   const signOut = () =>
     Alert.alert('Sign out?', 'Backup stops on this phone. Your records stay here and in the cloud.', [
@@ -154,16 +170,28 @@ export default function CloudScreen() {
         {cloudConfigured && !signedIn && (
           <Col gap={14}>
             <Txt size={14} color="muted">
-              Sign in with your email. We send a 6-digit code, no password. Your records are only visible to you.
+              {sent
+                ? 'Check your email on this phone and tap “Sign in”. YachtPA opens and finishes by itself. It can take a minute to arrive; check spam too.'
+                : 'Sign in with your email. We email you a sign-in link, no password. Open it on this phone. Your records are only visible to you.'}
             </Txt>
             <Field label="Email" value={email} onChangeText={setEmail} keyboardType="email-address" autoCapitalize="none" autoComplete="email" textContentType="emailAddress" />
-            {sent && <Field label="Code from the email" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" />}
             {!sent ? (
-              <Button label={busy ?? 'Send code'} onPress={busy || !email.includes('@') ? () => {} : sendCode} />
+              <Button label={busy ?? 'Email me a sign-in link'} onPress={busy || !email.includes('@') ? () => {} : sendCode} />
             ) : (
               <>
-                <Button label={busy ?? 'Sign in'} onPress={busy || code.trim().length < 6 ? () => {} : verify} />
-                <Button variant="ghost" label="Send a new code" onPress={busy ? () => {} : sendCode} />
+                <Button variant="ghost" label={busy ?? 'Send the link again'} onPress={busy ? () => {} : sendCode} />
+                {showCode ? (
+                  <>
+                    <Field label="Code from the email" value={code} onChangeText={setCode} keyboardType="number-pad" textContentType="oneTimeCode" autoComplete="one-time-code" />
+                    <Button label={busy ?? 'Sign in'} onPress={busy || code.trim().length < 6 ? () => {} : verify} />
+                  </>
+                ) : (
+                  <Pressable onPress={() => setShowCode(true)} accessibilityRole="button" style={{ alignSelf: 'center', padding: 8 }}>
+                    <Txt size={13} weight={700} color="accent">
+                      Got a code instead?
+                    </Txt>
+                  </Pressable>
+                )}
               </>
             )}
           </Col>

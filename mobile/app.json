@@ -42,7 +42,7 @@
         "expo-location",
         {
           "locationWhenInUsePermission": "YachtPA uses your location between START and STOP to log a voyage.",
-          "locationAlwaysAndWhenInUsePermission": "Allow \u201cAlways\u201d so YachtPA keeps logging your voyage with the phone locked. Location is only used between START and STOP.",
+          "locationAlwaysAndWhenInUsePermission": "Allow “Always” so YachtPA keeps logging your voyage with the phone locked. Location is only used between START and STOP.",
           "isIosBackgroundLocationEnabled": true,
           "isAndroidBackgroundLocationEnabled": true
         }
@@ -62,6 +62,18 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "d34a1130-1033-474d-a1bb-5661d73e9c0c"
+      }
+    },
+    "owner": "ilanagenbacht",
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d34a1130-1033-474d-a1bb-5661d73e9c0c"
     }
   }
 }

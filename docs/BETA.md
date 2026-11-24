@@ -18,7 +18,11 @@ You have an Android phone and no Mac; your testers have iPhones. Nothing below n
 | Log draft | Dictate with the keyboard mic, then "Tidy into duties". On the phone, offline. |
 | Data on the phone | Saved on the phone; survives restarts. |
 
-## Step 0 (optional): cloud backup, free
+## Step 0: cloud backup and metrics (done)
+
+Set up on 2026-11-24: Supabase project `YachtPA` (Frankfurt), both SQL files applied, sign-in by email link (free projects can only send Supabase's default email, which contains a link, not a code: testers tap "Sign in" in the email on their phone and YachtPA opens signed in), 6-digit code kept as a fallback for when a custom email sender is added. `mobile/.env` is committed. The steps below are kept for reference.
+
+### How it was set up
 
 Without this the app works fully offline and testers use Profile → Export all my data. With it, they sign in with an emailed code and their record backs up by itself and can be restored on a new phone.
 

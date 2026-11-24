@@ -22,6 +22,8 @@ yarn-error.*
 .env
 .env.*
 !.env.example
+# The app's .env holds only public values (Supabase URL and publishable key); builds need it.
+!mobile/.env
 
 # Build outputs
 *.apk
