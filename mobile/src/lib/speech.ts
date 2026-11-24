@@ -78,6 +78,8 @@ export type ListenOptions = {
 
 const GOOGLE_APP = 'com.google.android.googlequicksearchbox';
 const GOOGLE_ON_DEVICE = 'com.google.android.as';
+/** "Speech Services by Google": the usual default recogniser on Android, online and offline. */
+const GOOGLE_TTS = 'com.google.android.tts';
 
 let attemptsCache: ListenOptions[] | null = null;
 let diagCache: Record<string, unknown> | null = null;
@@ -87,6 +89,11 @@ export async function speechDiagnostics(): Promise<Record<string, unknown>> {
   if (diagCache) return diagCache;
   const m = load();
   const d: Record<string, unknown> = {};
+  try {
+    d.phoneLocale = Intl.DateTimeFormat().resolvedOptions().locale;
+  } catch {
+    // not available
+  }
   if (!m || Platform.OS !== 'android') return (diagCache = d);
   try {
     d.services = m.getSpeechRecognitionServices().slice(0, 8);
@@ -134,22 +141,22 @@ export async function recognitionAttempts(): Promise<ListenOptions[]> {
   }
   const d = await speechDiagnostics();
   const services = Array.isArray(d.services) ? (d.services as string[]) : [];
-  const onDeviceInfo = d.onDevice as { installedEnglish?: string[] } | undefined;
-  const offlineEnglish = onDeviceInfo?.installedEnglish?.[0];
+  const offlineEnglish = (d.onDevice as { installedEnglish?: string[] } | undefined)?.installedEnglish?.[0];
+  // 1. Offline English already downloaded: on-device, works at sea.
   if (offlineEnglish && services.includes(GOOGLE_ON_DEVICE)) list.push({ onDevice: true, service: GOOGLE_ON_DEVICE, lang: offlineEnglish, preferOffline: true });
-  const order = [GOOGLE_APP, typeof d.defaultService === 'string' ? d.defaultService : '', ...services]
-    .filter((p, i, all) => p && all.indexOf(p) === i && p !== GOOGLE_ON_DEVICE)
-    .sort((a, b) => Number(/bixby|samsung/i.test(a)) - Number(/bixby|samsung/i.test(b)));
-  for (const service of order.filter((p) => services.length === 0 || services.includes(p) || p === GOOGLE_APP)) {
-    list.push({ onDevice: false, service }, { onDevice: false, service, lang: 'en-US' });
-  }
-  // Whatever the phone picks, as a last resort.
+  // 2. Online recognition, only through services this phone actually has: the default first, Samsung last.
+  //    Unknown third-party services (another app's voice service) are skipped.
+  const online = [typeof d.defaultService === 'string' ? d.defaultService : '', GOOGLE_TTS, GOOGLE_APP, ...services]
+    .filter((p, i, all) => p && all.indexOf(p) === i && p !== GOOGLE_ON_DEVICE && services.includes(p) && /google|samsung|bixby/i.test(p))
+    .sort((x, y) => Number(/bixby|samsung/i.test(x)) - Number(/bixby|samsung/i.test(y)));
+  for (const service of online) for (const lang of [undefined, 'en-US', 'en-GB']) list.push({ onDevice: false, service, lang });
+  // 3. Whatever the phone picks, as a last resort.
   list.push({ onDevice: false }, { onDevice: false, lang: 'en-US' });
   return (attemptsCache = list);
 }
 
 /** Errors worth trying the next way for (the service or language is the problem, not the user). */
-export const RETRYABLE = ['language-not-supported', 'service-not-allowed', 'client', 'busy'];
+export const RETRYABLE = ['language-not-supported', 'service-not-allowed', 'client', 'busy', 'audio-capture'];
 
 /** The attempt that worked last on this phone, so later taps start there. */
 let working = 0;
@@ -216,13 +223,23 @@ export async function listen(h: ListenHandlers, vocabulary: string[], opts: List
   return { stop: () => m.stop(), abort: () => m.abort() };
 }
 
-/** Android: fetch the offline speech model so dictation works at sea. */
+/** Android: fetch an offline English model for the on-device service, so the mic works at sea. */
 export async function downloadOfflineModel(): Promise<string> {
   const m = load();
   if (!m || Platform.OS !== 'android') return 'Not needed on this phone.';
   try {
-    const r = await m.androidTriggerOfflineModelDownload({ locale: 'en-US' });
-    return r.status === 'download_success' ? 'Offline speech is ready.' : r.status === 'opened_dialog' ? 'Follow the prompt to download.' : 'Download scheduled.';
+    let locale = 'en-US';
+    try {
+      const r = await m.getSupportedLocales({ androidRecognitionServicePackage: GOOGLE_ON_DEVICE });
+      const phone = Intl.DateTimeFormat().resolvedOptions().locale;
+      locale = [phone, 'en-US', 'en-GB', 'en-AU'].find((l) => r.locales.includes(l)) ?? r.locales.find((l) => /^en/i.test(l)) ?? locale;
+    } catch {
+      // keep en-US
+    }
+    const r = await m.androidTriggerOfflineModelDownload({ locale });
+    attemptsCache = null;
+    diagCache = null;
+    return r.status === 'download_success' ? `Offline speech (${locale}) is ready.` : r.status === 'opened_dialog' ? 'Follow the prompt to download.' : 'Download scheduled.';
   } catch {
     return 'This phone cannot download an offline speech model.';
   }
