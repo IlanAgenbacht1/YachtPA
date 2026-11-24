@@ -12,7 +12,7 @@ import { getQualificationResults } from '@/lib/quals';
 import { fmtDateShort, fmtDur, fmtNum } from '@/lib/format';
 import { thump } from '@/lib/haptics';
 import { pocketReady, trackingStatus } from '@/location/permissions';
-import { useAppStore, useQuery, type LiveVoyage } from '@/store/AppStore';
+import { useAppStore, useElapsedMin, useQuery, type LiveVoyage } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 export default function HomeScreen() {
@@ -214,6 +214,7 @@ function Stat({ value, label }: { value: string; label: string }) {
 
 /** Replaces the Start button while a voyage is running. */
 function LiveCard({ voyage }: { voyage: LiveVoyage }) {
+  const elapsedMin = useElapsedMin(voyage);
   const t = useTokens();
   return (
     <Pressable
@@ -246,7 +247,7 @@ function LiveCard({ voyage }: { voyage: LiveVoyage }) {
             {voyage.nm.toFixed(1)}
           </Display>
           <Txt size={13} weight={700} color="heroMuted" tabular>
-            NM · {fmtDur(voyage.elapsedMin)}
+            NM · {fmtDur(elapsedMin)}
           </Txt>
         </Row>
       </Col>

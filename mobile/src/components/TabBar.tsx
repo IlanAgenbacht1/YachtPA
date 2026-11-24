@@ -3,7 +3,7 @@ import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, View } from 'react-native';
 
 import { fmtDur } from '@/lib/format';
-import { useAppStore } from '@/store/AppStore';
+import { useAppStore, useElapsedMin } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 
 import { Blink } from './motion';
@@ -21,6 +21,7 @@ const TABS: Record<string, { label: string; icon: IconName }> = {
 export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
   const t = useTokens();
   const { voyage } = useAppStore();
+  const elapsedMin = useElapsedMin(voyage);
   const focused = state.routes[state.index]?.name;
   const showMini = !!voyage && focused !== 'index';
 
@@ -49,7 +50,7 @@ export function TabBar({ state, navigation, insets }: BottomTabBarProps) {
               <Dot color="accent" size={8} />
             </Blink>
             <Txt size={13} weight={700} color="bg" tabular style={{ flex: 1 }}>
-              Underway · {voyage.nm.toFixed(1)} NM · {fmtDur(voyage.elapsedMin)}
+              Underway · {voyage.nm.toFixed(1)} NM · {fmtDur(elapsedMin)}
             </Txt>
             <Icon name="chevronRight" size={18} color="bg" strokeWidth={2.2} />
           </Pressable>

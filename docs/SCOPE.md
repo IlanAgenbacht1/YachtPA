@@ -141,7 +141,7 @@ Elegant, nautical, not kitsch. The practical constraints matter as much as the l
 
 | Metric | Rule |
 |---|---|
-| Distance | Sum of great-circle distance between filtered fixes, in NM. Filter: accuracy ≤ 50 m, drop fixes implying > 60 kn since the previous fix. |
+| Distance | Sum of great-circle distance between filtered fixes, in NM. Filter: accuracy ≤ 50 m; ignore fixes from before START (cached positions); a fix implying > 100 kn is dropped unless the next fix agrees with it; out-and-back spikes over ~280 m dropped. |
 | Underway | Speed ≥ 1 kn sustained ≥ 2 min starts a segment; 10 min below ends it. Thresholds configurable. |
 | Hours underway | Sum of underway segments. |
 | Night hours | Time between sunset and sunrise at the fix position, per authority definition where they differ. |

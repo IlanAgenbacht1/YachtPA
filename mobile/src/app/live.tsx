@@ -11,7 +11,7 @@ import { nextCrossing, isNight } from '@/domain/sun';
 import { fmtClock, fmtDur, minutesOfDay } from '@/lib/format';
 import { log } from '@/lib/diag';
 import { thump } from '@/lib/haptics';
-import { useAppStore } from '@/store/AppStore';
+import { useAppStore, useElapsedMin } from '@/store/AppStore';
 import { useTokens } from '@/theme';
 import { goBack } from '@/lib/nav';
 
@@ -20,13 +20,14 @@ const WAVE_B = 'M0 22q48.75 -14 97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0t97.5 0
 export default function LiveScreen() {
   const t = useTokens();
   const { voyage, stopVoyage, current, flash } = useAppStore();
+  const elapsedMin = useElapsedMin(voyage);
   const [stopping, setStopping] = useState(false);
 
   if (!voyage) return stopping ? null : <Redirect href="/" />;
 
   const last = voyage.fixes[voyage.fixes.length - 1];
   // The store's one-second clock (elapsed time is measured to it), so this screen stays pure.
-  const nowTs = voyage.startedAt + voyage.elapsedMin * 60000;
+  const nowTs = voyage.startedAt + elapsedMin * 60000;
   const startMin = minutesOfDay(new Date(voyage.startedAt));
   const clock = last?.ts ?? voyage.startedAt;
   const night = last ? isNight(clock, last.lat, last.lon) : false;
@@ -98,7 +99,7 @@ export default function LiveScreen() {
 
         <Row gap={10} align="stretch">
           <View style={{ flex: 1 }}>
-            <Tile on="hero" label="Elapsed" value={fmtDur(voyage.elapsedMin)} />
+            <Tile on="hero" label="Elapsed" value={fmtDur(elapsedMin)} />
           </View>
           <View style={{ flex: 1 }}>
             <Tile on="hero" label="Speed" value={`${voyage.speed.toFixed(1)} kn`} />

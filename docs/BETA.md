@@ -87,6 +87,7 @@ EAS asks for your Apple login, creates the certificates, builds in the cloud and
 
 Notes for the boat:
 - They need internet once to install. After that the app works offline.
+- **Don't swipe YachtPA away during a voyage.** On iPhone, closing it from the app switcher stops location until it is opened again. Locking the phone or switching apps is fine.
 - TestFlight builds expire after 90 days. Ship a new build before then.
 - Ask them to export their data (Profile → Export all my data) every so often. It is a beta.
 

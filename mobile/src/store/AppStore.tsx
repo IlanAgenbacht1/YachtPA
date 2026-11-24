@@ -44,7 +44,6 @@ export type LiveVoyage = {
   fixes: Fix[];
   track: TrackSummary;
   nm: number;
-  elapsedMin: number;
   speed: number;
   /** gps only: whether tracking survives the phone locking */
   mode: 'background' | 'foreground' | null;
@@ -100,7 +99,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [mode, setMode] = useState<'background' | 'foreground' | null>(null);
   const [rev, setRev] = useState(0);
   const [toast, setToast] = useState('');
-  const [now, setNow] = useState(() => Date.now());
 
   const feedStop = useRef<Stop | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -250,12 +248,6 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     return () => sub.remove();
   }, []);
 
-  // A one-second clock while live, for elapsed time.
-  useEffect(() => {
-    if (!live) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [live !== null]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(
     () => () => {
@@ -378,13 +370,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     repo.setSetting('simulate', on ? '1' : '0').catch(() => {});
   }, []);
 
+  // Recomputed when a position arrives, not every second: a long passage has thousands of them.
+  // Screens that show elapsed time tick on their own (useElapsedMin), so the whole app does not re-render each second.
   const voyage = useMemo<LiveVoyage | null>(() => {
     if (!live) return null;
-    const last = live.fixes[live.fixes.length - 1];
-    const clock = live.source === 'sim' ? (last?.ts ?? live.startedAt) : now;
-    const track = summarise(live.fixes, { startedAt: live.startedAt, endedAt: clock });
-    return { ...live, track, nm: track.distanceNm, elapsedMin: track.durationMin, speed: track.currentKn, mode };
-  }, [live, now, mode]);
+    const track = summarise(live.fixes, { startedAt: live.startedAt });
+    return { ...live, track, nm: track.distanceNm, speed: track.currentKn, mode };
+  }, [live, mode]);
 
   const value = useMemo<AppStore>(
     () => ({ ready, current, voyage, simulate, micOn, devTools, rev, toast, refresh, bump, onboard, startVoyage, stopVoyage, setSimulate, setMicOn, setDevTools, flash, soon }),
@@ -392,6 +384,21 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   );
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
+}
+
+/** Minutes since the live voyage started, ticking each second (pretend voyages run on their own clock). */
+export function useElapsedMin(v: LiveVoyage | null): number {
+  const [now, setNow] = useState(() => Date.now());
+  const active = !!v;
+  useEffect(() => {
+    if (!active) return;
+    const id = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(id);
+  }, [active]);
+  if (!v) return 0;
+  const last = v.fixes[v.fixes.length - 1];
+  const clock = v.source === 'sim' ? (last?.ts ?? v.startedAt) : now;
+  return Math.max(0, (clock - v.startedAt) / 60000);
 }
 
 export function useAppStore(): AppStore {
