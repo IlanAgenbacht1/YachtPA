@@ -27,7 +27,7 @@ import { placeName, startGps, startSim, type FeedSource, type Stop } from '@/loc
 import { ensureNotificationPermission, notificationsAllowed, rescheduleReminders } from '@/lib/reminders';
 import { readBattery, type BatteryReading } from '@/lib/battery';
 import { log } from '@/lib/diag';
-import { versionInfo } from '@/lib/updates';
+import { reportUpdateProblems, versionInfo } from '@/lib/updates';
 import { trackingStatus } from '@/location/permissions';
 import { batteryPerHour } from '@/telemetry/engine';
 import { flushTelemetry, track as trackEvent } from '@/telemetry';
@@ -219,6 +219,10 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       const v = versionInfo();
       trackEvent('app_open', { update: v.updateId ? v.updateId.slice(0, 8) : null, builtIn: v.embedded, channel: v.channel });
       trackEvent('setup_status', { services: t.services, allowed: t.allowed, precise: t.precise, always: t.always, canAlways: t.canAlways, notifications });
+      // Why a phone is not picking up updates, if it is not.
+      const seen = Number((await repo.getSetting('updates_log_seen')) ?? 0) || 0;
+      const latest = await reportUpdateProblems(log, seen);
+      if (latest > seen) await repo.setSetting('updates_log_seen', String(latest));
     })().catch(() => {});
     const id = setTimeout(() => flushTelemetry(), 3000);
     return () => clearTimeout(id);
@@ -335,9 +339,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       // How long the GPS took to give a first position after START.
       firstFixSec: fixes.length ? Math.max(0, Math.round((fixes[0].ts - live.startedAt) / 1000)) : null,
       positionsPerHour: hours > 0 ? Math.round(fixes.length / hours) : null,
+      // Stretches with no new position (includes sitting still, when the phone sends none).
       gaps: gaps.length,
       longestGapMin: gaps.length ? Math.max(...gaps.map((g) => g.minutes)) : 0,
       gapMinutes: gaps.reduce((t, g) => t + g.minutes, 0),
+      // Tracking stopped while the boat was moving: the phone paused the app. The number to watch.
+      pauses: s.gaps.length,
+      longestPauseMin: s.gaps.length ? Math.max(...s.gaps.map((g) => g.minutes)) : 0,
       batteryStart: startBattery?.level ?? null,
       batteryEnd: endBattery?.level ?? null,
       batteryPerHour: batteryPerHour(startBattery, endBattery, s.durationMin),

@@ -10,7 +10,7 @@ import { Platform, Share } from 'react-native';
 
 import { getDb } from '@/db/db';
 import { buildReport, type LogLine } from '@/domain/report';
-import { trackLog } from '@/telemetry';
+import { installTag, trackLog } from '@/telemetry';
 
 import { versionInfo } from './updates';
 
@@ -75,8 +75,12 @@ async function recentLines(limit = 400): Promise<LogLine[]> {
 }
 
 export async function problemReport(settings: Record<string, string | boolean | number | null>, extra?: string): Promise<string> {
-  const lines = await recentLines();
-  const report = buildReport({ app: appDescription(), phone: phoneDescription(), settings }, lines);
+  const [lines, install] = await Promise.all([recentLines(), installTag()]);
+  const offset = -new Date().getTimezoneOffset() / 60;
+  const report = buildReport(
+    { app: appDescription(), phone: `${phoneDescription()} · install ${install} · times are phone time (UTC${offset >= 0 ? '+' : ''}${offset})`, settings },
+    lines,
+  );
   return extra ? `${extra}\n\n${report}` : report;
 }
 

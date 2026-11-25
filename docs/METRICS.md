@@ -11,14 +11,14 @@ Each phone has a random install ID. **Never sent:** names, emails, positions, pl
 | `app_open` | App opened | app version, platform, OS, phone model |
 | `setup_status` | App opened, Tracking setup | location on, allowed, precise, all the time / Always, notifications |
 | `voyage_start` | Start voyage | tracking mode (locked / open only), battery %, charging, low power |
-| `voyage_stop` | Stop voyage | NM, minutes, positions per hour, gaps, longest gap, battery % per hour |
+| `voyage_stop` | Stop voyage | NM, minutes, underway, positions (usable), first fix, pauses while moving, quiet gaps, battery % per hour |
 | `voyage_resumed` | App reopened mid-voyage (swiped away or stopped by the phone) | minutes since last position |
 | `voyage_confirmed` / `voyage_discarded` | Summary | NM, skipper, names edited |
 | `manual_voyage_added` | Add a past voyage | NM, hours |
 | `log_saved` | Daily log saved | number of duties and ticks, written by mic / tidy / typing |
 | `mic_result` | Mic used | worked or not, error type, word count, on-device |
 | `document_saved`, `pdf_exported`, `report_sent` | | |
-| logs (`kind = log`) | Warnings and errors, crashes, failed screens | area, message |
+| logs (`kind = log`) | Warnings and errors, crashes, failed screens, failed updates | area, message |
 
 Testers can switch it off: Profile → Share anonymous usage data (on by default for the beta, explained on the welcome screen).
 
@@ -28,40 +28,47 @@ Needs the Supabase project from [BETA.md](BETA.md) step 0. In Supabase → SQL E
 
 ## Reading it
 
-Supabase → SQL Editor. Save these as snippets:
+Supabase → SQL Editor. Browser and development runs are left out of every view. Each phone shows as a short **install** ID (8 characters), the same one printed at the top of a tester's problem report. **app_version** reads `0.1.0 01a20e76` (running that over-the-air update) or `0.1.0 built-in` (the installed build as shipped); rows from before 25 Nov 2026 show only `0.1.0`. Times are UTC; problem reports use phone time and say which.
 
 ```sql
--- Who is testing, day by day
-select * from metrics_daily;
+-- Start here: every phone, what it runs, whether tracking is set up, what it has done
+select * from metrics_installs;
 
--- Is tracking reliable, per phone model? (% logged with the phone locked, positions per hour, gaps, battery)
-select * from metrics_tracking;
+-- Day by day
+select * from metrics_daily;
 
 -- Every GPS voyage, newest first
 select * from metrics_voyages limit 50;
 
--- Are phones set up right? Latest setup per tester
-select * from metrics_setup;
+-- Tracking per phone model
+select * from metrics_tracking;
 
--- Errors by app version and phone
-select * from metrics_errors limit 50;
+-- Warnings and errors per phone, newest first
+select * from metrics_problems limit 50;
 
--- Is the mic working?
+-- Errors across phones: what to fix first
+select * from metrics_errors;
+
+-- The mic per phone model
 select * from metrics_mic;
 
--- Testers who closed the app mid-voyage (iPhone stops tracking when swiped away)
-select ts, platform, model, props->>'minutesSinceLastPosition' as minutes
-  from telemetry where name = 'voyage_resumed' order by ts desc;
+-- Follow one phone, event by event
+select * from metrics_events where install = '3e1bc123' limit 100;
 ```
+
+Two kinds of row: **events** (`kind = event`, something happened, details in `props`) and **logs** (`kind = log`, a warning or error; `name` is the part of the app, e.g. `voyage`, `mic`, `update`, `backup`).
 
 Things to watch in the beta:
 
-- **`metrics_tracking.pct_logged_locked` below 100:** phones logging only while open. Check `metrics_setup` for who lacks "Always" / "all the time".
-- **`avg_longest_gap_min` over ~10:** the phone paused the app. On Android, battery saver; on iPhone, Low Power Mode or swiping away.
+- **A phone you don't recognise** in `metrics_installs` with a few opens, every permission granted at once and nothing else: an automated scanner that picked up the APK link. Ignore it.
+- **`tracking_ready = false`:** that tester never finished Tracking setup.
+- **`metrics_voyages.pauses` / `metrics_tracking.pct_voyages_paused` above 0:** tracking stopped while the boat was moving: Android battery saver, or iPhone Low Power Mode / swiping the app away. `quiet_gaps` are different: no new position because the phone was sitting still, which is normal.
+- **`pct_usable` below ~80:** positions too inaccurate to use (phone deep inside the boat).
 - **`est_battery_pct_per_12h` over 10:** above the target in SCOPE §12.
+- **`running` stuck on an old version** with `update` warnings in `metrics_problems`: that phone can't download updates.
 - **`metrics_errors`:** anything new after an update.
 
-For charts, Grafana Cloud's free tier can read the same views (connect it to the Supabase Postgres with a read-only role).
+For charts, Grafana Cloud's free tier can read the same views (connect it to the Supabase Postgres with a read-only role). The views are created by [`supabase/migrations/20261125000000_metrics_v2.sql`](../supabase/migrations/20261125000000_metrics_v2.sql) (re-runnable).
 
 ## App Store privacy answers (App Store Connect → App Privacy)
 

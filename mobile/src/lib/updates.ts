@@ -30,3 +30,20 @@ export async function checkAndDownload(): Promise<'downloaded' | 'latest' | 'off
 export function restartIntoUpdate(): Promise<void> {
   return Updates.reloadAsync();
 }
+
+/**
+ * Warnings and errors from the update system itself (a download that failed, an update rolled back),
+ * passed to the diagnostic log once each, so a phone that never updates shows why.
+ */
+export async function reportUpdateProblems(log: (level: 'warn' | 'error', area: string, message: string) => void, seenUntil: number): Promise<number> {
+  if (!updatesOn) return seenUntil;
+  const entries = await Updates.readLogEntriesAsync(7 * 86400000);
+  let latest = seenUntil;
+  for (const e of entries) {
+    if (e.timestamp <= seenUntil) continue;
+    latest = Math.max(latest, e.timestamp);
+    const level = e.level === 'error' || e.level === 'fatal' ? 'error' : e.level === 'warn' ? 'warn' : null;
+    if (level) log(level, 'update', `${e.code}: ${e.message}`.slice(0, 500));
+  }
+  return latest;
+}

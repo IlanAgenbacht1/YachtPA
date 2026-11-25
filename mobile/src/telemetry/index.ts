@@ -13,6 +13,7 @@ import { Platform } from 'react-native';
 import { getDb } from '@/db/db';
 import { getSetting, setSetting } from '@/db/repo';
 import type { Db } from '@/sync/engine';
+import { versionInfo } from '@/lib/updates';
 import { cloudConfigured, supabase } from '@/sync/supabase';
 
 import { clearQueue, enqueue, flush, type Device, type Item } from './engine';
@@ -20,8 +21,11 @@ import { clearQueue, enqueue, flush, type Device, type Item } from './engine';
 let enabled: boolean | null = null;
 let device: Device | null = null;
 
+/** Development and browser runs (including automated UI tests) never send: only real installs count. */
+const realInstall = !__DEV__ && Platform.OS !== 'web';
+
 async function isEnabled(): Promise<boolean> {
-  if (!cloudConfigured) return false;
+  if (!cloudConfigured || !realInstall) return false;
   if (enabled === null) enabled = (await getSetting('telemetry_off')) !== '1';
   return enabled;
 }
@@ -41,6 +45,20 @@ function randomId(): string {
   return `${hex()}${hex()}-${hex()}-4${hex().slice(1)}-${hex()}-${hex()}${hex()}${hex()}`;
 }
 
+function buildTag(): string {
+  const v = versionInfo();
+  return v.embedded || !v.updateId ? 'built-in' : v.updateId.slice(0, 8);
+}
+
+/** The first 8 characters of this phone's random install ID: shown in problem reports so they match the metrics. */
+export async function installTag(): Promise<string> {
+  try {
+    return (await getDevice()).installId.slice(0, 8);
+  } catch {
+    return '?';
+  }
+}
+
 async function getDevice(): Promise<Device> {
   if (device) return device;
   let installId = await getSetting('install_id');
@@ -51,7 +69,8 @@ async function getDevice(): Promise<Device> {
   const c = (Platform.constants ?? {}) as Record<string, unknown>;
   device = {
     installId,
-    appVersion: `${Constants.expoConfig?.version ?? '?'}${__DEV__ ? '-dev' : ''}`,
+    // Which code produced the row: "0.1.0 01a20e76" for an over-the-air update, "0.1.0 built-in" for the installed build.
+    appVersion: `${Constants.expoConfig?.version ?? '?'} ${buildTag()}`,
     platform: Platform.OS === 'ios' || Platform.OS === 'android' ? Platform.OS : 'web',
     osVersion: String(Platform.OS === 'android' ? (c.Release ?? Platform.Version) : (c.osVersion ?? Platform.Version)),
     model: Platform.OS === 'android' ? `${c.Brand ?? ''} ${c.Model ?? ''}`.trim() : Platform.OS === 'ios' ? (c.interfaceIdiom === 'pad' ? 'iPad' : 'iPhone') : 'web',
