@@ -34,6 +34,10 @@ npx eas-cli@latest update --channel production --environment production --platfo
 
 An update only reaches builds with the same native code (`runtimeVersion` is a fingerprint). After adding or upgrading a native package, make new builds first; updates published before that go only to the old builds.
 
+The fingerprint also covers `app.json` and `eas.json`. **Change either only together with new builds.** Editing them between builds (even the submit settings) silently stops updates reaching installed phones. Check before publishing: `npx expo-updates runtimeversion:resolve --platform ios` must print the same `runtimeVersion` as the installed build on expo.dev.
+
+Uploading to App Store Connect without prompts needs `"submit": { "production": { "ios": { "ascAppId": "6838828177" } } }` in `eas.json`. Add it in the same commit as the next iOS build, not before.
+
 With `--environment`, EAS ignores `mobile/.env` and uses the variables stored on Expo for that environment. `EXPO_PUBLIC_SUPABASE_URL` and `EXPO_PUBLIC_SUPABASE_KEY` are stored there for `preview` and `production` (public values). If they were missing, the update would ship with cloud backup and metrics switched off. Phones show "New version ready · Restart" once an update has downloaded; Profile shows which version is running.
 
 ## Step 0: cloud backup and metrics (done)
